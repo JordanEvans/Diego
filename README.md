@@ -13,6 +13,14 @@ How To Use
 
 Select an item in the Story, Scene or Page view. Hit Enter Key to create new item.
 
+<b>Remove a Story from the Story View (Does not Delete</b>
+
+Select an item in the Story View. Hit Delete key.
+
+<b>Delete a Scene or Page</b>
+
+Select an item in the Scene or Page View. Hit Delete key.
+
 <b>How to Format A Line as Description, Character, Parenthetic or Dialog</b>
 
 If the line is empty, just press the Spacebar. If the line has text, then place the cursor at the beginning of the line and hit Spacebar.
