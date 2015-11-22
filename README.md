@@ -1,25 +1,26 @@
 # Diego
-<h3>Simple. Organized. Fast!</h3>
+<h3>Simple. Organized. Fast.</h3>
 
 Diego's goal is to create the simplest, fastest story/script editor for Graphic Novel/Manga/Comic Book writers.
-PREMISE STORAGE
 
-How to run the app:
+Here's some instructions for usage:
+
+<i>At this time the app is in development so it at anytime it may be anywhere from stable enough to use what is working to broken (feature broken making it unsuable).</i>
+
+<b>How To Run The App</b>
 python app.py
-
-How To Use
 
 <b>Create a Story, Scene or Page</b>
 
 Select an item in the Story, Scene or Page view. Hit Enter Key to create new item.
 
-<b>Remove a Story from the Story View (Does not Delete</b>
+<b>Remove a Story from the Story View (Just removes from view, does not Delete)</b>
 
 Select an item in the Story View. Hit Delete key.
 
 <b>Delete a Scene or Page</b>
 
-Select an item in the Scene or Page View. Hit Delete key.
+Select an item in the Scene or Page View. Hit Delete key. Deleting a Scene will delete all pages contained within it.
 
 <b>How to Format A Line as Description, Character, Parenthetic or Dialog</b>
 
