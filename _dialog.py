@@ -31,6 +31,8 @@ def openFile(control):
     for story in control.stories:
         if story.path == dialog.get_filename():
             dialog.destroy()
+            infoDialog(control, 'That Story is already open.')
+            return
             
     if response == Gtk.ResponseType.OK:
 
@@ -87,3 +89,69 @@ def unsavedFiles(control):
 
     dialog.destroy()
 
+def deleteSceneConfirmation(control, row, index):
+    dialog = Gtk.MessageDialog(
+        control.app.window,
+        Gtk.DialogFlags.MODAL | Gtk.DialogFlags.DESTROY_WITH_PARENT,
+        Gtk.MessageType.QUESTION,
+        (Gtk.STOCK_YES, Gtk.ResponseType.OK, Gtk.STOCK_NO, Gtk.ResponseType.CANCEL
+         ),
+        None)
+
+    dialog.set_markup('Confirm you want to delete this Scene?')
+
+    response = dialog.run()
+    if response == Gtk.ResponseType.OK:
+        print "row in",  control.sceneItemBox.listbox.get_children()
+        control.sceneItemBox.listbox.remove(row)
+        if index == len(control.currentSequence().scenes) - 1:
+            control.currentSequence().scenes.pop(index)
+            control.currentStory().index.scene = index - 1
+        else:
+            control.currentSequence().scenes.pop(index)
+
+        control.sceneItemBox.updateNumberated()
+
+    elif response == Gtk.ResponseType.CANCEL:
+        pass
+
+    dialog.destroy()
+
+def deletePageConfirmation(control, row, index):
+    dialog = Gtk.MessageDialog(
+        control.app.window,
+        Gtk.DialogFlags.MODAL | Gtk.DialogFlags.DESTROY_WITH_PARENT,
+        Gtk.MessageType.QUESTION,
+        (Gtk.STOCK_YES, Gtk.ResponseType.OK, Gtk.STOCK_NO, Gtk.ResponseType.CANCEL
+         ),
+        None)
+
+    dialog.set_markup('Confirm you want to delete this Page?')
+
+    response = dialog.run()
+    if response == Gtk.ResponseType.OK:
+        control.pageItemBox.listbox.remove(row)
+        if index == len(control.currentScene().pages) - 1:
+            control.currentScene().pages.pop(index)
+            control.currentStory().index.page = index - 1
+        else:
+            control.currentScene().pages.pop(index)
+
+        control.pageItemBox.updateNumberated()
+
+    elif response == Gtk.ResponseType.CANCEL:
+        pass
+
+    dialog.destroy()
+
+def infoDialog(control, info=''):
+    dialog = Gtk.MessageDialog(
+        control.app.window,
+        Gtk.DialogFlags.MODAL | Gtk.DialogFlags.DESTROY_WITH_PARENT,
+        Gtk.MessageType.INFO,
+        (Gtk.STOCK_OK, Gtk.ResponseType.OK),
+        None)
+
+    dialog.set_markup(info)
+    dialog.run()
+    dialog.destroy()

@@ -4,6 +4,8 @@ import json
 
 import _event
 import _dialog
+import _rtf
+
 from _event import EventManager
 
 class StoryIndex(object):
@@ -170,6 +172,8 @@ class Story(object):
         self.saved = True
         self.horizontalPanePosition = 150
 
+        self.names = []
+
     def newSequence(self, prepend=False):
         sequence = Sequence()
 
@@ -269,6 +273,18 @@ class Story(object):
 
         self.horizontalPanePosition = data['horizontalPanePosition']
 
+        self.updateNames()
+
+    def updateNames(self):
+        self.names = []
+        for sequence in self.sequences:
+            for scene in sequence.scenes:
+                for page in scene.pages:
+                    for line in page.lines:
+                        if line.tag == 'character':
+                            if line.text not in self.names:
+                                self.names.append(line.text)
+
     def save(self,):
         if self.path == None:
             _dialog.saveFile(self.control)
@@ -287,6 +303,18 @@ class Story(object):
         self.control.currentStory().title = title
         self.control.storyItemBox.updateStoryLabelAtIndex(self.control.index)
         self.saved = True
+
+        rtf = _rtf.RTF(self.control)
+        rtf.exportScreenplay(path + ".rtf")
+        rtfPath = path + ".rtf"
+
+        cwd = os.getcwd()
+        os.chdir(self.control.saveDir)
+        os.system("soffice --headless --convert-to pdf " + "'" + rtfPath + "'")
+        os.chdir(cwd)
+
+        self.updateNames()
+        self.control.scriptView.textView.updateNameMenu()
 
     def default(self):
         self.control.historyEnabled = True

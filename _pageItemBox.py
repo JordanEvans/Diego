@@ -2,6 +2,7 @@
 from gi.repository import Gtk, Gdk
 
 import _pageItem
+import _dialog
 
 class IndexListBox(Gtk.ListBox):
     def __init__(self, control):
@@ -34,12 +35,25 @@ class IndexListBox(Gtk.ListBox):
 
             if event.keyval == 65293:
                 selectedRows = self.get_selected_rows()
+                rows = self.get_children()
                 if len(selectedRows) == 0:
                     return
                 elif len(selectedRows) == 1:
                     self.control.newPage()
                 else:
                     self.unselect_all()
+
+            elif (event.keyval == 65535): # delete
+                selectedRows = self.get_selected_rows()
+                rows = self.get_children()
+                if len(rows) == 1:
+                    return 1
+
+                row = selectedRows[0]
+                index = rows.index(row)
+                _dialog.deletePageConfirmation(self.control, row, index)
+                return 1
+
             else:
                 return 1
 
@@ -156,4 +170,23 @@ class PageItemBox(ScrolledListBox):
             self.listbox.remove(row)
         self.pages = []
 
+    def updateNumberated(self):
+        self.control.scriptView.updateTitles()
+        self.reset()
+        self.load()
+        self.show_all()
+        self.loadPageAtIndex()
 
+    def loadPageAtIndex(self, index=None):
+
+        if index == None:
+            cp = self.control.currentPage()
+            index = self.control.currentScene().pages.index(cp)
+
+        row = self.control.pageItemBox.listbox.get_row_at_index(index)
+
+        self.control.pageItemBox.listbox.resetAndLoadLowerListBoxes(row)
+
+        if row:
+            self.control.pageItemBox.listbox.select_row(row)
+            row.grab_focus()

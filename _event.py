@@ -269,8 +269,8 @@ class WordEvent(Event):
         cl = control.scriptView.currentLine()
 
         updateToKeyReleasePosition = 0
-        if duringKeyPressEvent:
-            updateToKeyReleasePosition = 1
+        # if duringKeyPressEvent:
+        #     updateToKeyReleasePosition = 1
 
         insertOffset = cs.index.offset - len(word)
 
@@ -329,7 +329,6 @@ class PasteEvent(Event):
             self.selectedLines = list(control.selectionClipboard.lines)
 
         self.lines = list(control.copyClipboard.lines)
-
 
         i = 0
 

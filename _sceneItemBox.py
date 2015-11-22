@@ -2,6 +2,7 @@
 from gi.repository import Gtk, Gdk
 
 import _sceneItem
+import _dialog
 
 class IndexListBox(Gtk.ListBox):
     def __init__(self, control):
@@ -57,12 +58,11 @@ class IndexListBox(Gtk.ListBox):
                 rows = self.get_children()
                 if len(rows) == 1:
                     return 1
+
                 if len(selectedRows):
                     row = selectedRows[0]
-
                     index = rows.index(row)
-                    self.control.currentSequence().scenes.pop(index)
-                    self.remove(row)
+                    _dialog.deleteSceneConfirmation(self.control, row, index)
                 return 1
 
             else:
@@ -146,8 +146,8 @@ class SceneItemBox(ScrolledListBox):
     def config(self, ):
         pass
 
-    def deleteScene(self, index):
-        self.control.currentStory().deleteScene(index)
+    # def deleteScene(self, index):
+    #     _dialog.deleteSceneConfirmation(self.control, index)
 
     def newScene(self):
         row = Gtk.ListBoxRow()
@@ -190,6 +190,13 @@ class SceneItemBox(ScrolledListBox):
         self.load()
         self.show_all()
         self.loadSceneAtIndex()
+
+    def updateNumberated(self):
+        if self.numerated:
+            self.reset()
+            self.load()
+            self.show_all()
+            self.loadSceneAtIndex()
 
     def loadSceneAtIndex(self, index=None):
 

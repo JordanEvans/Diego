@@ -1,6 +1,6 @@
 import string
 
-from gi.repository import Gtk, Gdk, GLib, Pango
+from gi.repository import Gtk, Gdk, GLib, Pango, GObject
 
 import _event
 import _story
@@ -8,7 +8,7 @@ import _story
 class TagIter(object):
 
     def __init__(self):
-        self.tags = ['description', 'character', 'dialog']
+        self.tags = ['description', 'character', 'dialog', 'parenthetic']
         self.index = 0
 
     def tag(self):
@@ -21,6 +21,7 @@ class TagIter(object):
             self.index += 1
 
     def reset(self):
+        print "reset"
         self.index = 0
 
     def load(self, tag='description'):
@@ -95,6 +96,36 @@ class TextView(Gtk.TextView):
         self.cutPress = False
         self.formatingLine = False
 
+        self.menu = None
+
+    def updateNameMenu(self):
+        self.control.scriptView.textView.menu = Gtk.Menu()
+
+        for name in self.control.currentStory().names:
+            item = Gtk.MenuItem()
+            item.set_label(name)
+            # self.menu.attach(item,0, 0, 0, 0)
+            self.menu.append(item)
+            item.show()
+            item.connect('activate', self.menuSelect)
+
+        self.control.scriptView.textView.menu.connect('key-release-event', self.menuKeyRelease)
+
+    def menuKeyRelease(self, widget, event):
+        if event.keyval == 32:
+            self.control.scriptView.textView.menu.popdown()
+            return 1
+
+    def menuSelect(self, widget):
+        print widget.get_label()
+        insertIter = self.insertIter()
+        self.buffer.insert(insertIter, widget.get_label(), len(widget.get_label()))
+
+        currentLine = self.control.currentLine()
+        index = self.control.scriptView.lines.index(currentLine)
+
+        self.formatLine(index, 'character')
+
     def resetTags(self, width=None):
 
         if width == None:
@@ -104,14 +135,17 @@ class TextView(Gtk.TextView):
         descriptionWidth = int(40.3125 * self.fontSize)
         characterWidth = self.descriptionWidth * 0.5
         dialogWidth = self.descriptionWidth * 0.70
+        parentheticWidth = self.descriptionWidth * 0.60
 
         descriptionLeftMargin = descriptionWidth * 0.1
         characterLeftMargin = descriptionWidth * 0.55
         dialogLeftMargin = descriptionWidth * 0.3
+        parentheticLeftMargin = descriptionWidth * 0.45
 
         descriptionRightMargin = self.width - (descriptionLeftMargin + descriptionWidth)
         characterRightMargin = self.width - (characterLeftMargin + characterWidth)
         dialogRightMargin = self.width - (dialogLeftMargin + dialogWidth)
+        parentheticRightMargin = self.width - (dialogLeftMargin + parentheticWidth)
 
         if descriptionRightMargin < 50:
             return
@@ -123,14 +157,17 @@ class TextView(Gtk.TextView):
         self.descriptionWidth = descriptionWidth
         self.characterWidth = characterWidth
         self.dialogWidth = dialogWidth
+        self.parentheticWidth = parentheticWidth
 
         self.descriptionLeftMargin = descriptionLeftMargin
         self.characterLeftMargin = characterLeftMargin
         self.dialogLeftMargin = dialogLeftMargin
+        self.parentheticLeftMargin = parentheticLeftMargin
 
         self.descriptionRightMargin = descriptionRightMargin
         self.characterRightMargin = characterRightMargin
         self.dialogRightMargin = dialogRightMargin
+        self.parentheticRightMargin = parentheticRightMargin
 
         self.props.left_margin = self.descriptionLeftMargin
         self.props.right_margin = self.descriptionRightMargin
@@ -138,18 +175,20 @@ class TextView(Gtk.TextView):
         self.descriptionTag.props.left_margin = self.descriptionLeftMargin
         self.characterTag.props.left_margin = self.characterLeftMargin
         self.dialogTag.props.left_margin = self.dialogLeftMargin
+        self.parentheticTag.props.left_margin = self.parentheticLeftMargin
 
         self.descriptionTag.props.right_margin = self.descriptionRightMargin
         self.characterTag.props.right_margin = self.characterRightMargin
         self.dialogTag.props.right_margin = self.dialogRightMargin
+        self.parentheticTag.props.right_margin = self.parentheticRightMargin
 
         self.descriptionTag.props.font = "Sans " + str(self.fontSize)
         self.characterTag.props.font = "Sans " + str(self.fontSize)
         self.dialogTag.props.font = "Sans " + str(self.fontSize)
+        self.parentheticTag.props.font = "Sans " + str(self.fontSize)
 
         self.control.scriptView.infoTextView.props.left_margin = self.control.scriptView.textView.descriptionLeftMargin
         self.control.scriptView.infoTextView.props.right_margin = self.control.scriptView.textView.descriptionRightMargin
-
 
     def createTags(self):
         pixelsInsideWrap = 2
@@ -191,6 +230,15 @@ class TextView(Gtk.TextView):
                                                 pixels_above_lines=2,
                                                 pixels_below_lines=10,
                                                 font="Sans " + str(self.fontSize))
+
+        self.parentheticTag = self.buffer.create_tag("parenthetic",
+                                                     background_rgba=descriptionBackground,
+                                                     pixels_inside_wrap=pixelsInsideWrap,
+                                                     pixels_above_lines=2,
+                                                     pixels_below_lines=2,
+                                                     left_margin=self.descriptionLeftMargin,
+                                                     right_margin=self.descriptionRightMargin,
+                                                     font="Sans " + str(self.fontSize))
 
     def do_size_allocate(self, allocation):
 
@@ -251,26 +299,27 @@ class TextView(Gtk.TextView):
             if self.insertingOnFirstIter(event):
                 return 1
 
-            if (event.keyval == 32) and insertIter.get_line_offset() == 0:
+            if (event.keyval == 32) and insertIter.get_line_offset() == 0: # format line
                 self.tagIter.increment()
                 self.control.currentLine().tag = self.tagIter.tag()
                 self.updateLineTag(formatingEmptyLine=True)
                 self.control.currentStory().saved = False
                 self.formatingLine = True
+
                 return 1
 
-            if (event.keyval == 65293):
+            if (event.keyval == 65293): # new line
                 return self.returnPress()
 
-            elif (event.keyval == 65288):
+            elif (event.keyval == 65288): # backspace
                 self.backspacePress()
                 return 1
 
-            elif (event.keyval == 65535):
+            elif (event.keyval == 65535): # delete
                 self.deletePress()
                 return 1
 
-            elif event.keyval in [65361,65362,65363,65364]:
+            elif event.keyval in [65361,65362,65363,65364]: # arrow key
                 self.forceWordEvent()
                 self.arrowPress = True
                 self.tagIter.reset()
@@ -319,6 +368,11 @@ class TextView(Gtk.TextView):
 
         if self.arrowPress or self.formatingLine or self.newLineEvent or self.deleteEvent or self.backspaceEvent:
             self.updatePanel()
+
+        if (event.keyval == 32) and insertIter.get_line_offset() == 0: # format line
+
+            if self.tagIter.tag() == 'character':
+                self.menu.popup( None, None, None, None, 0, 0)
 
     def updateLineTag(self, line=None, formatingEmptyLine=False):
 
@@ -412,8 +466,17 @@ class TextView(Gtk.TextView):
 
         currentLine = self.control.currentLine()
 
+        newLineTag = 'description'
+        if currentLine.tag == 'character':
+            newLineTag = 'dialog'
+        elif currentLine.tag == 'dialog':
+            newLineTag = 'description'
+
+        self.tagIter.load(newLineTag)
+
         if currentCharIsNewLine:
-            newLineEvent = _event.NewLineEvent(self.control, tag=currentLine.tag)
+
+            newLineEvent = _event.NewLineEvent(self.control, tag=newLineTag)
             self.control.currentStory().eventManager.addEvent(newLineEvent)
             insertIter = self.insertIter()
             lineIndex = insertIter.get_line()
@@ -426,14 +489,14 @@ class TextView(Gtk.TextView):
             endIter.forward_char()
             sc,ec,text = startIter.get_char(), endIter.get_char(), self.buffer.get_text(startIter, endIter, True)
             self.buffer.remove_all_tags(startIter, endIter)
-            self.buffer.apply_tag_by_name(currentLine.tag, startIter, endIter)
+            self.buffer.apply_tag_by_name(newLineTag, startIter, endIter)
 
             startIter = self.buffer.get_iter_at_line(lineIndex + 1)
             endIter = self.buffer.get_iter_at_line(lineIndex + 1)
             endIter.forward_char()
             sc,ec,text = startIter.get_char(), endIter.get_char(), self.buffer.get_text(startIter, endIter, True)
             self.buffer.remove_all_tags(startIter, endIter)
-            self.buffer.apply_tag_by_name(currentLine.tag, startIter, endIter)
+            self.buffer.apply_tag_by_name(newLineTag, startIter, endIter)
 
         else:
             insertIter = self.insertIter()
@@ -441,7 +504,7 @@ class TextView(Gtk.TextView):
             carryText = self.buffer.get_text(insertIter,endLineIter,False)
             if len(carryText):
                 self.buffer.delete(insertIter, endLineIter)
-            newLineEvent = _event.NewLineEvent(self.control, carryText, tag=currentLine.tag)
+            newLineEvent = _event.NewLineEvent(self.control, carryText, tag=newLineTag)
             self.control.currentStory().eventManager.addEvent(newLineEvent)
             insertIter = self.insertIter()
 
@@ -456,7 +519,7 @@ class TextView(Gtk.TextView):
 
             sc,ec,text = startIter.get_char(), endIter.get_char(), self.buffer.get_text(startIter, endIter, True)
             self.buffer.remove_all_tags(startIter, endIter)
-            self.buffer.apply_tag_by_name(currentLine.tag, startIter, endIter)
+            self.buffer.apply_tag_by_name(newLineTag, startIter, endIter)
 
             startIter = self.buffer.get_iter_at_line(lineIndex + 1)
             endIter = self.buffer.get_iter_at_line(lineIndex + 1)
@@ -465,7 +528,7 @@ class TextView(Gtk.TextView):
 
             sc,ec,text = startIter.get_char(), endIter.get_char(), self.buffer.get_text(startIter, endIter, True)
             self.buffer.remove_all_tags(startIter, endIter)
-            self.buffer.apply_tag_by_name(currentLine.tag, startIter, endIter)
+            self.buffer.apply_tag_by_name(newLineTag, startIter, endIter)
 
             insertIter = self.insertIter()
             insertIter.backward_chars(len(carryText))
@@ -1042,14 +1105,14 @@ class TextView(Gtk.TextView):
 
     def leaveNotify(self, widget, event):
         self.forceWordEvent()
-        self.tagIter.reset()
+        #self.tagIter.reset()
 
     def enterNotify(self, widget, event):
         pass
 
     def focusOut(self, widget, event):
         self.forceWordEvent()
-        self.tagIter.reset()
+        #self.tagIter.reset()
 
     def focusIn(self, widget, event):
         pass
