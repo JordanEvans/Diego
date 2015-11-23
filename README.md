@@ -6,9 +6,15 @@
 
 Diego's goal is to create the simplest, fastest story/script editor for Graphic Novel/Manga/Comic Book writers.
 
+<b>System Requirements</b>
+
+Linux Operationing System
+
+Pygtk 3.14.15 installed.
+
 Here's some instructions for usage:
 
-<i>At this time the app is in development so it at anytime it may be anywhere from stable enough to use what is working to broken (feature broken making it unsuable).</i>
+<i>At this time the app is in development and only meant for testing.</i>
 
 <b>How To Run The App</b>
 
