@@ -1,5 +1,8 @@
 # Diego
+
 <h3>Simple. Organized. Fast.</h3>
+
+<img src="http://specscripter.com/screenshot.png">
 
 Diego's goal is to create the simplest, fastest story/script editor for Graphic Novel/Manga/Comic Book writers.
 
@@ -8,6 +11,7 @@ Here's some instructions for usage:
 <i>At this time the app is in development so it at anytime it may be anywhere from stable enough to use what is working to broken (feature broken making it unsuable).</i>
 
 <b>How To Run The App</b>
+
 python app.py
 
 <b>Create a Story, Scene or Page</b>
@@ -45,3 +49,7 @@ Select the Scene or page in which you want the Scene/Page to be inserted before.
 <b>Increase/Decrease Font Size</b>
 
 Place the cursor in the editor you want to resize font. Hold down Control and press + or - keys (plus or minus).
+
+<b>Toggle Story/Scene Numbering</b>
+
+Hold down Control and press #.
