@@ -491,3 +491,16 @@ class CutEvent(Event):
 
     def undo(self):
         Event.undo(self)
+
+class AutocompleteCharacterEvent(Event):
+    def __init__(self, control, name):
+        Event.__init__(self)
+
+        self.index = _story.StoryIndex(None, control.currentStory().index.__dict__)
+        self.name = name
+
+    def redo(self):
+        Event.redo(self)
+
+    def undo(self):
+        Event.undo(self)

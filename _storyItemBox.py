@@ -64,6 +64,8 @@ class IndexListBox(Gtk.ListBox):
 
     def resetAndLoadLowerListBoxes(self, row):
 
+        print "resetAndLoadLowerListBoxes"
+
         self.control.sequenceItemBox.reset()
         self.control.sceneItemBox.reset()
         self.control.pageItemBox.reset()
@@ -83,6 +85,9 @@ class IndexListBox(Gtk.ListBox):
         self.control.scriptView.updateTitles()
         self.control.category = 'story'
         self.control.app.updateWindowTitle()
+
+        print self.control.currentStory().title, self.control.currentStory().names
+        self.control.currentStory().updateNames()
 
         self.control.scriptView.paned.set_position(self.control.currentStory().horizontalPanePosition)
 

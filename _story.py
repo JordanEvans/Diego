@@ -282,8 +282,10 @@ class Story(object):
                 for page in scene.pages:
                     for line in page.lines:
                         if line.tag == 'character':
-                            if line.text not in self.names:
+                            if len(line.text.lstrip().rstrip()) and line.text not in self.names:
                                 self.names.append(line.text)
+
+        self.control.scriptView.textView.updateNameMenu()
 
     def save(self,):
         if self.path == None:
@@ -319,6 +321,41 @@ class Story(object):
     def default(self):
         self.control.historyEnabled = True
         self.sequences = [Sequence()]
+
+
+    def hanselGretalImport(self):
+        import json
+        path = 'HanselAndGretel'
+        with open(path, 'r') as fp:
+                data = json.load(fp)
+
+        doc = data['document']
+
+        seq = self.sequences[0]
+
+        scenes = doc['scenes']
+
+        for i in range(len(scenes) - 1):
+            newScene = Scene()
+            seq.scenes.append(newScene)
+
+        for i in range(len(scenes)):
+            s = scenes[i]
+            seq.scenes[i].title = scenes[i]['title']
+            page = seq.scenes[i].pages[0]
+            text = s['infos'][0]['text']
+            self.control.p(text)
+
+            cs = seq.scenes[i]
+            cs.info = text
+
+            for beat in scenes[i]['beats']:
+                if len(beat['text']):
+                 page.lines.append(Line(beat['text'], beat['tag']))
+
+            if len(page.lines) > 1:
+                page.lines.pop(0)
+
 
     def reset(self):
         self.path = None

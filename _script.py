@@ -42,7 +42,6 @@ class TextView(Gtk.TextView):
     def __init__(self, control):
         Gtk.TextView.__init__(self)
 
-
         self.control = control
         self.buffer = self.get_buffer()
 
@@ -107,7 +106,7 @@ class TextView(Gtk.TextView):
             # self.menu.attach(item,0, 0, 0, 0)
             self.menu.append(item)
             item.show()
-            item.connect('activate', self.menuSelect)
+            item.connect('activate', self.characterSelectionFromMenu)
 
         self.control.scriptView.textView.menu.connect('key-release-event', self.menuKeyRelease)
 
@@ -116,10 +115,14 @@ class TextView(Gtk.TextView):
             self.control.scriptView.textView.menu.popdown()
             return 1
 
-    def menuSelect(self, widget):
-        print widget.get_label()
+    def characterSelectionFromMenu(self, widget):
+
+        ace = _event.AutocompleteCharacterEvent(self.control, widget.get_label())
+        self.control.currentStory().eventManager.addEvent(ace)
+
         insertIter = self.insertIter()
         self.buffer.insert(insertIter, widget.get_label(), len(widget.get_label()))
+        self.control.currentLine().text = widget.get_label()
 
         currentLine = self.control.currentLine()
         index = self.control.scriptView.lines.index(currentLine)
@@ -202,6 +205,10 @@ class TextView(Gtk.TextView):
             descriptionBackground = whiteColor
             characterBackground = whiteColor
             dialogBackground = whiteColor
+
+        self.lastLineTag = self.buffer.create_tag("lastLine",
+                                                     background_rgba=Gdk.RGBA(0.0, 1.0, 0.0, 0.1),
+                                                     editable=False)
 
         self.descriptionTag = self.buffer.create_tag("description",
                                                      background_rgba=descriptionBackground,
@@ -371,7 +378,7 @@ class TextView(Gtk.TextView):
 
         if (event.keyval == 32) and insertIter.get_line_offset() == 0: # format line
 
-            if self.tagIter.tag() == 'character':
+            if self.tagIter.tag() == 'character' and len(self.control.currentLine().text) == 0 and len(self.control.currentStory().names):
                 self.menu.popup( None, None, None, None, 0, 0)
 
     def updateLineTag(self, line=None, formatingEmptyLine=False):
@@ -694,16 +701,23 @@ class TextView(Gtk.TextView):
     def buttonPress(self, widget, event):
         self.forceWordEvent()
 
+        self.pressMark = self.insertMark()
+        print self.insertIter().get_offset()
+
     def buttonRelease(self, widget, event):
         self.removeCrossPageSelection()
+
+        # if self.insertIter().get_offset() == self.endIter().get_offset():
+        #     self.buffer.place_cursor(self.markIter(self.pressMark))
+        #     self.buffer.delete_mark(self.pressMark)
+        #     return
+
         self.control.scriptView.updateCurrentStoryIndex()
         self.tagIter.load(self.control.currentLine().tag)
         self.updateLineTag()
         self.selectedClipboard = []
 
-        self.control.scriptView.updateCurrentStoryIndex()
-
-        self.buttonReleaseIter = self.insertIter()
+        # self.control.scriptView.updateCurrentStoryIndex()
 
         self.updatePanel()
 
@@ -1280,6 +1294,13 @@ class ScriptView(Gtk.Box):
         self.infoTextView.get_buffer().insert(self.infoTextView.get_buffer().get_start_iter(), st.info)
 
         # self.textView.printTags()
+        # endIter = self.textView.endIter()
+        # self.textView.buffer.insert_with_tags_by_name(endIter, '\n', 'lastLine')
+        # lastLine = self.textView.insertIter().get_line()
+        # nextToLastLineIter = self.textView.lineIter(lastLine - 1)
+        # self.textView.buffer.place_cursor(nextToLastLineIter)
+
+
 
     def applyTags(self):
 

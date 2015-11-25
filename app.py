@@ -12,6 +12,7 @@ import _clipboard
 class App(object):
 
     def __init__(self):
+        print "PyGtk Version", Gtk.MAJOR_VERSION, Gtk.MINOR_VERSION, Gtk.MICRO_VERSION
         self.name = "Diego"
  
         self.control = Control(self)

@@ -25,6 +25,7 @@ class State(object):
         data['windowHeight'] = self.control.app.window.get_allocated_height()
         data['infoViewFontSize'] = self.control.scriptView.infoViewFontSize
         data['saveDir'] = self.control.saveDir
+        data['windowPosition'] = self.control.app.window.get_position()
         try:
             with open(self.path, 'w') as fp:
                 json.dump(data, fp)
@@ -56,6 +57,7 @@ class State(object):
                         self.control.scriptView.infoViewFontSize = data['infoViewFontSize']
                         self.control.scriptView.infoTextView.modify_font(Pango.FontDescription("Sans " + str(data['infoViewFontSize'])))
                         self.control.saveDir = data['saveDir']
+                        self.control.windowPosition = data['windowPosition']
                 except:
                     print "state file failed to load: " + self.path
 

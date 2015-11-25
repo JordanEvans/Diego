@@ -36,6 +36,14 @@ Select an item in the Scene or Page View. Hit Delete key. Deleting a Scene will 
 
 If the line is empty, just press the Spacebar. If the line has text, then place the cursor at the beginning of the line and hit Spacebar.
 
+<b>Rename Story/Save As</b>
+
+Double click the story title in the story view. Type in new name.
+
+<b>Name/Rename A Scene Title</b>
+
+Double click the scene title in the scene view. Type in new name.
+
 <b>Toggle Script View or Abstract View</b>
 
 Hit Escape key while in the respective editor.
@@ -47,6 +55,10 @@ Go to the Story, Scene or Page you want to write the abstract and type it in the
 <b>Save Story</b>
 
 Control + s.  Also creates an rtf and pdf (if you have libreoffice installed).
+
+<b>Open Story</b>
+
+Control + o
 
 <b>Prepend A New Scene/Page</b>
 
