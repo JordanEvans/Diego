@@ -44,6 +44,8 @@ class App(object):
         self.control.scriptView.infoTextView.props.left_margin = self.control.scriptView.textView.descriptionLeftMargin
         self.control.scriptView.infoTextView.props.right_margin = self.control.scriptView.textView.descriptionRightMargin
 
+        self.control.app.window.move(self.control.windowPosition[0], self.control.windowPosition[1])
+
     def updateWindowTitle(self):
 
         try:

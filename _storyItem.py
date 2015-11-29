@@ -90,6 +90,7 @@ class View(_item.Item):
 
         self.control.storyItemBox.editing = False
         self.editing = False
+        self.doubleClick = False
 
     def leaveNotify(self, widget, event):
         editing = self.control.storyItemBox.editing

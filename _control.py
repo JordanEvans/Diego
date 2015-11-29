@@ -112,7 +112,7 @@ class Control(object):
         self.appBox.paned.set_position(self.verticalPanePosition)
         self.scriptView.paned.set_position(self.currentStory().horizontalPanePosition)
         self.scriptView.textView.updateNameMenu()
-        self.app.window.move(self.windowPosition[0], self.windowPosition[1])
+
 
         self.historyEnabled = True
 

@@ -5,6 +5,9 @@ from gi.repository import Gtk, Gdk, GLib, Pango, GObject
 import _event
 import _story
 
+ZERO_WIDTH_SPACE = u'\u200B'.encode('utf-8')
+HEADING = '\xef\xbf\xbc'
+
 class TagIter(object):
 
     def __init__(self):
@@ -86,6 +89,7 @@ class TextView(Gtk.TextView):
 
         self.connections()
         self.createTags()
+        self.resetTags()
 
         self.forcingWordEvent = False
         self.newLineEvent = False
@@ -150,6 +154,11 @@ class TextView(Gtk.TextView):
         dialogRightMargin = self.width - (dialogLeftMargin + dialogWidth)
         parentheticRightMargin = self.width - (dialogLeftMargin + parentheticWidth)
 
+        self.descriptionLeftMargin = descriptionLeftMargin
+        self.characterLeftMargin = characterLeftMargin
+        self.dialogLeftMargin = dialogLeftMargin
+        self.parentheticLeftMargin = parentheticLeftMargin
+
         if descriptionRightMargin < 50:
             return
         if characterLeftMargin < 0:
@@ -179,6 +188,7 @@ class TextView(Gtk.TextView):
         self.characterTag.props.left_margin = self.characterLeftMargin
         self.dialogTag.props.left_margin = self.dialogLeftMargin
         self.parentheticTag.props.left_margin = self.parentheticLeftMargin
+        self.headingTag.props.left_margin = self.descriptionLeftMargin
 
         self.descriptionTag.props.right_margin = self.descriptionRightMargin
         self.characterTag.props.right_margin = self.characterRightMargin
@@ -193,6 +203,10 @@ class TextView(Gtk.TextView):
         self.control.scriptView.infoTextView.props.left_margin = self.control.scriptView.textView.descriptionLeftMargin
         self.control.scriptView.infoTextView.props.right_margin = self.control.scriptView.textView.descriptionRightMargin
 
+        # Fixing last line tag issue.
+        self.modify_font(Pango.FontDescription("Sans " + str(self.fontSize)))
+        self.props.left_margin = self.descriptionLeftMargin
+
     def createTags(self):
         pixelsInsideWrap = 2
         testing = False
@@ -205,10 +219,6 @@ class TextView(Gtk.TextView):
             descriptionBackground = whiteColor
             characterBackground = whiteColor
             dialogBackground = whiteColor
-
-        self.lastLineTag = self.buffer.create_tag("lastLine",
-                                                     background_rgba=Gdk.RGBA(0.0, 1.0, 0.0, 0.1),
-                                                     editable=False)
 
         self.descriptionTag = self.buffer.create_tag("description",
                                                      background_rgba=descriptionBackground,
@@ -234,18 +244,28 @@ class TextView(Gtk.TextView):
                                                 left_margin=self.dialogLeftMargin,
                                                 right_margin=self.dialogRightMargin,
                                                 pixels_inside_wrap=pixelsInsideWrap,
-                                                pixels_above_lines=2,
+                                                pixels_above_lines=0,
                                                 pixels_below_lines=10,
                                                 font="Sans " + str(self.fontSize))
 
         self.parentheticTag = self.buffer.create_tag("parenthetic",
                                                      background_rgba=descriptionBackground,
                                                      pixels_inside_wrap=pixelsInsideWrap,
-                                                     pixels_above_lines=2,
-                                                     pixels_below_lines=2,
+                                                     pixels_above_lines=0,
+                                                     pixels_below_lines=0,
                                                      left_margin=self.descriptionLeftMargin,
                                                      right_margin=self.descriptionRightMargin,
                                                      font="Sans " + str(self.fontSize))
+
+        self.headingTag = self.buffer.create_tag("heading",
+                                                     background_rgba=descriptionBackground,
+                                                     pixels_inside_wrap=pixelsInsideWrap,
+                                                     pixels_above_lines=10,
+                                                     pixels_below_lines=10,
+                                                     left_margin=self.descriptionLeftMargin,
+                                                     right_margin=self.descriptionRightMargin,
+                                                     font="Sans " + str(self.fontSize),
+                                                     editable=False)
 
     def do_size_allocate(self, allocation):
 
@@ -306,12 +326,18 @@ class TextView(Gtk.TextView):
             if self.insertingOnFirstIter(event):
                 return 1
 
-            if (event.keyval == 32) and insertIter.get_line_offset() == 0: # format line
+            # lineEmpty = len(self.control.currentLine().text) == 0
+
+            if event.keyval == 32 and insertIter.get_line_offset() == 0: # format line
+                #or (lineEmpty and event.keyval != 65293):
+
                 self.tagIter.increment()
                 self.control.currentLine().tag = self.tagIter.tag()
-                self.updateLineTag(formatingEmptyLine=True)
+
+                tag = self.updateLineTag(formatingLastLineWhenEmpty=True)
                 self.control.currentStory().saved = False
                 self.formatingLine = True
+                self.resetGlobalMargin(tag)
 
                 return 1
 
@@ -355,7 +381,6 @@ class TextView(Gtk.TextView):
             if event.keyval == 32:
                 self.forcingWordEvent = True
 
-            # print event.keyval
             return 1
 
     def keyRelease(self, widget, event):
@@ -377,11 +402,29 @@ class TextView(Gtk.TextView):
             self.updatePanel()
 
         if (event.keyval == 32) and insertIter.get_line_offset() == 0: # format line
-
             if self.tagIter.tag() == 'character' and len(self.control.currentLine().text) == 0 and len(self.control.currentStory().names):
                 self.menu.popup( None, None, None, None, 0, 0)
 
-    def updateLineTag(self, line=None, formatingEmptyLine=False):
+        self.printTags()
+
+    def resetGlobalMargin(self, tag):
+        print "resetGlobalMargin",
+        margin = None
+        if tag == 'description':
+            margin = self.descriptionLeftMargin
+        elif tag == 'character':
+            margin = self.characterLeftMargin
+        elif tag == 'dialog':
+            margin = self.dialogLeftMargin
+        elif tag == 'parenthetic':
+            margin = self.parentheticLeftMargin
+
+        print "tag", tag, margin
+        if margin != None:
+            self.props.left_margin = margin
+            #self.updateLineTag(True)
+
+    def updateLineTag(self, line=None, formatingLastLineWhenEmpty=False):
 
         if line != None:
             cp = self.control.currentPage()
@@ -391,39 +434,73 @@ class TextView(Gtk.TextView):
             updateLine = self.control.currentLine()
             bufferIndex = self.control.scriptView.lines.index(updateLine)
 
+        onLastLine = False
+        if bufferIndex == len(self.control.scriptView.lines) - 1:
+            onLastLine = True
+
         startIter = self.buffer.get_iter_at_line(bufferIndex)
         endIter = self.buffer.get_iter_at_line(bufferIndex +1)
 
-        if formatingEmptyLine:
-            # When true, this handles the last line of the editor.
-            if endIter.get_line() == len(self.control.scriptView.lines) -1 :
-                endIter.forward_to_end()
+        # if startIter.get_char() == ZERO_WIDTH_SPACE:
+        #     startIter.backward_char()
+
+        if endIter.get_char() == ZERO_WIDTH_SPACE:
+            endIter.forward_char()
+
+        if onLastLine:
+            endIter.forward_to_line_end()
+
+        # self.iterInfo(startIter)
+        # self.iterInfo(endIter)
 
         text = self.buffer.get_text(startIter, endIter, True)
+
+        self.iterInfo(startIter)
+        self.iterInfo(endIter)
 
         self.buffer.remove_all_tags(startIter, endIter)
 
         startIter = self.buffer.get_iter_at_line(bufferIndex)
-        endIter = self.buffer.get_iter_at_line(bufferIndex + 1)
+        endIter = self.buffer.get_iter_at_line(bufferIndex +1)
 
-        if formatingEmptyLine:
-            # When true, this handles the last line of the editor.
-            if endIter.get_line() == len(self.control.scriptView.lines) -1 :
-                endIter.forward_to_end()
+        # if startIter.get_char() == ZERO_WIDTH_SPACE:
+        #     startIter.backward_char()
+
+        if endIter.get_char() == ZERO_WIDTH_SPACE:
+            endIter.forward_char()
+
+        if onLastLine:
+            endIter.forward_to_line_end()
+
+        # self.iterInfo(startIter)
+        # self.iterInfo(endIter)
 
         self.buffer.apply_tag_by_name(updateLine.tag, startIter, endIter)
+
+        return updateLine.tag
 
     def printTags(self):
         charIter = self.startIter()
         print
         print
-        while 1:
-            self.p(charIter.get_tags())
-            try:
-                charIter.forward_char()
+        print "printTags"
 
-            except:
-                return
+        tagNames = [name.props.name for name in charIter.get_tags()]
+        self.control.p(charIter.get_char(), tagNames)
+
+        character = charIter.forward_char()
+        while character:
+            tagNames = [name.props.name for name in charIter.get_tags()]
+            self.control.p(charIter.get_char(), tagNames)
+            character = charIter.forward_char()
+
+        print
+        self.iterInfo(self.insertIter())
+
+    def iterInfo(self, iter):
+        info = iter.get_char(), iter.get_offset(), [name.props.name for name in iter.get_tags()]
+        print "insert", info
+        return iter.get_char(), iter.get_offset(), [name.props.name for name in iter.get_tags()]
 
     def returnPress(self):
 
@@ -453,13 +530,13 @@ class TextView(Gtk.TextView):
         if canGoForward:
             forwardTags = forwardIter.get_tags()
             names = [name.props.name for name in forwardTags]
-            if "heading" in names or backwardChar == '\xef\xbf\xbc':
+            if "heading" in names or backwardChar == HEADING:
                 nextCharIsHeading = True
 
         if canGoBackward:
             backwardTags = backwardIter.get_tags()
             names = [name.props.name for name in backwardTags]
-            if "heading" in names or backwardChar == '\xef\xbf\xbc':
+            if "heading" in names or backwardChar == HEADING:
                 prevCharIsHeading = True
 
         if currentCharIsHeading:
@@ -474,7 +551,7 @@ class TextView(Gtk.TextView):
         currentLine = self.control.currentLine()
 
         newLineTag = 'description'
-        if currentLine.tag == 'character':
+        if currentLine.tag in ['character', 'parenthetic']:
             newLineTag = 'dialog'
         elif currentLine.tag == 'dialog':
             newLineTag = 'description'
@@ -506,37 +583,52 @@ class TextView(Gtk.TextView):
             self.buffer.apply_tag_by_name(newLineTag, startIter, endIter)
 
         else:
+
+            # Get the carry text (if any), delete it in the buffer and send it to the NewLineEvent
             insertIter = self.insertIter()
+            of = insertIter.get_offset()
             endLineIter = self.lineEndIter(insertIter.get_line())
-            carryText = self.buffer.get_text(insertIter,endLineIter,False)
+            of2 = endLineIter.get_offset()
+
+            onLastLine = False
+            if endLineIter.get_offset() == self.endIter().get_offset():
+                onLastLine = True
+                endLineIter.backward_char()
+
+            self.iterInfo(insertIter)
+            self.iterInfo(endLineIter)
+
+            carryText = self.buffer.get_text(insertIter, endLineIter, False)
+
+            #Fixes the last line problem.
+            if carryText == ZERO_WIDTH_SPACE:
+                carryText = ''
+
             if len(carryText):
                 self.buffer.delete(insertIter, endLineIter)
             newLineEvent = _event.NewLineEvent(self.control, carryText, tag=newLineTag)
             self.control.currentStory().eventManager.addEvent(newLineEvent)
+
+            # Insert the new line in the buffer and append the carry text.
             insertIter = self.insertIter()
-
+            self.iterInfo(insertIter)
             lineIndex = insertIter.get_line()
-
             self.buffer.insert(insertIter, '\n' + carryText, len(carryText) + 1)
 
-            startIter = self.buffer.get_iter_at_line(lineIndex)
-            endIter = self.buffer.get_iter_at_line(lineIndex)
-            endIter.forward_to_line_end()
-            endIter.forward_char()
-
-            sc,ec,text = startIter.get_char(), endIter.get_char(), self.buffer.get_text(startIter, endIter, True)
-            self.buffer.remove_all_tags(startIter, endIter)
-            self.buffer.apply_tag_by_name(newLineTag, startIter, endIter)
+            # Remove all tags, starts with the new line text (if any) and stops 'after' next newLine character.
 
             startIter = self.buffer.get_iter_at_line(lineIndex + 1)
             endIter = self.buffer.get_iter_at_line(lineIndex + 1)
             endIter.forward_to_line_end()
             endIter.forward_char()
 
-            sc,ec,text = startIter.get_char(), endIter.get_char(), self.buffer.get_text(startIter, endIter, True)
+            self.iterInfo(startIter)
+            self.iterInfo(endIter)
+
             self.buffer.remove_all_tags(startIter, endIter)
             self.buffer.apply_tag_by_name(newLineTag, startIter, endIter)
 
+            # Places the cursor on zero offset of newline.
             insertIter = self.insertIter()
             insertIter.backward_chars(len(carryText))
             self.buffer.place_cursor(insertIter)
@@ -545,7 +637,7 @@ class TextView(Gtk.TextView):
         self.control.currentStory().saved = False
 
         self.updateLineTag(previousLineIndex)
-        self.updateLineTag()
+        tag = self.updateLineTag()
 
         return 1
 
@@ -569,31 +661,34 @@ class TextView(Gtk.TextView):
         bounds = self.buffer.get_selection_bounds()
         if len(bounds):
             selectStart, selectEnd = bounds
-            if selectEnd.get_char() == '\xef\xbf\xbc':
+            if selectEnd.get_char() == HEADING:
                 return 1
 
             startCanGoBackward = selectStart.backward_char()
             if startCanGoBackward:
-                if selectStart.get_char() == '\xef\xbf\xbc':
+                if selectStart.get_char() == HEADING:
                     return 1
 
         if canGoForward:
             forwardTags = forwardIter.get_tags()
             names = [name.props.name for name in forwardTags]
-            if "heading" in names or backwardChar == '\xef\xbf\xbc':
+            if "heading" in names or backwardChar == HEADING:
                 nextCharIsHeading = True
 
         if canGoBackward:
             backwardTags = backwardIter.get_tags()
             names = [name.props.name for name in backwardTags]
-            if "heading" in names or backwardChar == '\xef\xbf\xbc':
+            if "heading" in names or backwardChar == HEADING:
                 prevCharIsHeading = True
 
-        if not len(bounds) and currentCharIsNewLine and forwardChar == '\xef\xbf\xbc':
+        if not len(bounds) and currentCharIsNewLine and forwardChar == HEADING:
             if insertIter.get_chars_in_line() > 1:
                 return 1
 
         if len(bounds) and nextCharIsHeading and prevCharIsHeading:
+            return 1
+
+        if currentChar == ZERO_WIDTH_SPACE:
             return 1
 
         if currentChar and not nextCharIsHeading:
@@ -636,11 +731,14 @@ class TextView(Gtk.TextView):
         canGoBackward = backwardIter.backward_char()
         backwardChar = backwardIter.get_char()
 
+
+        self.iterInfo(backwardIter)
+
         prevCharIsHeading = False
         if canGoBackward:
             backwardTags = backwardIter.get_tags()
             names = [name.props.name for name in backwardTags]
-            if "heading" in names or backwardChar == '\xef\xbf\xbc':
+            if "heading" in names or backwardChar == HEADING:
                 prevCharIsHeading = True
 
         forwardIter = self.insertIter()
@@ -651,7 +749,7 @@ class TextView(Gtk.TextView):
         if canGoForward:
             forwardTags = forwardIter.get_tags()
             names = [name.props.name for name in forwardTags]
-            if "heading" in names or backwardChar == '\xef\xbf\xbc':
+            if "heading" in names or backwardChar == HEADING:
                 nextCharIsHeading = True
 
         self.control.scriptView.textView.markSet()
@@ -664,7 +762,7 @@ class TextView(Gtk.TextView):
         if currentCharIsHeading:
             return 1
 
-        if currentChar == '\xef\xbf\xbc' and not prevCharIsHeading:
+        if currentChar == HEADING and not prevCharIsHeading:
             currentLine = insertIter.get_line()
             prevLineIter = self.get_buffer().get_iter_at_line(currentLine-1)
             if prevLineIter.get_chars_in_line() > 1:
@@ -701,25 +799,35 @@ class TextView(Gtk.TextView):
     def buttonPress(self, widget, event):
         self.forceWordEvent()
 
-        self.pressMark = self.insertMark()
-        print self.insertIter().get_offset()
-
     def buttonRelease(self, widget, event):
-        self.removeCrossPageSelection()
 
-        # if self.insertIter().get_offset() == self.endIter().get_offset():
-        #     self.buffer.place_cursor(self.markIter(self.pressMark))
-        #     self.buffer.delete_mark(self.pressMark)
-        #     return
+        self.removeCrossPageSelection()
 
         self.control.scriptView.updateCurrentStoryIndex()
         self.tagIter.load(self.control.currentLine().tag)
-        self.updateLineTag()
+
+        tag = self.updateLineTag()
         self.selectedClipboard = []
 
-        # self.control.scriptView.updateCurrentStoryIndex()
-
         self.updatePanel()
+
+        tag = self.tagIter.tag()
+        self.resetGlobalMargin(tag)
+
+        # This forces the cursor before the ZERO_WIDTH_SPACE
+        insertIter = self.insertIter()
+        if insertIter.get_offset() == self.endIter().get_offset():
+            insertIter.backward_char()
+            bounds = self.buffer.get_selection_bounds()
+            if bounds:
+                startMark = self.iterMark(bounds[0])
+                bounds[1].backward_char()
+                endMark = self.iterMark(bounds[1])
+            self.buffer.place_cursor(insertIter)
+            if bounds:
+                self.buffer.select_range(self.markIter(startMark), self.markIter(endMark))
+
+        self.printTags()
 
     def updatePanel(self):
         paneNumber = self.control.currentPanel()
@@ -772,11 +880,19 @@ class TextView(Gtk.TextView):
             self.forceWordEvent()
 
             self.cutClipboard = list(self.selectedClipboard)
+
             cutEvent = _event.CutEvent(self.control)
+
             cutEvent.chained = True
 
-            self.buffer.delete(self.selectionIterStart, self.selectionIterEnd)
+            self.iterInfo(self.selectionIterEnd)
 
+            # Stop the deletion of the ZERO_WIDTH_SPACE
+            endOffset = self.endIter().get_offset()
+            if self.selectionIterEnd.get_offset() == endOffset:
+                self.selectionIterEnd.backward_char()
+
+            self.buffer.delete(self.selectionIterStart, self.selectionIterEnd)
             self.control.currentStory().eventManager.addEvent(cutEvent)
 
             self.control.scriptView.updateCurrentStoryIndex()
@@ -1061,21 +1177,6 @@ class TextView(Gtk.TextView):
         offset = insertIter.get_line_offset()
         return line, offset
 
-    def printTags(self):
-
-        walkIter = self.get_buffer().get_iter_at_offset(0)
-
-        names = walkIter.get_tags()
-        if len(names):
-            names = [name.props.name for name in names]
-        print [walkIter.get_char(), ]
-
-        while walkIter.forward_char():
-            names = walkIter.get_tags()
-            if len(names):
-                names = [name.props.name for name in names]
-            print [walkIter.get_char(), names]
-
     def insertingOnFirstIter(self, event):
         isStartIter = self.insertIter().is_start()
         if isStartIter:
@@ -1176,75 +1277,6 @@ class ScriptView(Gtk.Box):
         self.infoTextView.props.left_margin = self.textView.descriptionLeftMargin
         self.infoTextView.props.right_margin = self.textView.descriptionRightMargin
 
-    def infoTextViewKeyPress(self, widget, event):
-
-        if event.state & Gdk.ModifierType.CONTROL_MASK:
-            print event.keyval
-
-            if event.keyval == 45: # minus key
-                if self.control.scriptView.infoViewFontSize > 4:
-                    self.infoViewFontSize -= 1
-                    self.infoTextView.modify_font(Pango.FontDescription("Sans " + str(self.infoViewFontSize)))
-                    self.infoTextView.props.left_margin = self.textView.descriptionLeftMargin
-                    self.infoTextView.props.right_margin = self.textView.descriptionRightMargin
-
-            elif event.keyval==61: # equal key
-                self.infoViewFontSize += 1
-                self.infoTextView.modify_font(Pango.FontDescription("Sans " + str(self.infoViewFontSize)))
-                self.infoTextView.props.left_margin = self.textView.descriptionLeftMargin
-                self.infoTextView.props.right_margin = self.textView.descriptionRightMargin
-
-    def acceptPosition(self):
-        print 'ap'
-
-    def createTextView(self):
-
-        self.textView = TextView(self.control)
-
-        self.textBuffer = self.textView.get_buffer()
-
-        self.textTagTable = self.textBuffer.get_tag_table()
-
-        self.bt = self.textBuffer.create_tag("heading")
-        self.bt.props.editable=False
-
-        self.dt = self.textBuffer.create_tag("default", editable=True)
-
-        #
-        # self.textTagTable.add(headingTag)
-
-    def postInit(self):
-        pass
-
-    def insertHeading(self, text):
-
-        startMark = self.textView.insertMark()
-
-        anchor = self.textBuffer.create_child_anchor(self.textView.insertIter())
-        entry = Gtk.Label()
-        entry.set_markup("""<span font_family='monospace' font='9.0' foreground='#99bbff' >""" + text + """</span>""")
-
-        self.textView.add_child_at_anchor(entry, anchor)
-
-        self.textBuffer.insert(self.textView.insertIter(), '\n', len('\n'))
-
-        self.textBuffer.place_cursor(self.textView.insertIter())
-
-        self.textBuffer.delete_mark(startMark)
-
-    def insertPageText(self, pg):
-
-        lineCount = len(pg.lines)
-        line = pg.lines[0]
-        text = ''.join(line.text)
-
-        self.textView.buffer.insert(self.textView.insertIter(), text, len(text))
-
-        for i in range(lineCount-1):
-            line = pg.lines[i +1]
-            text = '\n' + ''.join(line.text)
-            self.textView.buffer.insert(self.textView.insertIter(), text, len(text))
-
     def loadStory(self):
         self.lines = []
 
@@ -1264,7 +1296,7 @@ class ScriptView(Gtk.Box):
             self.insertHeading(firstHeading.sequence.title + " > " + firstHeading.scene.title + " > " + firstHeading.page.title)
         else:
             self.insertHeading(firstHeading.scene.title + " > " + firstHeading.page.title)
-        
+
         self.lines.append(firstHeading)
         self.insertPageText(firstPage)
         self.lines += firstPage.lines
@@ -1275,142 +1307,40 @@ class ScriptView(Gtk.Box):
             pg = pages[i]
             heading = headings[i]
             self.textBuffer.insert(self.textView.insertIter(), '\n', len('\n'))
-            
+
             if self.control.sequenceVisible:
                 self.insertHeading(heading.sequence.title + " > " + heading.scene.title + " > " + heading.page.title)
             else:
                 self.insertHeading(heading.scene.title + " > " + heading.page.title)
-        
+
             self.lines.append(heading)
             self.insertPageText(pg)
             self.lines += pg.lines
             for ln in pg.lines:
                 ln.heading = heading
 
-        self.applyTags()
+        lastTag = self.applyTags()
         self.textView.updatePanel()
 
         self.infoTextView.get_buffer().delete(self.infoTextView.get_buffer().get_start_iter(), self.infoTextView.get_buffer().get_end_iter())
         self.infoTextView.get_buffer().insert(self.infoTextView.get_buffer().get_start_iter(), st.info)
 
-        # self.textView.printTags()
-        # endIter = self.textView.endIter()
-        # self.textView.buffer.insert_with_tags_by_name(endIter, '\n', 'lastLine')
-        # lastLine = self.textView.insertIter().get_line()
-        # nextToLastLineIter = self.textView.lineIter(lastLine - 1)
-        # self.textView.buffer.place_cursor(nextToLastLineIter)
+        self.addZeroWidthSpace(lastTag)
 
+    def addZeroWidthSpace(self, lastTag):
+        # This fixes a bug with the last line of buffer that has no text.
+        # The line will not show it's margin visually unless there is text on it.
+        # An empty line in Gtk.TextView will not show margin unless,
+        # the character directly following it has that margin. usually it's newline,
+        # but the last line can't have a new line following it so... ZWS.
 
+        # This must only be called at the very end of inserting text in a reloading of TextView.
 
-    def applyTags(self):
-
-        for i in range(len(self.lines)):
-            line = self.lines[i]
-
-            if line.__class__.__name__ == "Line":
-
-                startIter = self.textView.buffer.get_iter_at_line(i)
-                #startIter.forward_to_line_end()
-                endIter = self.textView.buffer.get_iter_at_line(i)
-                endIter.forward_to_line_end()
-                endIter.forward_char()
-
-                self.textView.buffer.remove_all_tags(startIter, endIter)
-
-                startIter = self.textView.buffer.get_iter_at_line(i)
-                # startIter.forward_to_line_end()
-                endIter = self.textView.buffer.get_iter_at_line(i)
-                endIter.forward_to_line_end()
-                endIter.forward_char()
-
-                self.textView.buffer.apply_tag_by_name(line.tag, startIter, endIter)
-            elif line.__class__.__name__ == "Heading":
-
-                startIter = self.textView.buffer.get_iter_at_line(i)
-
-                endIter = self.textView.buffer.get_iter_at_line(i)
-                endIter.forward_to_line_end()
-                endIter.forward_char()
-
-                self.textView.buffer.remove_all_tags(startIter, endIter)
-
-                startIter = self.textView.buffer.get_iter_at_line(i)
-
-                endIter = self.textView.buffer.get_iter_at_line(i)
-                endIter.forward_to_line_end()
-                endIter.forward_char()
-
-                self.textView.buffer.apply_tag_by_name('heading', startIter, endIter)
-
-    def loadSequence(self):
-        self.lines = []
-
-        pages = []
-        headings = []
-        st = self.control.currentStory()
-        currentSequence = self.control.currentSequence()
-        for sq in self.control.currentStory().sequences:
-            for sc in sq.scenes:
-                for pg in sc.pages:
-                    if currentSequence == sq:
-                        pages.append(pg)
-                        headings.append(Heading(st,sq,sc,pg))
-
-        firstPage = pages.pop(0)
-        firstHeading = headings.pop(0)
-
-        self.insertHeading(firstHeading.sequence.title + " > " + firstHeading.scene.title + " > " + firstHeading.page.title)
-        
-        self.lines.append(firstHeading)
-        self.insertPageText(firstPage)
-        self.lines += firstPage.lines
-        for ln in firstPage.lines:
-            ln.heading = firstHeading
-
-        for i in range(len(pages)):
-            pg = pages[i]
-            heading = headings[i]
-            self.textBuffer.insert(self.textView.insertIter(), '\n', len('\n'))
-
-            self.insertHeading(heading.sequence.title + " > " + heading.scene.title + " > " + heading.page.title)
-
-            self.lines.append(heading)
-            self.insertPageText(pg)
-            self.lines += pg.lines
-            for ln in pg.lines:
-                ln.heading = heading
-
-        self.applyTags()
-        self.textView.updatePanel()
-        self.infoTextView.get_buffer().delete(self.infoTextView.get_buffer().get_start_iter(), self.infoTextView.get_buffer().get_end_iter())
-        self.infoTextView.get_buffer().insert(self.infoTextView.get_buffer().get_start_iter(), currentSequence.info)
-
-    def updateInfo(self, textView, eventKey):
-
-        if eventKey.keyval == 65307: # esc
-            panePosition = self.control.scriptView.paned.get_position()
-
-            if panePosition > self.get_allocated_height() -10:
-                cs = self.control.currentStory()
-                # if self.control.currentStory().horizontalPanePosition > self.get_allocated_height() -10:
-                #     cs.horizontalPanePosition = 150
-                self.control.scriptView.paned.set_position(cs.horizontalPanePosition)
-            else:
-
-                self.control.currentStory().horizontalPanePosition = self.control.scriptView.paned.get_position()
-                self.control.scriptView.paned.set_position(self.get_allocated_height())
-            return 1
-
-        text = self.infoTextView.get_buffer().get_text(self.infoTextView.get_buffer().get_start_iter(), self.infoTextView.get_buffer().get_end_iter(), True)
-
-        if self.control.category == 'story':
-            self.currentStory().info = text
-        elif self.control.category == 'sequence':
-            self.currentSequence().info = text
-        elif self.control.category == 'scene':
-            self.currentScene().info = text
-        elif self.control.category == 'page':
-            self.currentPage().info = text
+        insertIter = self.textView.insertIter()
+        self.textBuffer.insert_with_tags_by_name(insertIter, ZERO_WIDTH_SPACE, lastTag)
+        insertIter = self.textView.insertIter()
+        insertIter.backward_chars(1)
+        self.textBuffer.place_cursor(insertIter)
 
     def loadScene(self):
         self.lines = []
@@ -1456,10 +1386,12 @@ class ScriptView(Gtk.Box):
             for ln in pg.lines:
                 ln.heading = heading
 
-        self.applyTags()
+        lastTag = self.applyTags()
         self.textView.updatePanel()
         self.infoTextView.get_buffer().delete(self.infoTextView.get_buffer().get_start_iter(), self.infoTextView.get_buffer().get_end_iter())
         self.infoTextView.get_buffer().insert(self.infoTextView.get_buffer().get_start_iter(), currentScene.info)
+
+        self.addZeroWidthSpace(lastTag)
 
     def loadPage(self):
         self.lines = []
@@ -1505,10 +1437,200 @@ class ScriptView(Gtk.Box):
             for ln in pg.lines:
                 ln.heading = heading
 
-        self.applyTags()
+        lastTag = self.applyTags()
         self.textView.updatePanel()
         self.infoTextView.get_buffer().delete(self.infoTextView.get_buffer().get_start_iter(), self.infoTextView.get_buffer().get_end_iter())
         self.infoTextView.get_buffer().insert(self.infoTextView.get_buffer().get_start_iter(), currentPage.info)
+
+        self.addZeroWidthSpace(lastTag)
+
+    def loadSequence(self):
+        self.lines = []
+
+        pages = []
+        headings = []
+        st = self.control.currentStory()
+        currentSequence = self.control.currentSequence()
+        for sq in self.control.currentStory().sequences:
+            for sc in sq.scenes:
+                for pg in sc.pages:
+                    if currentSequence == sq:
+                        pages.append(pg)
+                        headings.append(Heading(st,sq,sc,pg))
+
+        firstPage = pages.pop(0)
+        firstHeading = headings.pop(0)
+
+        self.insertHeading(firstHeading.sequence.title + " > " + firstHeading.scene.title + " > " + firstHeading.page.title)
+
+        self.lines.append(firstHeading)
+        self.insertPageText(firstPage)
+        self.lines += firstPage.lines
+        for ln in firstPage.lines:
+            ln.heading = firstHeading
+
+        for i in range(len(pages)):
+            pg = pages[i]
+            heading = headings[i]
+            self.textBuffer.insert(self.textView.insertIter(), '\n', len('\n'))
+
+            self.insertHeading(heading.sequence.title + " > " + heading.scene.title + " > " + heading.page.title)
+
+            self.lines.append(heading)
+            self.insertPageText(pg)
+            self.lines += pg.lines
+            for ln in pg.lines:
+                ln.heading = heading
+
+        self.applyTags()
+        self.textView.updatePanel()
+        self.infoTextView.get_buffer().delete(self.infoTextView.get_buffer().get_start_iter(), self.infoTextView.get_buffer().get_end_iter())
+        self.infoTextView.get_buffer().insert(self.infoTextView.get_buffer().get_start_iter(), currentSequence.info)
+
+        self.addZeroWidthSpace()
+
+    def infoTextViewKeyPress(self, widget, event):
+
+        if event.state & Gdk.ModifierType.CONTROL_MASK:
+            print event.keyval
+
+            if event.keyval == 45: # minus key
+                if self.control.scriptView.infoViewFontSize > 4:
+                    self.infoViewFontSize -= 1
+                    self.infoTextView.modify_font(Pango.FontDescription("Sans " + str(self.infoViewFontSize)))
+                    self.infoTextView.props.left_margin = self.textView.descriptionLeftMargin
+                    self.infoTextView.props.right_margin = self.textView.descriptionRightMargin
+
+            elif event.keyval==61: # equal key
+                self.infoViewFontSize += 1
+                self.infoTextView.modify_font(Pango.FontDescription("Sans " + str(self.infoViewFontSize)))
+                self.infoTextView.props.left_margin = self.textView.descriptionLeftMargin
+                self.infoTextView.props.right_margin = self.textView.descriptionRightMargin
+
+    def acceptPosition(self):
+        print 'ap'
+
+    def createTextView(self):
+
+        self.textView = TextView(self.control)
+
+        self.textBuffer = self.textView.get_buffer()
+
+        self.textTagTable = self.textBuffer.get_tag_table()
+
+    def postInit(self):
+        pass
+
+    def insertHeading(self, text):
+
+        startMark = self.textView.insertMark()
+
+        anchor = self.textBuffer.create_child_anchor(self.textView.insertIter())
+        entry = Gtk.Label()
+        entry.set_markup("""<span font_family='monospace' font='9.0' foreground='#99bbff' >""" + text + """</span>""")
+
+        self.textView.add_child_at_anchor(entry, anchor)
+
+        self.textBuffer.insert(self.textView.insertIter(), '\n', len('\n'))
+
+        startIter = self.textView.insertIter()
+        startIter.backward_chars(2)
+        endIter = self.textView.insertIter()
+        endIter.forward_char()
+
+        self.textView.printTags()
+        self.textView.iterInfo(startIter)
+        self.textView.iterInfo(endIter)
+
+        self.textView.buffer.apply_tag_by_name('heading', startIter, endIter)
+
+        self.textView.printTags()
+
+        self.textBuffer.place_cursor(self.textView.insertIter())
+
+        self.textBuffer.delete_mark(startMark)
+
+    def insertPageText(self, pg):
+
+        lineCount = len(pg.lines)
+        line = pg.lines[0]
+        text = ''.join(line.text)
+
+        self.textView.buffer.insert(self.textView.insertIter(), text, len(text))
+
+        for i in range(lineCount-1):
+            line = pg.lines[i +1]
+            text = '\n' + ''.join(line.text)
+            self.textView.buffer.insert(self.textView.insertIter(), text, len(text))
+
+    def applyTags(self):
+
+        for i in range(len(self.lines)):
+            line = self.lines[i]
+
+            if line.__class__.__name__ == "Line":
+
+                startIter = self.textView.buffer.get_iter_at_line(i)
+                #startIter.forward_to_line_end()
+                endIter = self.textView.buffer.get_iter_at_line(i)
+                endIter.forward_to_line_end()
+                endIter.forward_char()
+
+                self.textView.buffer.remove_all_tags(startIter, endIter)
+
+                startIter = self.textView.buffer.get_iter_at_line(i)
+                # startIter.forward_to_line_end()
+                endIter = self.textView.buffer.get_iter_at_line(i)
+                endIter.forward_to_line_end()
+                endIter.forward_char()
+
+                self.textView.buffer.apply_tag_by_name(line.tag, startIter, endIter)
+            elif line.__class__.__name__ == "Heading":
+
+                startIter = self.textView.buffer.get_iter_at_line(i)
+
+                endIter = self.textView.buffer.get_iter_at_line(i)
+                endIter.forward_to_line_end()
+                endIter.forward_char()
+
+                self.textView.buffer.remove_all_tags(startIter, endIter)
+
+                startIter = self.textView.buffer.get_iter_at_line(i)
+
+                endIter = self.textView.buffer.get_iter_at_line(i)
+                endIter.forward_to_line_end()
+                endIter.forward_char()
+
+                self.textView.buffer.apply_tag_by_name('heading', startIter, endIter)
+
+        return line.tag
+
+    def updateInfo(self, textView, eventKey):
+
+        if eventKey.keyval == 65307: # esc
+            panePosition = self.control.scriptView.paned.get_position()
+
+            if panePosition > self.get_allocated_height() -10:
+                cs = self.control.currentStory()
+                # if self.control.currentStory().horizontalPanePosition > self.get_allocated_height() -10:
+                #     cs.horizontalPanePosition = 150
+                self.control.scriptView.paned.set_position(cs.horizontalPanePosition)
+            else:
+
+                self.control.currentStory().horizontalPanePosition = self.control.scriptView.paned.get_position()
+                self.control.scriptView.paned.set_position(self.get_allocated_height())
+            return 1
+
+        text = self.infoTextView.get_buffer().get_text(self.infoTextView.get_buffer().get_start_iter(), self.infoTextView.get_buffer().get_end_iter(), True)
+
+        if self.control.category == 'story':
+            self.currentStory().info = text
+        elif self.control.category == 'sequence':
+            self.currentSequence().info = text
+        elif self.control.category == 'scene':
+            self.currentScene().info = text
+        elif self.control.category == 'page':
+            self.currentPage().info = text
 
     def load(self):
         pass

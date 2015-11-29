@@ -1,9 +1,12 @@
+import sys
+
 from gi.repository import Gtk, Gdk
 
 if __name__ == "__main__":
     win = Gtk.Window()
 
     tv = Gtk.TextView()
+    tv.props.left_margin = 20
     tv.get_buffer().create_tag("tag",
                                      background_rgba=Gdk.RGBA(0.0, 1.0, 0.0, 0.5),
                                      left_margin=20,
@@ -31,6 +34,9 @@ if __name__ == "__main__":
         insertIter = tv.get_buffer().get_iter_at_mark(tv.get_buffer().get_insert())
         tv.get_buffer().insert(insertIter, "line\nline", len("line\nline"))
 
+    insertIter = tv.get_buffer().get_iter_at_mark(tv.get_buffer().get_insert())
+    # tv.get_buffer().insert(insertIter, u"\n\u200b".encode('utf-8'), 0)
+    tv.get_buffer().insert(insertIter, u"\n\u200b", 0)
 
     applyTagOption = 2
 
@@ -44,7 +50,10 @@ if __name__ == "__main__":
     elif applyTagOption == 2:
         startIter = tv.get_buffer().get_start_iter()
         endIter = tv.get_buffer().get_end_iter()
+        #endIter.backward_char()
         tv.get_buffer().apply_tag_by_name('tag', startIter, endIter)
+
+    print [tv.get_buffer().get_text(startIter, endIter, True)]
 
     win.add(tv)
     win.show_all()
