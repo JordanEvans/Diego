@@ -79,6 +79,5 @@ class Item(Gtk.EventBox):
         pass
 
     def entryLeaveNotifyEvent(self, entry, eventCrossing):
-        print "leaving"
         if not self.saving and self.editing:
             self.endEditMode()

@@ -127,7 +127,8 @@ class Scene(object):
 
         return data
 
-    def updateNames(self):
+    def updateCompletionNames(self):
+
         self.names = []
 
         for page in self.pages:
@@ -135,6 +136,8 @@ class Scene(object):
                 if line.tag == 'character':
                     if len(line.text.lstrip().rstrip()) and line.text not in self.names:
                         self.names.append(line.text)
+
+        self.names.sort()
 
 
 class Page(object):
@@ -282,9 +285,9 @@ class Story(object):
 
         self.horizontalPanePosition = data['horizontalPanePosition']
 
-        self.updateNames()
+        self.updateCompletionNames()
 
-    def updateNames(self):
+    def updateCompletionNames(self):
         self.names = []
         for sequence in self.sequences:
             for scene in sequence.scenes:
@@ -294,9 +297,11 @@ class Story(object):
                             if len(line.text.lstrip().rstrip()) and line.text not in self.names:
                                 self.names.append(line.text)
 
+        self.names.sort()
+
         for sequence in self.sequences:
             for scene in sequence.scenes:
-                scene.updateNames()
+                scene.updateCompletionNames()
 
         # self.control.scriptView.textView.updateNameMenu()
 
@@ -328,13 +333,12 @@ class Story(object):
         os.system("soffice --headless --convert-to pdf " + "'" + rtfPath + "'")
         os.chdir(cwd)
 
-        self.updateNames()
+        self.updateCompletionNames()
         # self.control.scriptView.textView.updateNameMenu()
 
     def default(self):
         self.control.historyEnabled = True
         self.sequences = [Sequence()]
-
 
     def hanselGretalImport(self):
         import json
@@ -368,7 +372,6 @@ class Story(object):
 
             if len(page.lines) > 1:
                 page.lines.pop(0)
-
 
     def reset(self):
         self.path = None

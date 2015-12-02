@@ -40,11 +40,7 @@ If the line is empty, just press the Spacebar. If the line has text, then place 
 
 Hold down shift. Type the first letter of the characters name. Press same character to cycle through potential names.
 
-Characters in current scene are listed first. Character in rest of story follow in completion list.
-
-<b>How to Update the Names That Can Be Autocompleted</b>
-
-Save the story.
+<i>Characters in current scene are listed first. Character in rest of story follow in completion list.</i>
 
 <b>Rename Story/Save As</b>
 

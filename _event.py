@@ -174,23 +174,41 @@ class View(object):
 
 
 class NewLineEvent(Event):
-    def __init__(self, control, carryText='', tag='description'):
+    def __init__(self, control, carryText='', tag='description', fromHeading=False):
         Event.__init__(self)
-        cl = control.scriptView.currentLine()
-        scriptLineIndex = control.scriptView.lines.index(cl) +1
 
-        if len(carryText):
-            cl.text = cl.text[:len(cl.text)-len(carryText)]
+        if fromHeading:
+            cl = control.scriptView.currentLine()
+            scriptLineIndex = control.scriptView.lines.index(cl)
 
-        newLine = _story.Line(carryText, tag=tag)
-        newLine.heading = cl.heading
+            newLine = _story.Line(carryText, tag=tag)
+            newLine.heading = cl.heading
 
-        index = control.currentStory().index.line +1
+            index = control.currentStory().index.line
 
-        cp = control.currentPage()
+            cp = control.currentPage()
 
-        control.currentPage().lines.insert(index, newLine)
-        control.scriptView.lines.insert(scriptLineIndex, newLine)
+            control.currentPage().lines.insert(index, newLine)
+            control.scriptView.lines.insert(scriptLineIndex, newLine)
+
+            # control.currentStory().index
+
+        else:
+            cl = control.scriptView.currentLine()
+            scriptLineIndex = control.scriptView.lines.index(cl) +1
+
+            if len(carryText):
+                cl.text = cl.text[:len(cl.text)-len(carryText)]
+
+            newLine = _story.Line(carryText, tag=tag)
+            newLine.heading = cl.heading
+
+            index = control.currentStory().index.line +1
+
+            cp = control.currentPage()
+
+            control.currentPage().lines.insert(index, newLine)
+            control.scriptView.lines.insert(scriptLineIndex, newLine)
 
     def redo(self):
         Event.redo(self)

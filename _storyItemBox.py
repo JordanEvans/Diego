@@ -87,7 +87,7 @@ class IndexListBox(Gtk.ListBox):
         self.control.app.updateWindowTitle()
 
         print self.control.currentStory().title, self.control.currentStory().names
-        self.control.currentStory().updateNames()
+        self.control.currentStory().updateCompletionNames()
 
         self.control.scriptView.paned.set_position(self.control.currentStory().horizontalPanePosition)
 

@@ -32,7 +32,6 @@ class Window(Gtk.Window):
     def keyPress(self, widget, event):
         
         if event.state & Gdk.ModifierType.CONTROL_MASK:
-            print event.keyval
 
             if ( event.keyval == 49):
                 self.newPage()
