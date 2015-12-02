@@ -36,6 +36,16 @@ Select an item in the Scene or Page View. Hit Delete key. Deleting a Scene will 
 
 If the line is empty, just press the Spacebar. If the line has text, then place the cursor at the beginning of the line and hit Spacebar.
 
+<b>How to Auto Complete Names</b>
+
+Hold down shift. Type the first letter of the characters name. Press same character to cycle through potential names.
+
+Characters in current scene are listed first. Character in rest of story follow in completion list.
+
+<b>How to Update the Names That Can Be Autocompleted</b>
+
+Save the story.
+
 <b>Rename Story/Save As</b>
 
 Double click the story title in the story view. Type in new name.
