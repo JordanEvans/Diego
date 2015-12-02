@@ -127,6 +127,15 @@ class Scene(object):
 
         return data
 
+    def updateNames(self):
+        self.names = []
+
+        for page in self.pages:
+            for line in page.lines:
+                if line.tag == 'character':
+                    if len(line.text.lstrip().rstrip()) and line.text not in self.names:
+                        self.names.append(line.text)
+
 
 class Page(object):
 
@@ -285,7 +294,11 @@ class Story(object):
                             if len(line.text.lstrip().rstrip()) and line.text not in self.names:
                                 self.names.append(line.text)
 
-        self.control.scriptView.textView.updateNameMenu()
+        for sequence in self.sequences:
+            for scene in sequence.scenes:
+                scene.updateNames()
+
+        # self.control.scriptView.textView.updateNameMenu()
 
     def save(self,):
         if self.path == None:
@@ -316,7 +329,7 @@ class Story(object):
         os.chdir(cwd)
 
         self.updateNames()
-        self.control.scriptView.textView.updateNameMenu()
+        # self.control.scriptView.textView.updateNameMenu()
 
     def default(self):
         self.control.historyEnabled = True
