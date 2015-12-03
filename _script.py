@@ -484,15 +484,30 @@ class TextView(Gtk.TextView):
         self.parentheticTag.props.left_margin = self.parentheticLeftMargin
         self.headingTag.props.left_margin = self.descriptionLeftMargin
 
+        self.descriptionFindTag.props.left_margin = self.descriptionLeftMargin
+        self.characterFindTag.props.left_margin = self.characterLeftMargin
+        self.dialogFindTag.props.left_margin = self.dialogLeftMargin
+        self.parentheticFindTag.props.left_margin = self.parentheticLeftMargin
+
         self.descriptionTag.props.right_margin = self.descriptionRightMargin
         self.characterTag.props.right_margin = self.characterRightMargin
         self.dialogTag.props.right_margin = self.dialogRightMargin
         self.parentheticTag.props.right_margin = self.parentheticRightMargin
 
+        self.descriptionFindTag.props.right_margin = self.descriptionRightMargin
+        self.characterFindTag.props.right_margin = self.characterRightMargin
+        self.dialogFindTag.props.right_margin = self.dialogRightMargin
+        self.parentheticFindTag.props.right_margin = self.parentheticRightMargin
+
         self.descriptionTag.props.font = "Sans " + str(self.fontSize)
         self.characterTag.props.font = "Sans " + str(self.fontSize)
         self.dialogTag.props.font = "Sans " + str(self.fontSize)
         self.parentheticTag.props.font = "Sans " + str(self.fontSize)
+
+        self.descriptionFindTag.props.font = "Sans " + str(self.fontSize)
+        self.characterFindTag.props.font = "Sans " + str(self.fontSize)
+        self.dialogFindTag.props.font = "Sans " + str(self.fontSize)
+        self.parentheticFindTag.props.font = "Sans " + str(self.fontSize)
 
         self.control.scriptView.infoTextView.props.left_margin = self.control.scriptView.textView.descriptionLeftMargin
         self.control.scriptView.infoTextView.props.right_margin = self.control.scriptView.textView.descriptionRightMargin
@@ -513,6 +528,8 @@ class TextView(Gtk.TextView):
             descriptionBackground = whiteColor
             characterBackground = whiteColor
             dialogBackground = whiteColor
+
+        findColor = Gdk.RGBA(0.0, 0.1, 1.8, 0.15)
 
         self.descriptionTag = self.buffer.create_tag("description",
                                                      background_rgba=descriptionBackground,
@@ -560,6 +577,48 @@ class TextView(Gtk.TextView):
                                                      right_margin=self.descriptionRightMargin,
                                                      font="Sans " + str(self.fontSize),
                                                      editable=False)
+
+
+
+
+        ## Find Tags
+
+        self.descriptionFindTag = self.buffer.create_tag("descriptionFind",
+                                                     background_rgba=findColor,
+                                                     pixels_inside_wrap=pixelsInsideWrap,
+                                                     pixels_above_lines=10,
+                                                     pixels_below_lines=10,
+                                                     left_margin=self.descriptionLeftMargin,
+                                                     right_margin=self.descriptionRightMargin,
+                                                     font="Sans " + str(self.fontSize))
+
+        self.characterFindTag = self.buffer.create_tag("characterFind",
+                                                   background_rgba=findColor,
+                                                   left_margin=self.characterLeftMargin,
+                                                   right_margin=self.characterRightMargin,
+                                                   justification=Gtk.Justification.LEFT,
+                                                   pixels_inside_wrap=pixelsInsideWrap,
+                                                   pixels_above_lines=10,
+                                                   pixels_below_lines=0,
+                                                   font="Sans " + str(self.fontSize))
+
+        self.dialogFindTag = self.buffer.create_tag("dialogFind",
+                                                background_rgba=findColor,
+                                                left_margin=self.dialogLeftMargin,
+                                                right_margin=self.dialogRightMargin,
+                                                pixels_inside_wrap=pixelsInsideWrap,
+                                                pixels_above_lines=0,
+                                                pixels_below_lines=10,
+                                                font="Sans " + str(self.fontSize))
+
+        self.parentheticFindTag = self.buffer.create_tag("parentheticFind",
+                                                     background_rgba=findColor,
+                                                     pixels_inside_wrap=pixelsInsideWrap,
+                                                     pixels_above_lines=0,
+                                                     pixels_below_lines=0,
+                                                     left_margin=self.parentheticLeftMargin,
+                                                     right_margin=self.descriptionRightMargin,
+                                                     font="Sans " + str(self.fontSize))
 
     def do_size_allocate(self, allocation):
 

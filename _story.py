@@ -1,4 +1,4 @@
-import os
+import os, re
 
 import json
 
@@ -433,11 +433,90 @@ class Story(object):
 
     def addFindTags(self, find):
 
-        for sq in self.sequences:
-            for scene in sq.scenes:
-                for page in scene.pages:
-                    for line in page.lines:
-                        line.findTags = []
+        if self.control.category == 'story':
+            for sq in self.sequences:
+                for scene in sq.scenes:
+                    for page in scene.pages:
+                        for line in page.lines:
+                            line.findTags = []
 
+                            splitText = re.findall(r"[\w']+|[ .,!?;]", line.text)
+                            print "split", splitText
+
+                            if find in splitText:
+                                offset = 0
+                                for word in splitText:
+                                    if word == find:
+                                        line.findTags.append(offset)
+                                        lineIndex = self.control.scriptView.lines.index(line)
+                                        print line.tag, self.control.scriptView.lines[lineIndex].text
+                                    offset += len(word)
+
+        elif self.control.category == 'scene':
+            for page in self.currentScene().pages:
+                for line in page.lines:
+                    line.findTags = []
+                    splitText = line.text.split(" ")
+
+                    if find in splitText:
+                        offset = 0
+                        for word in splitText:
+                            if word == find:
+                                line.findTags.append(offset)
+                                lineIndex = self.control.scriptView.lines.index(line)
+                                print line.tag, self.control.scriptView.lines[lineIndex].text
+
+        elif self.control.category == 'page':
+            for line in self.control.currentPage().lines:
+                line.findTags = []
+                splitText = line.text.split(" ")
+
+                if find in splitText:
+                    offset = 0
+                    for word in splitText:
+                        if word == find:
+                            line.findTags.append(offset)
+                            lineIndex = self.control.scriptView.lines.index(line)
+                            print line.tag, self.control.scriptView.lines[lineIndex].text
         if len(find) == 0:
             pass
+
+
+    def applyFindTags(self, find):
+
+        if self.control.category == 'story':
+            for sq in self.sequences:
+                for scene in sq.scenes:
+                    for page in scene.pages:
+                        for line in page.lines:
+                            if len(line.findTags):
+                                for index in line.findTags:
+                                    self.applyFindTag(line, word=find, offset=index)
+
+
+        elif self.control.category == 'scene':
+            for page in self.currentScene().pages:
+                for line in page.lines:
+                    if len(line.findTags):
+                        index = line.text.index(find)
+                        self.applyFindTag(line, word=find, offset=index)
+
+        elif self.control.category == 'page':
+            for line in self.control.currentPage().lines:
+                if len(line.findTags):
+                    index = line.text.index(find)
+                    self.applyFindTag(line, word=find, offset=index)
+
+    def applyFindTag(self, line, word, offset):
+
+        lineIndex = self.control.scriptView.lines.index(line)
+
+        startIter = self.control.scriptView.textView.buffer.get_iter_at_line(lineIndex)
+        startIter.forward_chars(offset)
+        endIter = self.control.scriptView.textView.buffer.get_iter_at_line(lineIndex)
+        endIter.forward_chars(offset + len(word))
+
+        sc,ec,text = startIter.get_char(), endIter.get_char(), self.control.scriptView.textView.buffer.get_text(startIter, endIter, True)
+
+        self.control.scriptView.textView.buffer.remove_all_tags(startIter, endIter)
+        self.control.scriptView.textView.buffer.apply_tag_by_name(line.tag + "Find", startIter, endIter)

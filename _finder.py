@@ -70,11 +70,9 @@ class View(Gtk.Box):
 
         self.entry.connect("key-release-event", self.keyRelease)
 
-
     def keyRelease(self, widget, event):
         if (event.keyval == 65293):
             find = self.entry.get_text()
-            print find
 
             self.control.currentStory().addFindTags(find)
             self.control.scriptView.reset()
@@ -85,3 +83,5 @@ class View(Gtk.Box):
                 self.control.scriptView.loadScene()
             elif self.control.category == 'page':
                 self.control.scriptView.loadPage()
+
+            self.control.currentStory().applyFindTags(find)
