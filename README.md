@@ -81,3 +81,9 @@ Place the cursor in the editor you want to resize font. Hold down Control and pr
 <b>Toggle Story/Scene Numbering</b>
 
 Hold down Control and press #.
+
+<b>Find In Story/Scene/Page</b>
+
+Go to Story, Scene, or Page View. Type single word in Find Entry.
+
+<i>Not implemented. Hit enter to navigate through selections.</i>
