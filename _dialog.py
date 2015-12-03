@@ -4,6 +4,46 @@ from gi.repository import Gtk
 
 import _story
 
+
+class FindAndReplaceDialog(Gtk.Dialog):
+
+    def __init__(self, control, parent):
+        Gtk.Dialog.__init__(self, "Find And Replace", parent, 0, (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, Gtk.STOCK_FIND_AND_REPLACE, Gtk.ResponseType.APPLY))
+        self.control = control
+        self.set_default_size(600, 150)
+        self.set_modal(True)
+        self.set_title("Find And Replace")
+
+        self.findEntry = Gtk.Entry()
+        self.replaceEntry = Gtk.Entry()
+        self.connect('key-release-event', self.replaceEntryKeyRelease)
+
+        box = Gtk.HBox()
+        box.pack_start(self.findEntry, 1, 1, 5)
+        box.pack_end(self.replaceEntry, 1, 1, 5)
+
+        ca = self.get_content_area()
+
+        ca.add(box)
+
+        self.show_all()
+
+    def replaceEntryKeyRelease(self, widget, event):
+        if (event.keyval == 65293):
+            if len(self.findEntry.get_text()) and len(self.replaceEntry.get_text()):
+                self.findAndReplace()
+            self.destroy()
+
+    def findAndReplace(self):
+        self.control.currentStory().findAndReplace(self.findEntry.get_text(), self.replaceEntry.get_text())
+        self.control.scriptView.reset()
+        if self.control.category == 'story':
+            self.control.scriptView.loadStory()
+        elif self.control.category == 'scene':
+            self.control.scriptView.loadScene()
+        elif self.control.category == 'page':
+            self.control.scriptView.loadPage()
+
 def saveFile(control):
     dialog = Gtk.FileChooserDialog("Save story", control.app.window,
         Gtk.FileChooserAction.SAVE,
@@ -102,7 +142,6 @@ def deleteSceneConfirmation(control, row, index):
 
     response = dialog.run()
     if response == Gtk.ResponseType.OK:
-        print "row in",  control.sceneItemBox.listbox.get_children()
         control.sceneItemBox.listbox.remove(row)
         if index == len(control.currentSequence().scenes) - 1:
             control.currentSequence().scenes.pop(index)

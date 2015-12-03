@@ -61,6 +61,8 @@ class Line(object):
         self.text = text
         self.tag = tag
 
+        self.findTags = [] # does not go in data.
+
     def data(self):
         data = {}
         data['text'] = self.text
@@ -130,18 +132,6 @@ class Scene(object):
 
         return data
 
-    def updateCompletionNames(self):
-
-        self.names = []
-
-        for page in self.pages:
-            for line in page.lines:
-                if line.tag == 'character':
-                    if len(line.text.lstrip().rstrip()) and line.text not in self.names:
-                        self.names.append(line.text)
-
-        self.names.sort()
-
     def findAndReplace(self, find, replace):
         for page in self.pages:
             page.findAndReplace(find, replace)
@@ -168,8 +158,17 @@ class Page(object):
         return data
 
     def findAndReplace(self, find, replace):
+        find = unicode(find)
+        replace = unicode(replace)
         for line in self.lines:
             line.text = line.text.replace(find, replace)
+
+    def panelCount(self):
+        count = 0
+        for line in self.lines:
+            if line.tag == "description":
+                count += 1
+        return count
 
 class Story(object):
 
@@ -308,12 +307,6 @@ class Story(object):
 
         self.names.sort()
 
-        for sequence in self.sequences:
-            for scene in sequence.scenes:
-                scene.updateCompletionNames()
-
-        # self.control.scriptView.textView.updateNameMenu()
-
     def save(self,):
         if self.path == None:
             _dialog.saveFile(self.control)
@@ -422,3 +415,29 @@ class Story(object):
     def findAndReplace(self, find, replace):
         for seq in self.sequences:
             seq.findAndReplace(find, replace)
+
+    def addName(self, name):
+        if len(name) and name not in self.names:
+            self.names.append(name)
+            self.names.sort()
+
+    def find(self, find):
+        self.findLines = []
+        for sq in self.sequences:
+            for scene in sq.scenes:
+                for page in scene.pages:
+                    for line in page.lines:
+                        if find in line.text:
+                            self.findLines.append(line)
+        return self.findLines
+
+    def addFindTags(self, find):
+
+        for sq in self.sequences:
+            for scene in sq.scenes:
+                for page in scene.pages:
+                    for line in page.lines:
+                        line.findTags = []
+
+        if len(find) == 0:
+            pass

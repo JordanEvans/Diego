@@ -36,10 +36,13 @@ class Window(Gtk.Window):
             if ( event.keyval == 49):
                 self.newPage()
 
-            elif(event.keyval==114):
-                # reset for development
-                self.control.reset()
-                self.control.load()
+            elif(event.keyval==114): # Find And Replace
+                dialog = _dialog.FindAndReplaceDialog(self.control, self)
+                responseType = dialog.run()
+                if responseType == Gtk.ResponseType.APPLY:
+                    dialog.findAndReplace()
+
+                dialog.destroy()
 
             elif ( event.keyval == 122):
                 pass

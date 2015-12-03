@@ -5,6 +5,7 @@ from gi.repository import Gtk, Gdk
 
 # app
 import _appWindow
+import _finder
 
 # data
 from _config import Config
@@ -40,6 +41,10 @@ class Control(object):
         self.startingUpApp = True
 
         self.sequenceVisible = False
+
+        self.testingTags = True
+
+        self.updateNamesGlobally = True
 
     def notImplemented(self):
         print "not implemented"
@@ -77,7 +82,7 @@ class Control(object):
         self.headerBar = Gtk.HeaderBar()
         self.pathLabel = Gtk.Label()
 
-        self.searchEntry = Gtk.SearchEntry()
+        self.searchEntry = _finder.View()
 
     def load(self, data=True):
         self.historyEnabled = False
@@ -113,8 +118,6 @@ class Control(object):
         self.scriptView.paned.set_position(self.currentStory().horizontalPanePosition)
 
         self.historyEnabled = True
-
-        self.currentStory().findAndReplace("Harry", "Gordon")
 
     def reset(self, data=True):
         if data:

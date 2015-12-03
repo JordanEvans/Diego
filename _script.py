@@ -138,10 +138,13 @@ class TextView(Gtk.TextView):
 
         self.forceWordEvent()
 
-        # Update names in the scene where the cursor is moving from a character line.
-        self.buttonPressScene = self.control.currentScene()
-        if self.tagIter.tag() == 'character':
-            self.buttonPressScene.updateCompletionNames()
+        # # Update names in the scene where the cursor is moving from a character line.
+        # self.buttonPressScene = self.control.currentScene()
+        # if self.tagIter.tag() == 'character':
+        #     self.buttonPressScene.updateCompletionNames()
+
+        if self.tagIter.tag() == "character":
+            self.control.currentStory().addName(self.control.currentLine().text)
 
     def buttonRelease(self, widget, event):
 
@@ -173,9 +176,9 @@ class TextView(Gtk.TextView):
             if bounds:
                 self.buffer.select_range(self.markIter(startMark), self.markIter(endMark))
 
-        # If changing to another scene, update the completion names so they are relevant to that scene.
-        if buttonReleaseScene != self.buttonPressScene:
-            buttonReleaseScene.updateCompletionNames()
+        # # If changing to another scene, update the completion names so they are relevant to that scene.
+        # if buttonReleaseScene != self.buttonPressScene:
+        #     buttonReleaseScene.updateCompletionNames()
 
     def keyPress(self, widget, event):
         self.forcingWordEvent = False
@@ -206,9 +209,9 @@ class TextView(Gtk.TextView):
                     character = chr(event.keyval).upper()
                     wordHasLength = len(self.word)
                     if (char == character and wordHasLength) or self.nameIter != None:
-                        for name in self.control.currentScene().names:
-                            if name.startswith(character):
-                                prefixes.append(name)
+                        # for name in self.control.currentScene().names:
+                        #     if name.startswith(character):
+                        #         prefixes.append(name)
 
                         for name in self.control.currentStory().names:
                             if name.startswith(character) and name not in prefixes:
@@ -734,6 +737,9 @@ class TextView(Gtk.TextView):
 
         self.forceWordEvent()
 
+        if self.tagIter.tag() == "character":
+            self.control.currentStory().addName(self.control.currentLine().text)
+
         # In case the cursor is at the end of a heading line, allow a new line to be created.
         if currentCharIsHeading:
             # return
@@ -751,10 +757,8 @@ class TextView(Gtk.TextView):
             tag = self.control.currentLine().tag
             self.tagIter.load(tag)
 
-
-
-        if self.tagIter.tag() == 'character':
-            self.control.currentScene().updateCompletionNames()
+        # if self.tagIter.tag() == 'character':
+        #     self.control.currentScene().updateCompletionNames()
 
         cutEvent = self.chainDeleteSelectedTextEvent()
         if cutEvent != None :
@@ -792,14 +796,6 @@ class TextView(Gtk.TextView):
 
                 self.buffer.insert(insertIter, '\n', 1)
 
-                # startIter = self.buffer.get_iter_at_line(lineIndex)
-                # endIter = self.buffer.get_iter_at_line(lineIndex)
-                # endIter.forward_to_line_end()
-                # endIter.forward_char()
-                # sc,ec,text = startIter.get_char(), endIter.get_char(), self.buffer.get_text(startIter, endIter, True)
-                # self.buffer.remove_all_tags(startIter, endIter)
-                # self.buffer.apply_tag_by_name(nextLineTag, startIter, endIter)
-
                 insertIter = self.insertIter()
                 insertIter.backward_char()
                 self.buffer.place_cursor(insertIter)
@@ -813,14 +809,6 @@ class TextView(Gtk.TextView):
                 lineIndex = insertIter.get_line()
 
                 self.buffer.insert(insertIter, '\n', 1)
-
-                # startIter = self.buffer.get_iter_at_line(lineIndex)
-                # endIter = self.buffer.get_iter_at_line(lineIndex)
-                # endIter.forward_to_line_end()
-                # endIter.forward_char()
-                # sc,ec,text = startIter.get_char(), endIter.get_char(), self.buffer.get_text(startIter, endIter, True)
-                # self.buffer.remove_all_tags(startIter, endIter)
-                # self.buffer.apply_tag_by_name(newLineTag, startIter, endIter)
 
                 startIter = self.buffer.get_iter_at_line(lineIndex + 1)
                 endIter = self.buffer.get_iter_at_line(lineIndex + 1)
@@ -1034,7 +1022,8 @@ class TextView(Gtk.TextView):
     def updatePanel(self):
         paneNumber = self.control.currentPanel()
         pad = " " * 30
-        self.control.panelLabel.set_text(pad + "PANEL " + str(paneNumber))
+        panelCount = str(self.control.currentPage().panelCount())
+        self.control.panelLabel.set_text(pad + "PANEL " + str(paneNumber) + " / " + panelCount)
 
     def do_cut_clipboard(self):
 
