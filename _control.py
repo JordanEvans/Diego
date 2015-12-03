@@ -114,6 +114,8 @@ class Control(object):
 
         self.historyEnabled = True
 
+        self.currentStory().findAndReplace("Harry", "Gordon")
+
     def reset(self, data=True):
         if data:
             self.config.reset()

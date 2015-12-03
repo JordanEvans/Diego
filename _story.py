@@ -98,6 +98,9 @@ class Sequence(object):
         data['info'] = self.info
         return data
 
+    def findAndReplace(self, find, replace):
+        for scene in self.scenes:
+            scene.findAndReplace(find, replace)
 
 class Scene(object):
 
@@ -139,6 +142,9 @@ class Scene(object):
 
         self.names.sort()
 
+    def findAndReplace(self, find, replace):
+        for page in self.pages:
+            page.findAndReplace(find, replace)
 
 class Page(object):
 
@@ -161,6 +167,9 @@ class Page(object):
         data['info'] = self.info
         return data
 
+    def findAndReplace(self, find, replace):
+        for line in self.lines:
+            line.text = line.text.replace(find, replace)
 
 class Story(object):
 
@@ -361,7 +370,6 @@ class Story(object):
             seq.scenes[i].title = scenes[i]['title']
             page = seq.scenes[i].pages[0]
             text = s['infos'][0]['text']
-            self.control.p(text)
 
             cs = seq.scenes[i]
             cs.info = text
@@ -410,3 +418,7 @@ class Story(object):
     def currentLine(self):
         currentPage = self.currentPage()
         return currentPage.lines[self.index.line]
+
+    def findAndReplace(self, find, replace):
+        for seq in self.sequences:
+            seq.findAndReplace(find, replace)

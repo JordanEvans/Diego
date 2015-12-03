@@ -17,7 +17,6 @@ class IndexListBox(Gtk.ListBox):
             self.editing = True
 
     def do_button_release_event(self, event):
-        self.control.p("dbr", self.editing)
         Gtk.ListBox.do_button_release_event(self, event)
         if self.editing:
             self.control.storyItemBox.editCurrentTitle()

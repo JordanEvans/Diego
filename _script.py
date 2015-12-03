@@ -177,8 +177,6 @@ class TextView(Gtk.TextView):
         if buttonReleaseScene != self.buttonPressScene:
             buttonReleaseScene.updateCompletionNames()
 
-        self.iterInfo(self.insertIter())
-
     def keyPress(self, widget, event):
         self.forcingWordEvent = False
         self.newLineEvent = False
@@ -215,6 +213,8 @@ class TextView(Gtk.TextView):
                         for name in self.control.currentStory().names:
                             if name.startswith(character) and name not in prefixes:
                                 prefixes.append(name)
+
+                        # Add empty string at the end, so users have a reset at end of completion list.
                         if len(prefixes):
                             prefixes.append("")
 
@@ -587,7 +587,8 @@ class TextView(Gtk.TextView):
 
         index = self.control.scriptView.lines.index(currentLine)
 
-        self.formatLine(index, self.tagIter.tag())
+        if len(name):
+            self.formatLine(index, self.tagIter.tag())
 
     def insertPrefix(self):
 
@@ -625,7 +626,6 @@ class TextView(Gtk.TextView):
         elif tag == 'parenthetic':
             margin = self.parentheticLeftMargin
 
-        print "tag", tag, margin
         if margin != None:
             self.props.left_margin = margin
             #self.updateLineTag(True)
@@ -689,9 +689,6 @@ class TextView(Gtk.TextView):
             tagNames = [name.props.name for name in charIter.get_tags()]
             self.control.p(charIter.get_char(), tagNames)
             character = charIter.forward_char()
-
-        print
-        self.iterInfo(self.insertIter())
 
     def iterInfo(self, iter):
         info = iter.get_line(), iter.get_offset(), iter.get_char(), [name.props.name for name in iter.get_tags()]
@@ -846,9 +843,6 @@ class TextView(Gtk.TextView):
                 onLastLine = True
                 endLineIter.backward_char()
 
-            self.iterInfo(insertIter)
-            self.iterInfo(endLineIter)
-
             carryText = self.buffer.get_text(insertIter, endLineIter, False)
 
             #Fixes the last line problem.
@@ -862,7 +856,6 @@ class TextView(Gtk.TextView):
 
             # Insert the new line in the buffer and append the carry text.
             insertIter = self.insertIter()
-            self.iterInfo(insertIter)
             lineIndex = insertIter.get_line()
             self.buffer.insert(insertIter, '\n' + carryText, len(carryText) + 1)
 
@@ -872,9 +865,6 @@ class TextView(Gtk.TextView):
             endIter = self.buffer.get_iter_at_line(lineIndex + 1)
             endIter.forward_to_line_end()
             endIter.forward_char()
-
-            self.iterInfo(startIter)
-            self.iterInfo(endIter)
 
             self.buffer.remove_all_tags(startIter, endIter)
             self.buffer.apply_tag_by_name(newLineTag, startIter, endIter)
@@ -982,9 +972,6 @@ class TextView(Gtk.TextView):
         canGoBackward = backwardIter.backward_char()
         backwardChar = backwardIter.get_char()
 
-
-        self.iterInfo(backwardIter)
-
         prevCharIsHeading = False
         if canGoBackward:
             backwardTags = backwardIter.get_tags()
@@ -1044,9 +1031,6 @@ class TextView(Gtk.TextView):
 
         self.control.currentStory().saved = False
 
-        # if removedNewLine:
-        #     self.updatePanel()
-
     def updatePanel(self):
         paneNumber = self.control.currentPanel()
         pad = " " * 30
@@ -1102,8 +1086,6 @@ class TextView(Gtk.TextView):
             cutEvent = _event.CutEvent(self.control)
 
             cutEvent.chained = True
-
-            self.iterInfo(self.selectionIterEnd)
 
             # Stop the deletion of the ZERO_WIDTH_SPACE
             endOffset = self.endIter().get_offset()
@@ -1191,8 +1173,6 @@ class TextView(Gtk.TextView):
 
         self.control.scriptView.updateCurrentStoryIndex()
 
-        #GLib.timeout_add(1000, self.dragDropPaste)
-
     def dragDropPaste(self):
 
         dragLines = self.control.copyClipboard.lines
@@ -1240,8 +1220,6 @@ class TextView(Gtk.TextView):
         endIter = self.buffer.get_iter_at_line(index)
         endIter.forward_to_line_end()
         endIter.forward_char()
-
-        sc,ec,text = startIter.get_char(), endIter.get_char(), self.buffer.get_text(startIter, endIter, True)
 
         self.buffer.remove_all_tags(startIter, endIter)
         self.buffer.apply_tag_by_name(tag, startIter, endIter)
@@ -1754,9 +1732,6 @@ class ScriptView(Gtk.Box):
         startIter.backward_chars(2)
         endIter = self.textView.insertIter()
         endIter.forward_char()
-
-        self.textView.iterInfo(startIter)
-        self.textView.iterInfo(endIter)
 
         self.textView.buffer.apply_tag_by_name('heading', startIter, endIter)
 
