@@ -82,7 +82,7 @@ class Control(object):
         self.headerBar = Gtk.HeaderBar()
         self.pathLabel = Gtk.Label()
 
-        self.searchEntry = _finder.View()
+        self.searchEntry = _finder.View(self)
 
     def load(self, data=True):
         self.historyEnabled = False

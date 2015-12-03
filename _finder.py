@@ -73,9 +73,10 @@ class View(Gtk.Box):
 
     def keyRelease(self, widget, event):
         if (event.keyval == 65293):
-            print "find", self.entry.get_text()
+            find = self.entry.get_text()
+            print find
 
-            self.control.currentStory().addFindTags()
+            self.control.currentStory().addFindTags(find)
             self.control.scriptView.reset()
 
             if self.control.category == 'story':
