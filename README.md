@@ -50,6 +50,10 @@ Double click the story title in the story view. Type in new name.
 
 Double click the scene title in the scene view. Type in new name.
 
+<b>Find And Replace</b>
+
+Control + r
+
 <b>Toggle Script View or Abstract View</b>
 
 Hit Escape key while in the respective editor.
