@@ -104,6 +104,7 @@ class Sequence(object):
         for scene in self.scenes:
             scene.findAndReplace(find, replace)
 
+
 class Scene(object):
 
     def __init__(self, title='Scene', synopsis='', notes='', pages=[], info=''):
@@ -135,6 +136,7 @@ class Scene(object):
     def findAndReplace(self, find, replace):
         for page in self.pages:
             page.findAndReplace(find, replace)
+
 
 class Page(object):
 
@@ -169,6 +171,7 @@ class Page(object):
             if line.tag == "description":
                 count += 1
         return count
+
 
 class Story(object):
 
@@ -441,7 +444,6 @@ class Story(object):
                             line.findTags = []
 
                             splitText = re.findall(r"[\w']+|[ .,!?;]", line.text)
-                            print "split", splitText
 
                             if find in splitText:
                                 offset = 0

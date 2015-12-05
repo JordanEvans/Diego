@@ -15,39 +15,33 @@ class AppBox(Gtk.Box):
 
         self.pack_start(self.control.appHeaderBar, 0, 0, 0)
 
+        # Add the Stack Switcher
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-
         self.stackSwitcherBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
-
+        self.control.stackSwitcher = Gtk.StackSwitcher(self.control)
+        self.control.stackSwitcher.set_stack(self.control.indexView.stack)
+        self.stackSwitcherBox.pack_start(self.control.stackSwitcher, 0, 0, 0)
         vbox.pack_start(self.stackSwitcherBox,0 ,0, 0)
-
-        vbox.pack_start(hbox,0, 0, 0)
-
         self.control.appHeaderBar.pack_start(vbox)
 
+        # Add the Panel box
         panelLabelBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-
         panelLabelBox.pack_start(self.control.panelLabel, 1, 1, 1)
-
         self.control.appHeaderBar.pack_start(panelLabelBox)
 
+        # Add SearchEntry
         self.control.appHeaderBar.pack_end(self.control.searchEntry)
-        
+
+        # Add Paned, which includes IndexView on left and ScriptView on right.
+        self.paned = Gtk.Paned()
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
-        self.pack_start(vbox, 1, 1, 0)
-        
         hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         vbox.pack_start(hbox, 1, 1, 0)
-        
-        self.paned = Gtk.Paned()
         hbox.pack_start(self.paned, 1, 1, 0)
-        
         self.paned.add1(self.control.indexView)
-
         self.paned.add2(self.control.scriptView)
-
         self.paned.set_position(150)
+        self.pack_start(vbox, 1, 1, 0)
 
     def connections(self, ):
         pass

@@ -13,6 +13,8 @@ from _state import State
 from _story import Story
 from _preferences import Preferences
 
+import _clipboard
+
 # views
 from _appBox import AppBox
 from _indexView import IndexView
@@ -29,8 +31,9 @@ from _storyItemBox import StoryItemBox
 class Control(object):
 
     def __init__(self, app):
+
+        # Data objects
         self.app = app
-        self.clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
         self.stories = []
         self.index = 0
         self.historyEnabled = False
@@ -39,12 +42,30 @@ class Control(object):
         self.saveDir = os.path.expanduser(('~'))
         self.verticalPanePosition = 150
         self.startingUpApp = True
-
         self.sequenceVisible = False
-
         self.testingTags = True
-
         self.updateNamesGlobally = True
+
+        self.config = Config(self)
+        self.preferences = Preferences(self)
+        self.state = State(self)
+        self.copyClipboard = _clipboard.Clipboard(self)
+        self.selectionClipboard = _clipboard.Clipboard(self)
+
+        # View objects
+        self.app.window = _appWindow.Window(self)
+        self.appBox = AppBox(self)
+        self.panelLabel = Gtk.Label()
+        self.indexView = IndexView(self)
+        self.pageItemBox = PageItemBox(self)
+        self.sceneItemBox = SceneItemBox(self)
+        self.sequenceItemBox = SequenceItemBox(self)
+        self.storyItemBox = StoryItemBox(self)
+        self.scriptView = ScriptView(self)
+        self.appHeaderBar = Gtk.HeaderBar()
+        self.headerBar = Gtk.HeaderBar()
+        self.pathLabel = Gtk.Label()
+        self.searchEntry = _finder.View(self)
 
     def notImplemented(self):
         print "not implemented"
@@ -52,37 +73,6 @@ class Control(object):
     def p(self, *args):
         self.printCount += 1
         print self.printCount, args
-
-    def postInit(self, ):
-        self.initData()
-        self.initViews()
-
-    def initData(self, ):
-        self.config = Config(self)
-        self.preferences = Preferences(self)
-        self.state = State(self)
-
-    def initViews(self, ):
-        # Widgets directly tied to Control for implementation convenience.
-        self.app.window = _appWindow.Window(self)
-
-        self.appBox = AppBox(self)
-
-        self.panelLabel = Gtk.Label()
-
-        self.indexView = IndexView(self)
-        self.pageItemBox = PageItemBox(self)
-        self.sceneItemBox = SceneItemBox(self)
-        self.sequenceItemBox = SequenceItemBox(self)
-        self.storyItemBox = StoryItemBox(self)
-
-        self.scriptView = ScriptView(self)
-
-        self.appHeaderBar = Gtk.HeaderBar()
-        self.headerBar = Gtk.HeaderBar()
-        self.pathLabel = Gtk.Label()
-
-        self.searchEntry = _finder.View(self)
 
     def load(self, data=True):
         self.historyEnabled = False

@@ -6,48 +6,53 @@ from gi.repository import Gtk
 from _control import Control
 
 import _dialog
-import _clipboard
-
 
 class App(object):
 
     def __init__(self):
+        # The whole app is initialized and brought up here.
+
         print "PyGtk Version", Gtk.MAJOR_VERSION, Gtk.MINOR_VERSION, Gtk.MICRO_VERSION
         self.name = "Diego"
- 
+
+        # Control's purpose is to connect everything. Control.__init__ contains app-wide variables
+        # for the pupose of shorten variable indirection during implementation.
         self.control = Control(self)
 
-        self.control.appClipboard = _clipboard.AppClipboard(self.control)
-        self.control.sysClipboard = _clipboard.SysClipboard(self.control)
+        # Creates Data and Widgets
+        # self.control.postInit()
 
-        self.control.copyClipboard = _clipboard.Clipboard(self.control)
-        self.control.selectionClipboard = _clipboard.Clipboard(self.control)
-        self.control.dragDropCutClipboard = _clipboard.Clipboard(self.control)
-
-        self.control.postInit()
-
-        self.window.postInit()  
-
+        # Configures and packs Widgets.
+        self.window.postInit()
         self.control.appBox.postInit()
         self.control.pageItemBox.postInit()
         self.control.sceneItemBox.postInit()
         self.control.sequenceItemBox.postInit()
         self.control.scriptView.postInit()
         self.control.storyItemBox.postInit()
-
         self.control.indexView.postInit()
 
+        # Now that Data and View objects have been created and packed,
+        # control.load will load the data into the views. No arg is passed here,
+        # but control.state may provide stories to load,
+        # if app was previously opened and stories were made.
         self.control.load()
 
+        # Some misc follow up stuff.
         self.window.resize_to_geometry(self.control.state.width, self.control.state.height)
         self.control.scriptView.textView.resetTags()
         self.control.scriptView.infoTextView.props.left_margin = self.control.scriptView.textView.descriptionLeftMargin
         self.control.scriptView.infoTextView.props.right_margin = self.control.scriptView.textView.descriptionRightMargin
-
         self.control.app.window.move(self.control.windowPosition[0], self.control.windowPosition[1])
 
-    def updateWindowTitle(self):
+        # testing area
 
+        # how to select a row
+        row = self.control.storyItemBox.rowAtIndex(1)
+        self.control.storyItemBox.listbox.select_row(row)
+        row.grab_focus()
+
+    def updateWindowTitle(self):
         try:
             title = os.path.split(self.control.currentStory().path)[-1] + " - Diego"
         except:

@@ -17,10 +17,9 @@ class SysClipboard(object):
 
     def update(self):
         return
-        text = self.control.clipboard.wait_for_text()
         if self.text != text:
             self.text = text
-            self.control.appClipboard.override = False
+            #self.control.appClipboard.override = False
         if text == None:
             self.text = ''
 

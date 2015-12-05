@@ -21,10 +21,10 @@ class Window(Gtk.Window):
     def connections(self, ):
         self.connect("delete-event", self.control.app.shutdown)
         self.connect("key-press-event", self.keyPress)
-        self.connect("focus-in-event", self.focusIn)
+        # self.connect("focus-in-event", self.focusIn)
 
-    def focusIn(self, window, event):
-        self.control.sysClipboard.update()
+    # def focusIn(self, window, event):
+    #     self.control.sysClipboard.update()
 
     def config(self, ):
         self.resize(1000,600)

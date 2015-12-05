@@ -45,6 +45,7 @@ class IndexListBox(Gtk.ListBox):
                 return 1
 
     def do_row_selected(self, row):
+        print "story do_row_selected", row
         if row:
             self.resetAndLoadLowerListBoxes(row)
             self.control.app.window.show_all()
@@ -237,3 +238,6 @@ class StoryItemBox(ScrolledListBox):
             selectedRow = self.listbox.get_selected_row()
             child = selectedRow.get_child()
             child.startEditMode()
+
+    def rowAtIndex(self, index):
+        return self.control.storyItemBox.listbox.get_row_at_index(index)

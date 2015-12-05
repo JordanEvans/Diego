@@ -329,6 +329,9 @@ class TextView(Gtk.TextView):
 
         self.nameIter = None
 
+        if event.keyval == 65289: # tab, ignore them
+            return 1
+
         if event.keyval == 65307: # esc
             if self.control.scriptView.paned.get_position() == 0:
                 self.control.scriptView.paned.set_position(self.control.currentStory().horizontalPanePosition)
@@ -1506,12 +1509,12 @@ class ScriptView(Gtk.Box):
         self.paned.add1(self.scrolledWindow)
         self.paned.add2(vbox)
 
-        self.scrolledWindow = Gtk.ScrolledWindow()
-        self.scrolledWindow.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-        vbox.pack_start(self.scrolledWindow, 1, 1, 0)
+        self.scrolledWindow2 = Gtk.ScrolledWindow()
+        self.scrolledWindow2.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        vbox.pack_start(self.scrolledWindow2, 1, 1, 0)
 
         self.createTextView()
-        self.scrolledWindow.add(self.textView)
+        self.scrolledWindow2.add(self.textView)
 
         self.infoTextView.props.left_margin = 25
         self.infoTextView.props.right_margin = 100

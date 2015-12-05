@@ -1,12 +1,6 @@
 
 from gi.repository import Gtk
 
-class StackSwitcher(Gtk.StackSwitcher):
-    def __init__(self, control):
-        Gtk.StackSwitcher.__init__(self)
-        self.control = control
-        self.count = 0
-
 class IndexView(Gtk.Box):
 
     def __init__(self, control):
@@ -14,27 +8,22 @@ class IndexView(Gtk.Box):
         self.control = control
         self.items = []
 
+        self.stack = Gtk.Stack()
+
     def postInit(self):
-        stack = Gtk.Stack()
-        stack.set_transition_type(Gtk.StackTransitionType.SLIDE_LEFT_RIGHT)
-        stack.set_transition_duration(250)
 
-        stack.add_titled(self.control.storyItemBox, "stories", "Stories")
+        self.stack.set_transition_type(Gtk.StackTransitionType.SLIDE_LEFT_RIGHT)
+        self.stack.set_transition_duration(250)
+
+        self.stack.add_titled(self.control.storyItemBox, "stories", "Stories")
+
         if self.control.sequenceVisible:
-            stack.add_titled(self.control.sequenceItemBox, "sequence", "Sequence")
-        stack.add_titled(self.control.sceneItemBox, "scene", "Scene")
-        stack.add_titled(self.control.pageItemBox, "page", "Page")
+            self.stack.add_titled(self.control.sequenceItemBox, "sequence", "Sequence")
 
-        stackSwitcherBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
-        stack_switcher = StackSwitcher(self.control)
-        stack_switcher.set_stack(stack)
-        stackSwitcherBox.pack_start(stack_switcher, 0, 0, 0)
+        self.stack.add_titled(self.control.sceneItemBox, "scene", "Scene")
+        self.stack.add_titled(self.control.pageItemBox, "page", "Page")
 
-        self.pack_start(stack, 1, 1, 0)
-
-        hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
-        hbox.pack_start(stackSwitcherBox, 1, 1, 0)
-        self.control.appBox.stackSwitcherBox.pack_start(hbox, 0, 0, 0)
+        self.pack_start(self.stack, 1, 1, 0)
 
     def reset(self):
         pass
