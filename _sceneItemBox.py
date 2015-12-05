@@ -103,6 +103,10 @@ class IndexListBox(Gtk.ListBox):
 
         self.control.category = 'scene'
 
+        #Model index was set to 0, so the listboxes will select zero items.
+        row = self.control.pageItemBox.rowAtIndex(0)
+        self.control.pageItemBox.listbox.select_row(row)
+
 class ScrolledListBox(Gtk.Box):
 
     def __init__(self, control):
@@ -183,6 +187,12 @@ class SceneItemBox(ScrolledListBox):
                     prefix = str(sceneNumber + 1) + '.  '
                 self.scenes[sceneNumber].label.set_text(prefix + dataScenes[sceneNumber].title)
 
+        # row = self.rowAtIndex(0)
+        # self.listbox.select_row(row)
+        #
+        # row = self.control.pageItemBox.rowAtIndex(0)
+        # self.control.pageItemBox.listbox.select_row(row)
+
     def reset(self):
         for row in self.listbox.get_children():
             self.listbox.remove(row)
@@ -235,3 +245,6 @@ class SceneItemBox(ScrolledListBox):
             if row in rows:
                 index = rows.index(row)
                 return self.scenes[index]
+
+    def rowAtIndex(self, index):
+        return self.listbox.get_row_at_index(index)

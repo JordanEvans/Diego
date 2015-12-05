@@ -88,6 +88,13 @@ class IndexListBox(Gtk.ListBox):
 
         self.control.scriptView.paned.set_position(self.control.currentStory().horizontalPanePosition)
 
+        #Model index was set to 0, so the listboxes will select zero items.
+        row = self.control.sceneItemBox.rowAtIndex(0)
+        self.control.sceneItemBox.listbox.select_row(row)
+
+        row = self.control.pageItemBox.rowAtIndex(0)
+        self.control.pageItemBox.listbox.select_row(row)
+
 class ScrolledListBox(Gtk.Box):
 
     def __init__(self, control):
@@ -240,4 +247,4 @@ class StoryItemBox(ScrolledListBox):
             child.startEditMode()
 
     def rowAtIndex(self, index):
-        return self.control.storyItemBox.listbox.get_row_at_index(index)
+        return self.listbox.get_row_at_index(index)

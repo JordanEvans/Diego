@@ -154,6 +154,7 @@ class PageItemBox(ScrolledListBox):
         pass
 
     def load(self):
+        print "pload"
         if len(self.control.stories):
             pages = self.control.currentScene().pages
             for i in range(len(pages)):
@@ -164,6 +165,9 @@ class PageItemBox(ScrolledListBox):
 
         else:
             self.reset()
+
+        # row = self.rowAtIndex(0)
+        # self.listbox.select_row(row)
 
     def reset(self):
         for row in self.listbox.get_children():
@@ -190,3 +194,6 @@ class PageItemBox(ScrolledListBox):
         if row:
             self.control.pageItemBox.listbox.select_row(row)
             row.grab_focus()
+
+    def rowAtIndex(self, index):
+        return self.listbox.get_row_at_index(index)
