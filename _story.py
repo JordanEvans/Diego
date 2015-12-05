@@ -163,7 +163,15 @@ class Page(object):
         find = unicode(find)
         replace = unicode(replace)
         for line in self.lines:
-            line.text = line.text.replace(find, replace)
+            splitText = re.findall(r"[\w']+|[ .,!?;]", line.text)
+            newLine = []
+            for split in splitText:
+                if split == find:
+                    newLine.append(replace)
+                else:
+                    newLine.append(split)
+
+            line.text = "".join(newLine)
 
     def panelCount(self):
         count = 0
