@@ -15,6 +15,7 @@ if __name__ == '__main__':
     os.system("cp -purv *.py " + path)
     os.system("cp -puv '/home/dev/Stories/Hansel And Gretel' /home/dev/DiegoGit/")
     os.system("cp -puv '/home/dev/Diego/README.md' /home/dev/DiegoGit/")
+    os.system("cp -puv '/home/dev/Diego/widgetView.png' /home/dev/DiegoGit/")
 
     usbPath = '/media/dev/UUI/Diego/'
     os.system("cp -purv *.py " + usbPath)
