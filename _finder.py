@@ -1,4 +1,6 @@
 
+import re
+
 from gi.repository import Gtk
 
 class FindIter(object):
@@ -73,15 +75,92 @@ class View(Gtk.Box):
     def keyRelease(self, widget, event):
         if (event.keyval == 65293):
             find = self.entry.get_text()
+            self.addFindTags(find)
+            self.applyFindTags(find)
 
-            self.control.currentStory().addFindTags(find)
-            self.control.scriptView.reset()
+    def addFindTags(self, find):
 
-            if self.control.category == 'story':
-                self.control.scriptView.loadStory()
-            elif self.control.category == 'scene':
-                self.control.scriptView.loadScene()
-            elif self.control.category == 'page':
-                self.control.scriptView.loadPage()
+        if self.control.category == 'story':
+            for sq in self.control.currentStory().sequences:
+                for scene in sq.scenes:
+                    for page in scene.pages:
+                        for line in page.lines:
 
-            self.control.currentStory().applyFindTags(find)
+                            if line.tag != 'heading':
+                                line.findTags = []
+
+                                splitText = re.findall(r"[\w']+|[ .,!?;]", line.text)
+
+                                if find in splitText:
+                                    offset = 0
+                                    for word in splitText:
+                                        if word == find:
+                                            line.findTags.append(offset)
+                                            lineIndex = self.control.scriptView.lines.index(line)
+                                        offset += len(word)
+
+        elif self.control.category == 'scene':
+            for page in self.control.currentScene().pages:
+                for line in page.lines:
+                    line.findTags = []
+
+                    splitText = re.findall(r"[\w']+|[ .,!?;]", line.text)
+
+                    if find in splitText:
+                        offset = 0
+                        for word in splitText:
+                            if word == find:
+                                line.findTags.append(offset)
+                                lineIndex = self.control.scriptView.lines.index(line)
+                            offset += len(word)
+
+        elif self.control.category == 'page':
+            for line in self.control.currentPage().lines:
+                line.findTags = []
+                splitText = re.findall(r"[\w']+|[ .,!?;]", line.text)
+
+                if find in splitText:
+                    offset = 0
+                    for word in splitText:
+                        if word == find:
+                            line.findTags.append(offset)
+                            lineIndex = self.control.scriptView.lines.index(line)
+                        offset += len(word)
+        if len(find) == 0:
+            pass
+
+    def applyFindTags(self, find):
+
+        if self.control.category == 'story':
+            for sq in self.control.currentStory().sequences:
+                for scene in sq.scenes:
+                    for page in scene.pages:
+                        for line in page.lines:
+                            if line.tag != 'heading':
+                                for offset in line.findTags:
+                                    self.applyFindTag(line, word=find, offset=offset)
+
+        elif self.control.category == 'scene':
+            for page in self.control.currentScene().pages:
+                for line in page.lines:
+                    for offset in line.findTags:
+                        self.applyFindTag(line, word=find, offset=offset)
+
+        elif self.control.category == 'page':
+            for line in self.control.currentPage().lines:
+                for offset in line.findTags:
+                    self.applyFindTag(line, word=find, offset=offset)
+
+    def applyFindTag(self, line, word, offset):
+
+        lineIndex = self.control.scriptView.lines.index(line)
+
+        startIter = self.control.scriptView.textView.buffer.get_iter_at_line(lineIndex)
+        startIter.forward_chars(offset)
+        endIter = self.control.scriptView.textView.buffer.get_iter_at_line(lineIndex)
+        endIter.forward_chars(offset + len(word))
+
+        # sc,ec,soff, eoff, text = startIter.get_char(), endIter.get_char(), startIter.get_offset(), endIter.get_offset(), self.control.scriptView.textView.buffer.get_text(startIter, endIter, True)
+
+        self.control.scriptView.textView.buffer.remove_all_tags(startIter, endIter)
+        self.control.scriptView.textView.buffer.apply_tag_by_name(line.tag + "Find", startIter, endIter)

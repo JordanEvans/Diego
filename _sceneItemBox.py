@@ -75,7 +75,12 @@ class IndexListBox(Gtk.ListBox):
 
     def do_map(self):
         Gtk.ListBox.do_map(self)
+
+        self.control.sceneItemBox.reset()
+        self.control.sceneItemBox.load()
+
         row = self.get_row_at_index(self.control.currentStory().index.scene)
+        self.select_row(row)
 
         self.resetAndLoadLowerListBoxes(row)
         self.control.scriptView.show_all()
@@ -86,7 +91,7 @@ class IndexListBox(Gtk.ListBox):
 
     def resetAndLoadLowerListBoxes(self, row):
 
-        self.control.pageItemBox.reset()
+        # self.control.pageItemBox.reset()
         self.control.scriptView.reset()
 
         currentStory = self.control.currentStory()
@@ -95,17 +100,17 @@ class IndexListBox(Gtk.ListBox):
         currentStory.index.page = 0
         currentStory.index.line = 0
 
-        self.control.pageItemBox.load()
+        # self.control.pageItemBox.load()
         self.control.scriptView.load()
         self.control.scriptView.loadScene()
 
         currentStory.updateCompletionNames()
 
-        self.control.category = 'scene'
-
         #Model index was set to 0, so the listboxes will select zero items.
-        row = self.control.pageItemBox.rowAtIndex(0)
-        self.control.pageItemBox.listbox.select_row(row)
+        # row = self.control.pageItemBox.rowAtIndex(0)
+        # self.control.pageItemBox.listbox.select_row(row)
+
+        self.control.category = 'scene'
 
 class ScrolledListBox(Gtk.Box):
 

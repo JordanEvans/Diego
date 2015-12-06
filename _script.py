@@ -1691,51 +1691,6 @@ class ScriptView(Gtk.Box):
 
         self.addZeroWidthSpace(lastTag)
 
-    def loadSequence(self):
-        self.lines = []
-
-        pages = []
-        headings = []
-        st = self.control.currentStory()
-        currentSequence = self.control.currentSequence()
-        for sq in self.control.currentStory().sequences:
-            for sc in sq.scenes:
-                for pg in sc.pages:
-                    if currentSequence == sq:
-                        pages.append(pg)
-                        headings.append(Heading(st,sq,sc,pg))
-
-        firstPage = pages.pop(0)
-        firstHeading = headings.pop(0)
-
-        self.insertHeading(firstHeading.sequence.title + " > " + firstHeading.scene.title + " > " + firstHeading.page.title)
-
-        self.lines.append(firstHeading)
-        self.insertPageText(firstPage)
-        self.lines += firstPage.lines
-        for ln in firstPage.lines:
-            ln.heading = firstHeading
-
-        for i in range(len(pages)):
-            pg = pages[i]
-            heading = headings[i]
-            self.textBuffer.insert(self.textView.insertIter(), '\n', len('\n'))
-
-            self.insertHeading(heading.sequence.title + " > " + heading.scene.title + " > " + heading.page.title)
-
-            self.lines.append(heading)
-            self.insertPageText(pg)
-            self.lines += pg.lines
-            for ln in pg.lines:
-                ln.heading = heading
-
-        self.applyTags()
-        self.textView.updatePanel()
-        self.infoTextView.get_buffer().delete(self.infoTextView.get_buffer().get_start_iter(), self.infoTextView.get_buffer().get_end_iter())
-        self.infoTextView.get_buffer().insert(self.infoTextView.get_buffer().get_start_iter(), currentSequence.info)
-
-        self.addZeroWidthSpace()
-
     def infoTextViewKeyPress(self, widget, event):
 
         if event.state & Gdk.ModifierType.CONTROL_MASK:
@@ -1811,7 +1766,6 @@ class ScriptView(Gtk.Box):
             if line.__class__.__name__ == "Line":
 
                 startIter = self.textView.buffer.get_iter_at_line(i)
-                #startIter.forward_to_line_end()
                 endIter = self.textView.buffer.get_iter_at_line(i)
                 endIter.forward_to_line_end()
                 endIter.forward_char()
@@ -1819,7 +1773,6 @@ class ScriptView(Gtk.Box):
                 self.textView.buffer.remove_all_tags(startIter, endIter)
 
                 startIter = self.textView.buffer.get_iter_at_line(i)
-                # startIter.forward_to_line_end()
                 endIter = self.textView.buffer.get_iter_at_line(i)
                 endIter.forward_to_line_end()
                 endIter.forward_char()

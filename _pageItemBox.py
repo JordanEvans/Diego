@@ -65,7 +65,12 @@ class IndexListBox(Gtk.ListBox):
 
     def do_map(self):
         Gtk.ListBox.do_map(self)
+
+        self.control.pageItemBox.reset()
+        self.control.pageItemBox.load()
+
         row = self.get_row_at_index(self.control.currentStory().index.page)
+        self.select_row(row)
 
         if row:
             self.resetAndLoadLowerListBoxes(row)
@@ -154,7 +159,6 @@ class PageItemBox(ScrolledListBox):
         pass
 
     def load(self):
-        print "pload"
         if len(self.control.stories):
             pages = self.control.currentScene().pages
             for i in range(len(pages)):

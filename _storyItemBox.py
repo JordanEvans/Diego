@@ -45,7 +45,6 @@ class IndexListBox(Gtk.ListBox):
                 return 1
 
     def do_row_selected(self, row):
-        print "story do_row_selected", row
         if row:
             self.resetAndLoadLowerListBoxes(row)
             self.control.app.window.show_all()
@@ -64,24 +63,24 @@ class IndexListBox(Gtk.ListBox):
 
     def resetAndLoadLowerListBoxes(self, row):
 
-        self.control.sequenceItemBox.reset()
-        self.control.sceneItemBox.reset()
-        self.control.pageItemBox.reset()
+        # self.control.sequenceItemBox.reset()
+        # self.control.sceneItemBox.reset()
+        # self.control.pageItemBox.reset()
         self.control.scriptView.reset()
 
         self.control.index = self.get_children().index(row)
-        self.control.currentStory().index.sequence = 0
-        self.control.currentStory().index.scene = 0
-        self.control.currentStory().index.page = 0
-        self.control.currentStory().index.line = 0
+        # self.control.currentStory().index.sequence = 0
+        # self.control.currentStory().index.scene = 0
+        # self.control.currentStory().index.page = 0
+        # self.control.currentStory().index.line = 0
 
-        self.control.sequenceItemBox.load()
-        self.control.sceneItemBox.load()
-        self.control.pageItemBox.load()
+        # self.control.sequenceItemBox.load()
+        # self.control.sceneItemBox.load()
+        # self.control.pageItemBox.load()
         self.control.scriptView.load()
         self.control.scriptView.loadStory()
         self.control.scriptView.updateTitles()
-        self.control.category = 'story'
+
         self.control.app.updateWindowTitle()
 
         self.control.currentStory().updateCompletionNames()
@@ -89,11 +88,13 @@ class IndexListBox(Gtk.ListBox):
         self.control.scriptView.paned.set_position(self.control.currentStory().horizontalPanePosition)
 
         #Model index was set to 0, so the listboxes will select zero items.
-        row = self.control.sceneItemBox.rowAtIndex(0)
-        self.control.sceneItemBox.listbox.select_row(row)
+        # row = self.control.sceneItemBox.rowAtIndex(0)
+        # self.control.sceneItemBox.listbox.select_row(row)
+        #
+        # row = self.control.pageItemBox.rowAtIndex(0)
+        # self.control.pageItemBox.listbox.select_row(row)
 
-        row = self.control.pageItemBox.rowAtIndex(0)
-        self.control.pageItemBox.listbox.select_row(row)
+        self.control.category = 'story'
 
 class ScrolledListBox(Gtk.Box):
 

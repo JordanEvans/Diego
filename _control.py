@@ -80,10 +80,12 @@ class Control(object):
         if data:
             self.config.load()
             self.preferences.load()
+
             self.state.load()
 
             for story in self.stories:
                 story.load()
+
 
             self.scriptView.updateTitles()
 

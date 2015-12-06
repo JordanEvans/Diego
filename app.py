@@ -39,18 +39,19 @@ class App(object):
         self.control.load()
 
         # Some misc follow up stuff.
-        self.window.resize_to_geometry(self.control.state.width, self.control.state.height)
+        try:
+            self.window.resize_to_geometry(self.control.state.width, self.control.state.height)
+        except:
+            self.window.resize_to_geometry(600, 400)
+
         self.control.scriptView.textView.resetTags()
         self.control.scriptView.infoTextView.props.left_margin = self.control.scriptView.textView.descriptionLeftMargin
         self.control.scriptView.infoTextView.props.right_margin = self.control.scriptView.textView.descriptionRightMargin
-        self.control.app.window.move(self.control.windowPosition[0], self.control.windowPosition[1])
 
-        # testing area
-
-        # how to select a row
-        row = self.control.storyItemBox.rowAtIndex(1)
-        self.control.storyItemBox.listbox.select_row(row)
-        row.grab_focus()
+        try:
+            self.control.app.window.move(self.control.windowPosition[0], self.control.windowPosition[1])
+        except:
+            pass
 
     def updateWindowTitle(self):
         try:
