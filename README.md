@@ -2,9 +2,15 @@
 
 <h3>Simple. Organized. Fast.</h3>
 
-<img src="http://specscripter.com/screenshot.png">
+Diego's goal is to be The Simplest and the Fastest Scriptwriting software for Graphic Novel writers. Soon, Diego will second as well as specscripting software.
 
-Diego's goal is to be The Simplest and the Fastest Scriptwriting software for Graphic Novel writers. Only the features that are neccessary and keyboards shortcuts desgined to make using that feature faster than any other method.
+Diego has traded feature bloat for simplicy which means only features that are neccessary to get the job done. Diego's design centers around keeping the writers hands on the keyboard. Keyboard shortcuts replace the common interface cluttered with buttons and menus and submenus.
+
+Each Story, Scene and Page has an Info/Abstract Text area that allows the writer to outline their story by creating abstracts. This text area works as a  convenient place to store premises for new story ideas that may turn into a full script at some point.
+
+When Diego saves, three documents are created: the Diego document, an RTF for extra tweeking if neccessary and a PDF.
+
+<img src="http://specscripter.com/screenshot.png">
 
 <b>System Requirements</b>
 

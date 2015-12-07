@@ -6,6 +6,7 @@ from gi.repository import Gtk, Gdk
 # app
 import _appWindow
 import _finder
+import _screenplayModeSwitch
 
 # data
 from _config import Config
@@ -66,6 +67,7 @@ class Control(object):
         self.headerBar = Gtk.HeaderBar()
         self.pathLabel = Gtk.Label()
         self.searchEntry = _finder.View(self)
+        self.screenplayModeSwitch = _screenplayModeSwitch.Switch(self)
 
         self.doMarkSetIndexUpdate = True
 
@@ -87,8 +89,6 @@ class Control(object):
 
             for story in self.stories:
                 story.load()
-
-
 
             self.scriptView.updateTitles()
 

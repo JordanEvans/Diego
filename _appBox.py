@@ -1,5 +1,7 @@
 from gi.repository import Gtk
 
+
+
 class AppBox(Gtk.Box):
 
     def __init__(self, control):
@@ -31,6 +33,9 @@ class AppBox(Gtk.Box):
 
         # Add SearchEntry
         self.control.appHeaderBar.pack_end(self.control.searchEntry)
+
+        # Add Screenplay Mode Switch
+        self.control.appHeaderBar.pack_end(self.control.screenplayModeSwitch)
 
         # Add Paned, which includes IndexView on left and ScriptView on right.
         self.paned = Gtk.Paned()

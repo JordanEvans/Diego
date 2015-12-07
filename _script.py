@@ -414,7 +414,7 @@ class TextView(Gtk.TextView):
 
             self.updateLineTag()
 
-            self.addCharToWord(event, duringKeyPressEvent=True) 157.00
+            self.addCharToWord(event, duringKeyPressEvent=True)
 
             if cutEvent:
                 self.forceWordEvent()
