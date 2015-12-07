@@ -1557,10 +1557,14 @@ class ScriptView(Gtk.Box):
         firstPage = pages.pop(0)
         firstHeading = headings.pop(0)
 
+        pageText = " > " + firstHeading.page.title
+        if self.control.screenplayModeSwitch.get_active():
+            pageText = ""
+
         if self.control.sequenceVisible:
-            self.insertHeading(firstHeading.sequence.title + " > " + firstHeading.scene.title + " > " + firstHeading.page.title)
+            self.insertHeading(firstHeading.sequence.title + " > " + firstHeading.scene.title + pageText)
         else:
-            self.insertHeading(firstHeading.scene.title + " > " + firstHeading.page.title)
+            self.insertHeading(firstHeading.scene.title + pageText)
 
         self.lines.append(firstHeading)
         self.insertPageText(firstPage)
@@ -1574,10 +1578,17 @@ class ScriptView(Gtk.Box):
             heading = headings[i]
             self.textBuffer.insert(self.textView.insertIter(), '\n', len('\n'))
 
+
+            pageText = " > " + heading.page.title
+            if self.control.screenplayModeSwitch.get_active():
+                pageText = ""
+
             if self.control.sequenceVisible:
-                self.insertHeading(heading.sequence.title + " > " + heading.scene.title + " > " + heading.page.title)
+                self.insertHeading(heading.sequence.title + " > " + heading.scene.title + pageText)
             else:
-                self.insertHeading(heading.scene.title + " > " + heading.page.title)
+                self.insertHeading(heading.scene.title + pageText)
+
+            x = heading.scene.title + pageText
 
             self.lines.append(heading)
             self.insertPageText(pg)
@@ -1856,6 +1867,35 @@ class ScriptView(Gtk.Box):
 
     def load(self):
         pass
+
+    def resetAndLoad(self):
+
+        print "start", self.control.category
+
+        self.reset()
+        category = self.control.category
+
+        if category == 'story':
+            lastTag = self.control.scriptView.loadStory()
+        elif category == 'scene':
+            lastTag = self.control.scriptView.loadScene()
+        elif category == 'page':
+            lastTag = self.control.scriptView.loadPage()
+
+        self.updateTitles()
+
+        self.control.app.updateWindowTitle()
+
+        self.control.currentStory().updateCompletionNames()
+
+        self.paned.set_position(self.control.currentStory().horizontalPanePosition)
+
+        self.control.category = category
+
+        print "lastTag", lastTag, self.control.category
+        self.control.scriptView.addZeroWidthSpace(lastTag)
+        print "lastTag 2", lastTag, self.control.category
+
 
     def reset(self):
         self.textView.get_buffer().set_text("")

@@ -74,6 +74,21 @@ class IndexListBox(Gtk.ListBox):
             self.select_row(row)
             row.grab_focus()
 
+    def test(self):
+        self.control.p("story do map", self.resetLowerIndexs)
+
+        # Gtk.ListBox.do_map(self)
+        row = self.get_row_at_index(self.control.index)
+
+        self.resetAndLoad(row, False)
+
+        self.control.scriptView.show_all()
+
+        if row:
+            self.select_row(row)
+            row.grab_focus()
+
+
     def resetAndLoad(self, row, resetIndex=True):
 
         self.control.index = self.get_children().index(row)
