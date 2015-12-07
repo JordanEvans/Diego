@@ -504,31 +504,37 @@ class TextView(Gtk.TextView):
         self.dialogTag.props.left_margin = self.dialogLeftMargin
         self.parentheticTag.props.left_margin = self.parentheticLeftMargin
         self.headingTag.props.left_margin = self.descriptionLeftMargin
+        self.sceneHeadingTag.props.left_margin = self.descriptionLeftMargin
 
         self.descriptionFindTag.props.left_margin = self.descriptionLeftMargin
         self.characterFindTag.props.left_margin = self.characterLeftMargin
         self.dialogFindTag.props.left_margin = self.dialogLeftMargin
         self.parentheticFindTag.props.left_margin = self.parentheticLeftMargin
+        self.sceneHeadingTag.props.left_margin = self.descriptionLeftMargin
 
         self.descriptionTag.props.right_margin = self.descriptionRightMargin
         self.characterTag.props.right_margin = self.characterRightMargin
         self.dialogTag.props.right_margin = self.dialogRightMargin
         self.parentheticTag.props.right_margin = self.parentheticRightMargin
+        self.sceneHeadingTag.props.right_margin = self.descriptionRightMargin
 
         self.descriptionFindTag.props.right_margin = self.descriptionRightMargin
         self.characterFindTag.props.right_margin = self.characterRightMargin
         self.dialogFindTag.props.right_margin = self.dialogRightMargin
         self.parentheticFindTag.props.right_margin = self.parentheticRightMargin
+        self.sceneHeadingTag.props.right_margin = self.descriptionRightMargin
 
         self.descriptionTag.props.font = "Sans " + str(self.fontSize)
         self.characterTag.props.font = "Sans " + str(self.fontSize)
         self.dialogTag.props.font = "Sans " + str(self.fontSize)
         self.parentheticTag.props.font = "Sans " + str(self.fontSize)
+        self.sceneHeadingTag.props.font = "Sans " + str(self.fontSize)
 
         self.descriptionFindTag.props.font = "Sans " + str(self.fontSize)
         self.characterFindTag.props.font = "Sans " + str(self.fontSize)
         self.dialogFindTag.props.font = "Sans " + str(self.fontSize)
         self.parentheticFindTag.props.font = "Sans " + str(self.fontSize)
+        self.sceneHadingFindTag.props.font = "Sans " + str(self.fontSize)
 
         self.control.scriptView.infoTextView.props.left_margin = self.control.scriptView.textView.descriptionLeftMargin
         self.control.scriptView.infoTextView.props.right_margin = self.control.scriptView.textView.descriptionRightMargin
@@ -599,7 +605,14 @@ class TextView(Gtk.TextView):
                                                      font="Sans " + str(self.fontSize),
                                                      editable=False)
 
-
+        self.sceneHeadingTag = self.buffer.create_tag("sceneHeading",
+                                                     background_rgba=descriptionBackground,
+                                                     pixels_inside_wrap=pixelsInsideWrap,
+                                                     pixels_above_lines=10,
+                                                     pixels_below_lines=10,
+                                                     left_margin=self.descriptionLeftMargin,
+                                                     right_margin=self.descriptionRightMargin,
+                                                     font="Sans " + str(self.fontSize))
 
 
         ## Find Tags
@@ -638,6 +651,16 @@ class TextView(Gtk.TextView):
                                                      pixels_above_lines=0,
                                                      pixels_below_lines=0,
                                                      left_margin=self.parentheticLeftMargin,
+                                                     right_margin=self.descriptionRightMargin,
+                                                     font="Sans " + str(self.fontSize))
+
+
+        self.sceneHeadingFindTag = self.buffer.create_tag("sceneHeadingFind",
+                                                     background_rgba=descriptionBackground,
+                                                     pixels_inside_wrap=pixelsInsideWrap,
+                                                     pixels_above_lines=10,
+                                                     pixels_below_lines=10,
+                                                     left_margin=self.descriptionLeftMargin,
                                                      right_margin=self.descriptionRightMargin,
                                                      font="Sans " + str(self.fontSize))
 
@@ -1870,8 +1893,6 @@ class ScriptView(Gtk.Box):
 
     def resetAndLoad(self):
 
-        print "start", self.control.category
-
         self.reset()
         category = self.control.category
 
@@ -1892,10 +1913,7 @@ class ScriptView(Gtk.Box):
 
         self.control.category = category
 
-        print "lastTag", lastTag, self.control.category
         self.control.scriptView.addZeroWidthSpace(lastTag)
-        print "lastTag 2", lastTag, self.control.category
-
 
     def reset(self):
         self.textView.get_buffer().set_text("")
