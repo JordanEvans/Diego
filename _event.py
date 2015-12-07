@@ -87,7 +87,7 @@ class NewPageEvent(Event):
     def redo(self, control):
         control.currentScene().pages.insert(self.index.page, self.data)
         control.reset(False)
-        control.currentStory().index = _story.StoryIndex(None, self.index.__dict__)
+        control.currentStory().index = _story.StoryIndex(self.index.__dict__)
         control.load(False)
 
 
@@ -96,7 +96,7 @@ class NewPanelEvent(Event):
     def __init__(self, data, index):
         Event.__init__(self)
         self.data = data
-        self.index = _story.StoryIndex(None, index.__dict__)
+        self.index = _story.StoryIndex(index.__dict__)
 
     def undo(self, control):
         control.currentPage().elements.remove(self.data)
@@ -109,7 +109,7 @@ class NewPanelEvent(Event):
     def redo(self, control):
         control.currentPage().elements.insert(self.index[3], self.data)
         control.reset(False)
-        control.currentStory().index = _story.StoryIndex(None, self.index.__dict__)
+        control.currentStory().index = _story.StoryIndex(self.index.__dict__)
         control.load(False)
 
 
@@ -118,7 +118,7 @@ class NewDialogEvent(Event):
     def __init__(self, data, index):
         Event.__init__(self)
         self.data = data
-        self.index = _story.StoryIndex(None, index.__dict__)
+        self.index = _story.StoryIndex(index.__dict__)
 
     def undo(self, control):
         control.currentPage().elements.remove(self.data)
@@ -514,7 +514,7 @@ class AutocompleteCharacterEvent(Event):
     def __init__(self, control, name):
         Event.__init__(self)
 
-        self.index = _story.StoryIndex(None, control.currentStory().index.__dict__)
+        self.index = _story.StoryIndex(control.currentStory().index.__dict__)
         self.name = name
 
     def redo(self):

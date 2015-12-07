@@ -228,7 +228,7 @@ class Data(object):
         self.synopsis=data['synopsis']
         self.notes=data['notes']
 
-        self.index = StoryIndex(None, data['index'])
+        self.index = StoryIndex(data['index'])
         for sequence in data['sequences']:
             title=sequence['title']
             synopsis=sequence['synopsis']
