@@ -178,7 +178,6 @@ class SceneItemBox(ScrolledListBox):
     #     _dialog.deleteSceneConfirmation(self.control, index)
 
     def newScene(self):
-        print "new scene"
         row = Gtk.ListBoxRow()
         hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         row.add(hbox)

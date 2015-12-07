@@ -287,8 +287,6 @@ class Story(object):
             self.default()
             return
 
-
-
         self.control.historyEnabled = False
 
         self.title=data['title']

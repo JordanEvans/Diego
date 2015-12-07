@@ -4,7 +4,7 @@
 
 <img src="http://specscripter.com/screenshot.png">
 
-Diego's goal is to create the simplest, fastest story/script editor for Graphic Novel/Manga/Comic Book writers.
+Diego's goal is to be The Simplest and the Fastest Scriptwriting software for Graphic Novel writers. Only the features that are neccessary and keyboards shortcuts desgined to make using that feature faster than any other method.
 
 <b>System Requirements</b>
 
@@ -35,6 +35,8 @@ Select an item in the Scene or Page View. Hit Delete key. Deleting a Scene will 
 <b>How to Format A Line as Description, Character, Parenthetic or Dialog</b>
 
 If the line is empty, just press the Spacebar. If the line has text, then place the cursor at the beginning of the line and hit Spacebar.
+
+<i>Optionally, pressing tab will reformat the line no matter where the cursor is placed on the line.</i>
 
 <b>How to Auto Complete Names</b>
 

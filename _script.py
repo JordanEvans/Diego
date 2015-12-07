@@ -310,7 +310,16 @@ class TextView(Gtk.TextView):
 
             self.nameIter = None
 
-            if event.keyval == 65507: # pasting
+            if event.keyval == 118: # pasting
+                self.pasteClipboard()
+                return 1
+
+            elif event.keyval == 99: #copy
+                self.do_copy_clipboard()
+                return 1
+
+            elif event.keyval == 120: #cut
+                self.do_cut_clipboard()
                 return 1
 
             elif event.keyval == 45: # minus key
@@ -330,6 +339,16 @@ class TextView(Gtk.TextView):
         self.nameIter = None
 
         if event.keyval == 65289: # tab, ignore them
+            if self.control.currentLine().tag != 'heading':
+                self.tagIter.increment()
+                self.control.currentLine().tag = self.tagIter.tag()
+
+                tag = self.updateLineTag(formatingLastLineWhenEmpty=True)
+                self.control.currentStory().saved = False
+                self.formatingLine = True
+                self.resetGlobalMargin(tag)
+
+            self.printTags()
             return 1
 
         if event.keyval == 65307: # esc
@@ -395,13 +414,12 @@ class TextView(Gtk.TextView):
 
             self.updateLineTag()
 
-            self.addCharToWord(event, duringKeyPressEvent=True)
+            self.addCharToWord(event, duringKeyPressEvent=True) 157.00
 
             if cutEvent:
                 self.forceWordEvent()
 
             self.control.currentStory().saved = False
-
 
         if event.keyval == 32:
             self.forcingWordEvent = True
