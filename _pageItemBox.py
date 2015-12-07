@@ -9,6 +9,8 @@ class IndexListBox(Gtk.ListBox):
         Gtk.ListBox.__init__(self)
         self.control = control
         self.reloadControl = True
+        self.resetLowerIndexs = False
+        self.currentRowIndex = None
 
     def do_key_press_event(self, event):
 
@@ -58,12 +60,18 @@ class IndexListBox(Gtk.ListBox):
                 return 1
 
     def do_row_selected(self, row):
+        self.control.p("page do row sel", self.resetLowerIndexs)
 
         if row:
-            self.resetAndLoadLowerListBoxes(row)
+            currentStory = self.control.currentStory()
+            currentStory.index.page = self.get_children().index(row)
+
+            self.resetAndLoad(row)
             self.control.app.window.show_all()
 
     def do_map(self):
+        self.control.p("page do mapl", self.resetLowerIndexs)
+
         Gtk.ListBox.do_map(self)
 
         self.control.pageItemBox.reset()
@@ -72,23 +80,35 @@ class IndexListBox(Gtk.ListBox):
         row = self.get_row_at_index(self.control.currentStory().index.page)
         self.select_row(row)
 
+        self.resetAndLoad(row, False)
+        self.control.scriptView.show_all()
+
         if row:
-            self.resetAndLoadLowerListBoxes(row)
-            self.control.scriptView.show_all()
             self.select_row(row)
             row.grab_focus()
 
-    def resetAndLoadLowerListBoxes(self, row):
+    def resetAndLoad(self, row, resetIndex=True):
+
+        currentStory = self.control.currentStory()
 
         self.control.scriptView.reset()
-
-        self.control.currentStory().index.page = self.get_children().index(row)
-        self.control.currentStory().index.line = 0
-
         self.control.scriptView.load()
+
+        rowIndex = self.get_children().index(row)
+
+        if rowIndex != self.currentRowIndex:
+            currentStory.index.line = 0
+
         self.control.scriptView.loadPage()
+        #
+        # self.control.currentStory().index.page = self.get_children().index(row)
+        # self.control.currentStory().index.line = 0
+
+        currentStory.updateCompletionNames()
 
         self.control.category = 'page'
+
+        self.currentRowIndex = rowIndex
 
 class ScrolledListBox(Gtk.Box):
 
@@ -193,7 +213,7 @@ class PageItemBox(ScrolledListBox):
 
         row = self.control.pageItemBox.listbox.get_row_at_index(index)
 
-        self.control.pageItemBox.listbox.resetAndLoadLowerListBoxes(row)
+        self.control.pageItemBox.listbox.resetAndLoad(row)
 
         if row:
             self.control.pageItemBox.listbox.select_row(row)

@@ -1189,9 +1189,6 @@ class TextView(Gtk.TextView):
         self.add_events(Gdk.EventMask.BUTTON_PRESS_MASK)
         self.add_events(Gdk.EventMask.BUTTON_RELEASE_MASK)
 
-        self.connect("focus-out-event",self.focusOut)
-        self.connect("focus-in-event",self.focusIn)
-
         self.connect("leave-notify-event",self.leaveNotify)
         self.connect("enter-notify-event",self.enterNotify)
 
@@ -1259,10 +1256,12 @@ class TextView(Gtk.TextView):
 
     def markSet(self, buffer=None, anIter=None, mark=None):
         # This is being done so the index is immediately updated after a selection is deselected.
-        try:
-            self.control.scriptView.updateCurrentStoryIndex()
-        except:
-            pass
+
+        if self.control.doMarkSetIndexUpdate:
+            try:
+                self.control.scriptView.updateCurrentStoryIndex()
+            except:
+                pass
 
         return
 
@@ -1524,7 +1523,8 @@ class ScriptView(Gtk.Box):
         self.infoTextView.props.left_margin = self.textView.descriptionLeftMargin
         self.infoTextView.props.right_margin = self.textView.descriptionRightMargin
 
-    def loadStory(self):
+    def loadStory(self, addZeroSpaceChar=True):
+
         self.lines = []
 
         st = self.control.currentStory()
@@ -1550,6 +1550,7 @@ class ScriptView(Gtk.Box):
         for ln in firstPage.lines:
             ln.heading = firstHeading
 
+
         for i in range(len(pages)):
             pg = pages[i]
             heading = headings[i]
@@ -1572,7 +1573,10 @@ class ScriptView(Gtk.Box):
         self.infoTextView.get_buffer().delete(self.infoTextView.get_buffer().get_start_iter(), self.infoTextView.get_buffer().get_end_iter())
         self.infoTextView.get_buffer().insert(self.infoTextView.get_buffer().get_start_iter(), st.info)
 
-        self.addZeroWidthSpace(lastTag)
+        if addZeroSpaceChar:
+            self.addZeroWidthSpace(lastTag)
+
+        return lastTag
 
     def addZeroWidthSpace(self, lastTag):
         # This fixes a bug with the last line of buffer that has no text.
@@ -1587,7 +1591,10 @@ class ScriptView(Gtk.Box):
         self.textBuffer.insert_with_tags_by_name(insertIter, ZERO_WIDTH_SPACE, lastTag)
         insertIter = self.textView.insertIter()
         insertIter.backward_chars(1)
+
+        self.control.doMarkSetIndexUpdate = False
         self.textBuffer.place_cursor(insertIter)
+        self.control.doMarkSetIndexUpdate = True
 
     def loadScene(self):
         self.lines = []
@@ -1638,7 +1645,9 @@ class ScriptView(Gtk.Box):
         self.infoTextView.get_buffer().delete(self.infoTextView.get_buffer().get_start_iter(), self.infoTextView.get_buffer().get_end_iter())
         self.infoTextView.get_buffer().insert(self.infoTextView.get_buffer().get_start_iter(), currentScene.info)
 
+        self.control.doMarkSetIndexUpdate = False
         self.addZeroWidthSpace(lastTag)
+        self.control.doMarkSetIndexUpdate = True
 
     def loadPage(self):
         self.lines = []
@@ -1689,7 +1698,9 @@ class ScriptView(Gtk.Box):
         self.infoTextView.get_buffer().delete(self.infoTextView.get_buffer().get_start_iter(), self.infoTextView.get_buffer().get_end_iter())
         self.infoTextView.get_buffer().insert(self.infoTextView.get_buffer().get_start_iter(), currentPage.info)
 
+        self.control.doMarkSetIndexUpdate = False
         self.addZeroWidthSpace(lastTag)
+        self.control.doMarkSetIndexUpdate = True
 
     def infoTextViewKeyPress(self, widget, event):
 

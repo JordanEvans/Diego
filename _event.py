@@ -30,7 +30,7 @@ class NewSequenceEvent(Event):
     def __init__(self, data, index):
         Event.__init__(self)
         self.data = data
-        self.index = _story.StoryIndex(None, index.__dict__)
+        self.index = _story.StoryIndex(index.__dict__)
 
     def undo(self, control):
         control.currentStory().sequences.remove(self.data)
@@ -52,7 +52,7 @@ class NewSceneEvent(Event):
     def __init__(self, data, index):
         Event.__init__(self)
         self.data = data
-        self.index = _story.StoryIndex(None, index.__dict__)
+        self.index = _story.StoryIndex(index.__dict__)
 
     def undo(self, control):
         control.currentSequence().scenes.remove(self.data)
@@ -74,7 +74,7 @@ class NewPageEvent(Event):
     def __init__(self, data, index):
         Event.__init__(self)
         self.data = data
-        self.index = _story.StoryIndex(None, index.__dict__)
+        self.index = _story.StoryIndex(index.__dict__)
 
     def undo(self, control):
         control.currentScene().pages.remove(self.data)
@@ -301,7 +301,7 @@ class WordEvent(Event):
 
         cl.text = text
 
-        self.index = _story.StoryIndex(None, cs.index.__dict__)
+        self.index = _story.StoryIndex(cs.index.__dict__)
 
         # if not duringKeyPressEvent: # will do in TextView.keyRelease
         #     control.scriptView.updateCurrentStoryIndex()

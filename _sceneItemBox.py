@@ -10,6 +10,8 @@ class IndexListBox(Gtk.ListBox):
         self.control = control
         self.reloadControl = True
         self.editing = False
+        self.resetLowerIndexs = False
+        self.currentRowIndex = None
 
     def do_button_press_event(self, event):
         if not self.editing:
@@ -69,11 +71,24 @@ class IndexListBox(Gtk.ListBox):
                 return 1
 
     def do_row_selected(self, row):
+
+        self.control.p("scene do row sel", self.resetLowerIndexs)
+
         if row:
-            self.resetAndLoadLowerListBoxes(row)
+            currentStory = self.control.currentStory()
+            currentStory.index.scene = self.get_children().index(row)
+
+            if self.resetLowerIndexs:
+                currentStory.index.page = 0
+                currentStory.index.line = 0
+
+            self.resetAndLoad(row, False)
             self.control.app.window.show_all()
 
+
     def do_map(self):
+        self.control.p("scene do map", self.resetLowerIndexs)
+        self.control.p("index", self.control.currentStory().index.__dict__)
         Gtk.ListBox.do_map(self)
 
         self.control.sceneItemBox.reset()
@@ -82,35 +97,35 @@ class IndexListBox(Gtk.ListBox):
         row = self.get_row_at_index(self.control.currentStory().index.scene)
         self.select_row(row)
 
-        self.resetAndLoadLowerListBoxes(row)
+        self.resetAndLoad(row, False)
         self.control.scriptView.show_all()
 
+        self.show_all()
         if row:
             self.select_row(row)
             row.grab_focus()
 
-    def resetAndLoadLowerListBoxes(self, row):
-
-        # self.control.pageItemBox.reset()
-        self.control.scriptView.reset()
+    def resetAndLoad(self, row, resetIndex=True):
 
         currentStory = self.control.currentStory()
 
-        currentStory.index.scene = self.get_children().index(row)
-        currentStory.index.page = 0
-        currentStory.index.line = 0
-
-        # self.control.pageItemBox.load()
+        self.control.scriptView.reset()
         self.control.scriptView.load()
+        
+        rowIndex = self.get_children().index(row)
+
+        if rowIndex != self.currentRowIndex:
+            currentStory.index.page = 0
+            currentStory.index.line = 0
+
+        self.control.p("scene resetAndLoad page", self.control.currentStory().index.page)
         self.control.scriptView.loadScene()
 
         currentStory.updateCompletionNames()
 
-        #Model index was set to 0, so the listboxes will select zero items.
-        # row = self.control.pageItemBox.rowAtIndex(0)
-        # self.control.pageItemBox.listbox.select_row(row)
-
         self.control.category = 'scene'
+
+        self.currentRowIndex = rowIndex
 
 class ScrolledListBox(Gtk.Box):
 
@@ -163,6 +178,7 @@ class SceneItemBox(ScrolledListBox):
     #     _dialog.deleteSceneConfirmation(self.control, index)
 
     def newScene(self):
+        print "new scene"
         row = Gtk.ListBoxRow()
         hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         row.add(hbox)
@@ -227,7 +243,7 @@ class SceneItemBox(ScrolledListBox):
 
         row = self.control.sceneItemBox.listbox.get_row_at_index(index)
 
-        self.control.sceneItemBox.listbox.resetAndLoadLowerListBoxes(row)
+        self.control.sceneItemBox.listbox.resetAndLoad(row)
 
         if row:
             self.control.sceneItemBox.listbox.select_row(row)

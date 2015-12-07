@@ -8,6 +8,7 @@ class IndexListBox(Gtk.ListBox):
         Gtk.ListBox.__init__(self)
         self.control = control
         self.editing = False
+        self.resetLowerIndexs = False
 
     def do_button_press_event(self, event):
         self.editing = False
@@ -45,15 +46,27 @@ class IndexListBox(Gtk.ListBox):
                 return 1
 
     def do_row_selected(self, row):
+
+        self.control.p("story do row sel", self.resetLowerIndexs)
         if row:
-            self.resetAndLoadLowerListBoxes(row)
+
+            if self.resetLowerIndexs:
+                self.control.currentStory().index.scene = 0
+                self.control.currentStory().index.page = 0
+                self.control.currentStory().index.line = 0
+
+
+            self.resetAndLoad(row)
             self.control.app.window.show_all()
 
     def do_map(self):
+
+        self.control.p("story do map", self.resetLowerIndexs)
+
         Gtk.ListBox.do_map(self)
         row = self.get_row_at_index(self.control.index)
 
-        self.resetAndLoadLowerListBoxes(row)
+        self.resetAndLoad(row, False)
 
         self.control.scriptView.show_all()
 
@@ -61,25 +74,16 @@ class IndexListBox(Gtk.ListBox):
             self.select_row(row)
             row.grab_focus()
 
-    def resetAndLoadLowerListBoxes(self, row):
-
-        # self.control.sequenceItemBox.reset()
-        # self.control.sceneItemBox.reset()
-        # self.control.pageItemBox.reset()
-        self.control.scriptView.reset()
+    def resetAndLoad(self, row, resetIndex=True):
 
         self.control.index = self.get_children().index(row)
-        # self.control.currentStory().index.sequence = 0
-        # self.control.currentStory().index.scene = 0
-        # self.control.currentStory().index.page = 0
-        # self.control.currentStory().index.line = 0
 
-        # self.control.sequenceItemBox.load()
-        # self.control.sceneItemBox.load()
-        # self.control.pageItemBox.load()
+        self.control.scriptView.reset()
         self.control.scriptView.load()
-        self.control.scriptView.loadStory()
+        lastTag = self.control.scriptView.loadStory()
+
         self.control.scriptView.updateTitles()
+
 
         self.control.app.updateWindowTitle()
 
@@ -87,14 +91,9 @@ class IndexListBox(Gtk.ListBox):
 
         self.control.scriptView.paned.set_position(self.control.currentStory().horizontalPanePosition)
 
-        #Model index was set to 0, so the listboxes will select zero items.
-        # row = self.control.sceneItemBox.rowAtIndex(0)
-        # self.control.sceneItemBox.listbox.select_row(row)
-        #
-        # row = self.control.pageItemBox.rowAtIndex(0)
-        # self.control.pageItemBox.listbox.select_row(row)
-
         self.control.category = 'story'
+
+        self.control.scriptView.addZeroWidthSpace(lastTag)
 
 class ScrolledListBox(Gtk.Box):
 
@@ -129,13 +128,14 @@ class StoryItemBox(ScrolledListBox):
         # The listbox is subclassed , so it is replaced this object's superclass
         self.viewport.remove(self.listbox)
         self.listbox = IndexListBox(self.control)
+
         self.viewport.add(self.listbox)
 
     def postInit(self, ):
         self.layout()
         self.connections()
         self.config()
-        # self.show_all()
+        self.show_all()
 
     def layout(self, ):
         pass
@@ -171,7 +171,7 @@ class StoryItemBox(ScrolledListBox):
 
         row = self.control.storyItemBox.listbox.get_row_at_index(index)
 
-        self.control.storyItemBox.listbox.resetAndLoadLowerListBoxes(row)
+        self.control.storyItemBox.listbox.resetAndLoad(row)
 
         if row:
             self.control.storyItemBox.listbox.select_row(row)
@@ -227,7 +227,7 @@ class StoryItemBox(ScrolledListBox):
 
         row = self.control.storyItemBox.listbox.get_row_at_index(index)
 
-        self.control.storyItemBox.listbox.resetAndLoadLowerListBoxes(row)
+        self.control.storyItemBox.listbox.resetAndLoad(row)
 
         if row:
             self.control.storyItemBox.listbox.select_row(row)

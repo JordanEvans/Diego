@@ -10,7 +10,7 @@ from _event import EventManager
 
 class StoryIndex(object):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, indexDict=None):
         self.story = 0
         self.sequence = 0
         self.scene = 0
@@ -23,38 +23,39 @@ class StoryIndex(object):
         self.chapter = 1
         self.part = 1
 
-        if 'story' in kwargs.keys():
-            self.story = kwargs['story']
+        if indexDict:
 
-        if 'sequence' in kwargs.keys():
-            self.sequence = kwargs['sequence']
+            if u'story' in indexDict.keys():
+                self.story = indexDict['story']
 
-        if 'scene' in kwargs.keys():
-            self.scene = kwargs['scene']
+            if u'sequence' in indexDict.keys():
+                self.sequence = indexDict['sequence']
 
-        if 'page' in kwargs.keys():
-            self.page = kwargs['page']
+            if u'scene' in indexDict.keys():
+                self.scene = indexDict['scene']
 
-        if 'line' in kwargs.keys():
-            self.line = kwargs['line']
+            if u'page' in indexDict.keys():
+                self.page = indexDict['page']
 
-        if 'offset' in kwargs.keys():
-            self.offset = kwargs['offset']
+            if u'line' in indexDict.keys():
+                self.line = indexDict['line']
 
-        # Note implemented.
+            if u'offset' in indexDict.keys():
+                self.offset = indexDict['offset']
 
-        if 'issue' in kwargs.keys():
-            self.issue = kwargs['issue']
+            # Note implemented.
 
-        if 'chapter' in kwargs.keys():
-            self.chapter = kwargs['chapter']
+            if 'issue' in indexDict.keys():
+                self.issue = indexDict['issue']
 
-        if 'part' in kwargs.keys():
-            self.part = kwargs['part']
+            if 'chapter' in indexDict.keys():
+                self.chapter = indexDict['chapter']
+
+            if 'part' in indexDict.keys():
+                self.part = indexDict['part']
 
     def data(self):
         return self.__dict__
-
 
 class Line(object):
     def __init__(self, text='', tag='description'):
@@ -286,6 +287,8 @@ class Story(object):
             self.default()
             return
 
+
+
         self.control.historyEnabled = False
 
         self.title=data['title']
@@ -293,7 +296,13 @@ class Story(object):
         self.notes=data['notes']
         self.info = data['info']
 
-        self.index = StoryIndex(None, data['index'])
+
+        self.control.p(data['index'])
+
+        self.index = StoryIndex(data['index'])
+
+        self.control.p("index", self.index.__dict__)
+
         for sequence in data['sequences']:
             title=sequence['title']
             synopsis=sequence['synopsis']
@@ -305,6 +314,7 @@ class Story(object):
         self.horizontalPanePosition = data['horizontalPanePosition']
 
         self.updateCompletionNames()
+
 
     def updateCompletionNames(self):
         self.names = []

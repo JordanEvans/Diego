@@ -36,6 +36,8 @@ class App(object):
         # control.load will load the data into the views. No arg is passed here,
         # but control.state may provide stories to load,
         # if app was previously opened and stories were made.
+
+
         self.control.load()
 
         # Some misc follow up stuff.
@@ -52,6 +54,8 @@ class App(object):
             self.control.app.window.move(self.control.windowPosition[0], self.control.windowPosition[1])
         except:
             pass
+
+
 
     def updateWindowTitle(self):
         try:

@@ -67,6 +67,8 @@ class Control(object):
         self.pathLabel = Gtk.Label()
         self.searchEntry = _finder.View(self)
 
+        self.doMarkSetIndexUpdate = True
+
     def notImplemented(self):
         print "not implemented"
 
@@ -85,6 +87,7 @@ class Control(object):
 
             for story in self.stories:
                 story.load()
+
 
 
             self.scriptView.updateTitles()
