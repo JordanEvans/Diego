@@ -235,3 +235,5 @@ class Control(object):
     def moveCurrentPageDown(self):
         self.p('mcpd')
 
+    def screenplayMode(self):
+        return self.screenplayModeSwitch.get_active()

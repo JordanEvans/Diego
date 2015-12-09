@@ -72,8 +72,6 @@ class IndexListBox(Gtk.ListBox):
 
     def do_row_selected(self, row):
 
-        self.control.p("scene do row sel", self.resetLowerIndexs)
-
         if row:
             currentStory = self.control.currentStory()
             currentStory.index.scene = self.get_children().index(row)
@@ -87,8 +85,6 @@ class IndexListBox(Gtk.ListBox):
 
 
     def do_map(self):
-        self.control.p("scene do map", self.resetLowerIndexs)
-        self.control.p("index", self.control.currentStory().index.__dict__)
         Gtk.ListBox.do_map(self)
 
         self.control.sceneItemBox.reset()
@@ -118,7 +114,6 @@ class IndexListBox(Gtk.ListBox):
             currentStory.index.page = 0
             currentStory.index.line = 0
 
-        self.control.p("scene resetAndLoad page", self.control.currentStory().index.page)
         self.control.scriptView.loadScene()
 
         currentStory.updateCompletionNames()

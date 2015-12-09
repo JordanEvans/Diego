@@ -12,7 +12,7 @@ NON_WORD_CHARACTERS = [' ', '\n', ',', ':', ';', '!', '"', "'", HEADING]
 class TagIter(object):
 
     def __init__(self):
-        self.tags = ['description', 'character', 'dialog', 'parenthetic']
+        self.tags = ['description', 'character', 'dialog', 'parenthetic', 'sceneHeading']
         self.index = 0
 
     def tag(self):
@@ -28,8 +28,79 @@ class TagIter(object):
         self.index = 0
 
     def load(self, tag='description'):
+        if tag not in self.tags:
+            tag = 'description'
         index = self.tags.index(tag)
         self.index = index
+
+    def updateMode(self, control):
+        self.index = 0
+        if control.currentStory().isScreenplay:
+            self.tags = ['description', 'character', 'dialog', 'parenthetic', 'sceneHeading']
+        else:
+            self.tags = ['description', 'character', 'dialog', 'parenthetic']
+
+
+class SceneHeading(object):
+    def __init__self(self, intExt='', location='', time='', notation =''):
+        self.intExt = intExt
+        self.location = location
+        self.time = time
+        self.notation = notation
+
+    def componentsFromString(self, text):
+        if len(text) == 0:
+            return ['','','','']
+
+        intExt = ''
+        location = ''
+        time = ''
+        notation = ''
+
+        split = text.split('.')
+        intExt = split[0]
+
+        if len(split) > 1:
+            split2 = "".join(split[1:]).split('-')
+            if len(split2) == 1:
+                location = split2[0]
+            elif len(split2) == 2:
+                location, time = split2[0], split2[1]
+            else:
+                location, time = split2[0], split2[1]
+                notation = " - ".join(split2[2:])
+
+        components = intExt, location, time, notation
+        stripped = []
+        for component in components:
+            stripped.append(component.lstrip().rstrip())
+        components = stripped
+
+        return components
+
+    def cursorComponent(self, text, offset):
+
+        component = 'intExt'
+        hitLocation = False
+        hitTime = False
+
+        for i in range(len(text)):
+            if offset == i:
+                return component
+            c = text[i]
+            if c == '.' and not hitLocation:
+                component = 'location'
+            if c == '-' and not hitTime:
+                component = 'time'
+
+            if c == '-' and hitTime:
+                component = 'notation'
+
+        return component
+
+    def completeLine(self, line, offset):
+        #components = self.componentsFromString(line.text)
+        print self.cursorComponent(line, offset)
 
 
 class NameIter(object):
@@ -133,6 +204,11 @@ class TextView(Gtk.TextView):
         self.formatingLine = False
 
         self.nameIter = None
+        self.sceneHeadingIter = None
+
+        self.intExts = ["INT.", "EXT."]
+        self.locations = []
+        self.times = ["DAY", "NIGHT"]
 
     def buttonPress(self, widget, event):
 
@@ -180,6 +256,9 @@ class TextView(Gtk.TextView):
         # if buttonReleaseScene != self.buttonPressScene:
         #     buttonReleaseScene.updateCompletionNames()
 
+        # sh = SceneHeading()
+        # sh.completeLine(self.control.currentLine().text, self.control.currentStory().index.offset)
+
     def keyPress(self, widget, event):
         self.forcingWordEvent = False
         self.newLineEvent = False
@@ -198,117 +277,20 @@ class TextView(Gtk.TextView):
 
             if event.keyval >= 65 and event.keyval <= 90:
 
-                insertIter = self.insertIter()
+                if self.control.currentLine().tag == 'sceneHeading':
+                    returnValue = self.completeSceneHeading(event)
+                    if returnValue:
+                        return 1
 
-                prefix = ''
-                moved = insertIter.backward_char()
-                char = insertIter.get_char()
-
-                if moved:
-                    prefixes = []
-                    character = chr(event.keyval).upper()
-                    wordHasLength = len(self.word)
-                    if (char == character and wordHasLength) or self.nameIter != None:
-                        # for name in self.control.currentScene().names:
-                        #     if name.startswith(character):
-                        #         prefixes.append(name)
-
-                        for name in self.control.currentStory().names:
-                            if name.startswith(character) and name not in prefixes:
-                                prefixes.append(name)
-
-                        # Add empty string at the end, so users have a reset at end of completion list.
-                        if len(prefixes):
-                            prefixes.append("")
-
-                        if len(prefixes):
-
-                            insideWord = False
-                            secondMove = insertIter.backward_char()
-                            if secondMove:
-                                if insertIter.get_char().isalpha():
-                                    insideWord = True
-
-                            # Here we begin the first completion.
-                            if self.nameIter == None and not insideWord:
-
-                                self.nameIter = NameIter(prefixes, character)
-
-                                # get rid of first upper case that in in self.word
-                                self.word.pop(-1)
-                                wordHasLength = len(self.word)
-
-                                # write the word to the model.
-                                self.forceWordEvent()
-
-                                # remove the first upper from the buffer, corresponding with model
-                                startIter = self.insertIter()
-                                endIter = self.insertIter()
-                                startIter.backward_chars(1)
-                                self.buffer.delete(startIter,endIter)
-
-                                # complete the current iters name
-                                self.completeCharacterName(self.nameIter.name(), wordHasLength)
-
-                                return 1
-
-                            elif self.nameIter == None:
-                                pass
-
-                            # Here means we atleast autocompleted once and continue to do so.
-                            elif self.nameIter.initChar == character:
-
-                                # Delete the last completed name in the buffer.
-                                startIter = self.insertIter()
-                                endIter = self.insertIter()
-                                startIter.backward_chars(len(self.nameIter.name()))
-                                self.buffer.delete(startIter,endIter)
-
-                                # Delete the last completed name in the model.
-                                offset = self.control.currentStory().index.offset
-                                text = self.control.currentLine().text
-                                x = text[:offset - len(self.nameIter.name())]
-                                y = text[offset:]
-                                currentLine = self.control.currentLine()
-                                currentLine.text = text[:offset - len(self.nameIter.name())] + text[offset:]
-
-                                # The index must be updated where the deletion began.
-                                self.control.currentStory().index.offset -= (len(self.nameIter.name()) - 1)
-
-                                # Bring the next name forward and complete it.
-                                self.nameIter.increment()
-                                self.completeCharacterName(self.nameIter.name(), 0)
-
-                                return 1
-
-                            # Here we have been completing, but changed the start letter of the character name.
-                            else:
-                                # Delete the last completed name in the buffer.
-                                startIter = self.insertIter()
-                                endIter = self.insertIter()
-                                startIter.backward_chars(len(self.nameIter.name()))
-                                self.buffer.delete(startIter,endIter)
-
-                                # Delete the last completed name in the model.
-                                offset = self.control.currentStory().index.offset
-                                text = self.control.currentLine().text
-                                x = text[:offset - len(self.nameIter.name())]
-                                y = text[offset:]
-                                currentLine = self.control.currentLine()
-                                currentLine.text = text[:offset - len(self.nameIter.name())] + text[offset:]
-
-                                # The index must be updated where the deletion began.
-                                self.control.currentStory().index.offset -= (len(self.nameIter.name()) - 1)
-
-                                # Reset the NameIter and complete
-                                self.nameIter = NameIter(prefixes, character)
-                                self.completeCharacterName(self.nameIter.name(), 0)
-
-                                return 1
+                else:
+                    returnValue = self.completeName(event)
+                    if returnValue:
+                        return 1
 
         elif event.state & Gdk.ModifierType.CONTROL_MASK:
 
             self.nameIter = None
+            self.sceneHeadingIter = None
 
             if event.keyval == 118: # pasting
                 self.pasteClipboard()
@@ -337,8 +319,9 @@ class TextView(Gtk.TextView):
                 return 1
 
         self.nameIter = None
+        self.sceneHeadingIter = None
 
-        if event.keyval == 65289: # tab, ignore them
+        if event.keyval == 65289: # doing formating for the tab character now.
             if self.control.currentLine().tag != 'heading':
                 self.tagIter.increment()
                 self.control.currentLine().tag = self.tagIter.tag()
@@ -348,7 +331,6 @@ class TextView(Gtk.TextView):
                 self.formatingLine = True
                 self.resetGlobalMargin(tag)
 
-            self.printTags()
             return 1
 
         if event.keyval == 65307: # esc
@@ -406,15 +388,19 @@ class TextView(Gtk.TextView):
         # if not self.deleteEvent and not self.backspaceEvent and not self.arrowPress and self.isPrintable(event.string):
         if self.isPrintable(event.string):
 
+            character = event.string
+            if self.control.currentLine().tag == 'sceneHeading':
+                character = event.string.upper()
+
             self.setSelectionClipboard()
             cutEvent = self.chainDeleteSelectedTextEvent()
             insertIter = self.insertIter()
 
-            self.buffer.insert(insertIter, event.string, 1)
+            self.buffer.insert(insertIter, character, 1)
 
             self.updateLineTag()
 
-            self.addCharToWord(event, duringKeyPressEvent=True)
+            self.addCharToWord(character, duringKeyPressEvent=True)
 
             if cutEvent:
                 self.forceWordEvent()
@@ -425,6 +411,232 @@ class TextView(Gtk.TextView):
             self.forcingWordEvent = True
 
         return 1
+
+    def completeSceneHeading(self, event):
+
+        insertIter = self.insertIter()
+
+        prefix = ''
+        moved = insertIter.backward_char()
+        char = insertIter.get_char()
+
+        if moved:
+            prefixes = []
+            character = chr(event.keyval).upper()
+            wordHasLength = len(self.word)
+            if (char == character and wordHasLength) or self.sceneHeadingIter != None:
+
+                sh = SceneHeading()
+                component = sh.cursorComponent(self.control.currentLine().text, self.control.currentStory().index.offset)
+
+                if component == 'intExt':
+                    prefixBase = self.intExts
+                elif component == 'location':
+                    prefixBase = self.locations
+                elif component == 'time':
+                    prefixBase = self.times
+                else:
+                    # Notation will not have completion
+                    return
+
+                for prefix in prefixBase:
+                    if prefix.startswith(character) and prefix not in prefixes:
+                        prefixes.append(prefix)
+
+                # Add empty string at the end, so users have a reset at end of completion list.
+                if len(prefixes):
+                    prefixes.append("")
+
+                if len(prefixes):
+
+                    insideWord = False
+                    secondMove = insertIter.backward_char()
+                    if secondMove:
+                        if insertIter.get_char().isalpha():
+                            insideWord = True
+
+                    # Here we begin the first completion.
+                    if self.sceneHeadingIter == None and not insideWord:
+
+                        self.sceneHeadingIter = NameIter(prefixes, character)
+
+                        # get rid of first upper case that in in self.word
+                        self.word.pop(-1)
+                        wordHasLength = len(self.word)
+
+                        # write the word to the model.
+                        self.forceWordEvent()
+
+                        # remove the first upper from the buffer, corresponding with model
+                        startIter = self.insertIter()
+                        endIter = self.insertIter()
+                        startIter.backward_chars(1)
+                        self.buffer.delete(startIter,endIter)
+
+                        # complete the current iters name
+                        self.completeCharacterName(self.sceneHeadingIter.name(), wordHasLength)
+
+                        return 1
+
+                    elif self.sceneHeadingIter == None:
+                        pass
+
+                    # Here means we atleast autocompleted once and continue to do so.
+                    elif self.sceneHeadingIter.initChar == character:
+
+                        # Delete the last completed name in the buffer.
+                        startIter = self.insertIter()
+                        endIter = self.insertIter()
+                        startIter.backward_chars(len(self.sceneHeadingIter.name()))
+                        self.buffer.delete(startIter,endIter)
+
+                        # Delete the last completed name in the model.
+                        offset = self.control.currentStory().index.offset
+                        text = self.control.currentLine().text
+                        x = text[:offset - len(self.sceneHeadingIter.name())]
+                        y = text[offset:]
+                        currentLine = self.control.currentLine()
+                        currentLine.text = text[:offset - len(self.sceneHeadingIter.name())] + text[offset:]
+
+                        # The index must be updated where the deletion began.
+                        self.control.currentStory().index.offset -= (len(self.sceneHeadingIter.name()) - 1)
+
+                        # Bring the next name forward and complete it.
+                        self.sceneHeadingIter.increment()
+                        self.completeCharacterName(self.sceneHeadingIter.name(), 0)
+
+                        return 1
+
+                    # Here we have been completing, but changed the start letter of the character name.
+                    else:
+                        # Delete the last completed name in the buffer.
+                        startIter = self.insertIter()
+                        endIter = self.insertIter()
+                        startIter.backward_chars(len(self.sceneHeadingIter.name()))
+                        self.buffer.delete(startIter,endIter)
+
+                        # Delete the last completed name in the model.
+                        offset = self.control.currentStory().index.offset
+                        text = self.control.currentLine().text
+                        x = text[:offset - len(self.sceneHeadingIter.name())]
+                        y = text[offset:]
+                        currentLine = self.control.currentLine()
+                        currentLine.text = text[:offset - len(self.sceneHeadingIter.name())] + text[offset:]
+
+                        # The index must be updated where the deletion began.
+                        self.control.currentStory().index.offset -= (len(self.sceneHeadingIter.name()) - 1)
+
+                        # Reset the NameIter and complete
+                        self.sceneHeadingIter = NameIter(prefixes, character)
+                        self.completeCharacterName(self.sceneHeadingIter.name(), 0)
+
+                        return 1
+
+    def completeName(self, event):
+        insertIter = self.insertIter()
+
+        prefix = ''
+        moved = insertIter.backward_char()
+        char = insertIter.get_char()
+
+        if moved:
+            prefixes = []
+            character = chr(event.keyval).upper()
+            wordHasLength = len(self.word)
+            if (char == character and wordHasLength) or self.nameIter != None:
+
+                for name in self.control.currentStory().names:
+                    if name.startswith(character) and name not in prefixes:
+                        prefixes.append(name)
+
+                # Add empty string at the end, so users have a reset at end of completion list.
+                if len(prefixes):
+                    prefixes.append("")
+
+                if len(prefixes):
+
+                    insideWord = False
+                    secondMove = insertIter.backward_char()
+                    if secondMove:
+                        if insertIter.get_char().isalpha():
+                            insideWord = True
+
+                    # Here we begin the first completion.
+                    if self.nameIter == None and not insideWord:
+
+                        self.nameIter = NameIter(prefixes, character)
+
+                        # get rid of first upper case that in in self.word
+                        self.word.pop(-1)
+                        wordHasLength = len(self.word)
+
+                        # write the word to the model.
+                        self.forceWordEvent()
+
+                        # remove the first upper from the buffer, corresponding with model
+                        startIter = self.insertIter()
+                        endIter = self.insertIter()
+                        startIter.backward_chars(1)
+                        self.buffer.delete(startIter,endIter)
+
+                        # complete the current iters name
+                        self.completeCharacterName(self.nameIter.name(), wordHasLength)
+
+                        return 1
+
+                    elif self.nameIter == None:
+                        pass
+
+                    # Here means we atleast autocompleted once and continue to do so.
+                    elif self.nameIter.initChar == character:
+
+                        # Delete the last completed name in the buffer.
+                        startIter = self.insertIter()
+                        endIter = self.insertIter()
+                        startIter.backward_chars(len(self.nameIter.name()))
+                        self.buffer.delete(startIter,endIter)
+
+                        # Delete the last completed name in the model.
+                        offset = self.control.currentStory().index.offset
+                        text = self.control.currentLine().text
+                        x = text[:offset - len(self.nameIter.name())]
+                        y = text[offset:]
+                        currentLine = self.control.currentLine()
+                        currentLine.text = text[:offset - len(self.nameIter.name())] + text[offset:]
+
+                        # The index must be updated where the deletion began.
+                        self.control.currentStory().index.offset -= (len(self.nameIter.name()) - 1)
+
+                        # Bring the next name forward and complete it.
+                        self.nameIter.increment()
+                        self.completeCharacterName(self.nameIter.name(), 0)
+
+                        return 1
+
+                    # Here we have been completing, but changed the start letter of the character name.
+                    else:
+                        # Delete the last completed name in the buffer.
+                        startIter = self.insertIter()
+                        endIter = self.insertIter()
+                        startIter.backward_chars(len(self.nameIter.name()))
+                        self.buffer.delete(startIter,endIter)
+
+                        # Delete the last completed name in the model.
+                        offset = self.control.currentStory().index.offset
+                        text = self.control.currentLine().text
+                        x = text[:offset - len(self.nameIter.name())]
+                        y = text[offset:]
+                        currentLine = self.control.currentLine()
+                        currentLine.text = text[:offset - len(self.nameIter.name())] + text[offset:]
+
+                        # The index must be updated where the deletion began.
+                        self.control.currentStory().index.offset -= (len(self.nameIter.name()) - 1)
+
+                        # Reset the NameIter and complete
+                        self.nameIter = NameIter(prefixes, character)
+                        self.completeCharacterName(self.nameIter.name(), 0)
+
+                        return 1
 
     def keyRelease(self, widget, event):
 
@@ -534,7 +746,7 @@ class TextView(Gtk.TextView):
         self.characterFindTag.props.font = "Sans " + str(self.fontSize)
         self.dialogFindTag.props.font = "Sans " + str(self.fontSize)
         self.parentheticFindTag.props.font = "Sans " + str(self.fontSize)
-        self.sceneHadingFindTag.props.font = "Sans " + str(self.fontSize)
+        self.sceneHeadingFindTag.props.font = "Sans " + str(self.fontSize)
 
         self.control.scriptView.infoTextView.props.left_margin = self.control.scriptView.textView.descriptionLeftMargin
         self.control.scriptView.infoTextView.props.right_margin = self.control.scriptView.textView.descriptionRightMargin
@@ -606,7 +818,7 @@ class TextView(Gtk.TextView):
                                                      editable=False)
 
         self.sceneHeadingTag = self.buffer.create_tag("sceneHeading",
-                                                     background_rgba=descriptionBackground,
+                                                     background_rgba=descriptionBackground, #Gdk.RGBA(0.0, 0.0, 1.0, 0.1), #descriptionBackground,
                                                      pixels_inside_wrap=pixelsInsideWrap,
                                                      pixels_above_lines=10,
                                                      pixels_below_lines=10,
@@ -656,7 +868,7 @@ class TextView(Gtk.TextView):
 
 
         self.sceneHeadingFindTag = self.buffer.create_tag("sceneHeadingFind",
-                                                     background_rgba=descriptionBackground,
+                                                     background_rgba=Gdk.RGBA(0.0, 0.0, 1.0, 0.1), #descriptionBackground,
                                                      pixels_inside_wrap=pixelsInsideWrap,
                                                      pixels_above_lines=10,
                                                      pixels_below_lines=10,
@@ -753,9 +965,6 @@ class TextView(Gtk.TextView):
         startIter = self.buffer.get_iter_at_line(bufferIndex)
         endIter = self.buffer.get_iter_at_line(bufferIndex +1)
 
-        # if startIter.get_char() == ZERO_WIDTH_SPACE:
-        #     startIter.backward_char()
-
         if endIter.get_char() == ZERO_WIDTH_SPACE:
             endIter.forward_char()
 
@@ -769,15 +978,22 @@ class TextView(Gtk.TextView):
         startIter = self.buffer.get_iter_at_line(bufferIndex)
         endIter = self.buffer.get_iter_at_line(bufferIndex +1)
 
-        # if startIter.get_char() == ZERO_WIDTH_SPACE:
-        #     startIter.backward_char()
-
         if endIter.get_char() == ZERO_WIDTH_SPACE:
             endIter.forward_char()
 
         if onLastLine:
             endIter.forward_to_line_end()
-        self.buffer.apply_tag_by_name(updateLine.tag, startIter, endIter)
+
+        tag = updateLine.tag
+        screenplayMode = self.control.currentStory().isScreenplay
+        if not screenplayMode and tag == 'sceneHeading':
+            tag = 'description'
+        if screenplayMode:
+            if self.control.currentLine().before(self.control).tag == 'heading':
+                tag = "sceneHeading"
+                self.control.currentLine().tag = 'sceneHeading'
+
+        self.buffer.apply_tag_by_name(tag, startIter, endIter)
 
         return updateLine.tag
 
@@ -793,7 +1009,7 @@ class TextView(Gtk.TextView):
         character = charIter.forward_char()
         while character:
             tagNames = [name.props.name for name in charIter.get_tags()]
-            self.control.p(charIter.get_char(), tagNames)
+            gself.control.p(charIter.get_char(), tagNames)
             character = charIter.forward_char()
 
     def iterInfo(self, iter):
@@ -877,9 +1093,17 @@ class TextView(Gtk.TextView):
             elif currentLine.tag == 'dialog':
                 newLineTag = 'description'
 
-        # When just brings a whole line or part of a  line down, keep it's tag.
+        # When just brings a whole line or part of a  line down, keep it's tag,
         else:
             newLineTag = currentLine.tag
+
+        if currentLine.tag == 'sceneHeading':
+            newLineTag = 'description'
+            components = SceneHeading().componentsFromString(currentLine.text)
+            if len(components) > 1:
+                if components[1] not in self.locations:
+                    self.locations.append(components[1])
+                    self.locations.sort()
 
         self.tagIter.load(newLineTag)
 
@@ -889,7 +1113,6 @@ class TextView(Gtk.TextView):
 
                 nextLineTag = newLineTag
                 newLineTag = 'description'
-
 
                 insertIter = self.insertIter()
                 lineIndex = insertIter.get_line()
@@ -970,6 +1193,8 @@ class TextView(Gtk.TextView):
 
         self.updateLineTag(previousLineIndex)
         tag = self.updateLineTag()
+
+        print "return tag", tag
 
         return 1
 
@@ -1385,11 +1610,11 @@ class TextView(Gtk.TextView):
                 self.control.currentStory().eventManager.addEvent(_event.WordEvent(self.control, word))
                 self.word = []
 
-    def addCharToWord(self, event, duringKeyPressEvent=False):
+    def addCharToWord(self, character, duringKeyPressEvent=False):
 
-        self.word.append(event.string)
+        self.word.append(character)
 
-        if event.string == ' ':
+        if character == ' ':
             word = ''.join(self.word)
             self.control.scriptView.updateCurrentStoryIndex()
             self.control.currentStory().eventManager.addEvent(_event.WordEvent(self.control, word, duringKeyPressEvent))
@@ -1581,7 +1806,7 @@ class ScriptView(Gtk.Box):
         firstHeading = headings.pop(0)
 
         pageText = " > " + firstHeading.page.title
-        if self.control.screenplayModeSwitch.get_active():
+        if self.control.currentStory().isScreenplay:
             pageText = ""
 
         if self.control.sequenceVisible:
@@ -1603,7 +1828,7 @@ class ScriptView(Gtk.Box):
 
 
             pageText = " > " + heading.page.title
-            if self.control.screenplayModeSwitch.get_active():
+            if self.control.currentStory().isScreenplay:
                 pageText = ""
 
             if self.control.sequenceVisible:
@@ -1627,6 +1852,14 @@ class ScriptView(Gtk.Box):
 
         if addZeroSpaceChar:
             self.addZeroWidthSpace(lastTag)
+
+        if not self.control.screenplayModeSwitch.activating:
+            print "self.control.currentStory().isScreenplay", self.control.currentStory().isScreenplay
+            if self.control.currentStory().isScreenplay:
+                self.control.screenplayModeSwitch.set_state(True)
+            else:
+                self.control.screenplayModeSwitch.set_state(False)
+            self.control.screenplayModeSwitch.callHandlerCode = False
 
         return lastTag
 
@@ -1665,10 +1898,14 @@ class ScriptView(Gtk.Box):
         firstPage = pages.pop(0)
         firstHeading = headings.pop(0)
 
+        pageText = " > " + firstHeading.page.title
+        if self.control.currentStory().isScreenplay:
+            pageText = ""
+
         if self.control.sequenceVisible:
-            self.insertHeading(firstHeading.sequence.title + " > " + firstHeading.scene.title + " > " + firstHeading.page.title)
+            self.insertHeading(firstHeading.sequence.title + " > " + firstHeading.scene.title + pageText)
         else:
-            self.insertHeading(firstHeading.scene.title + " > " + firstHeading.page.title)
+            self.insertHeading(firstHeading.scene.title + pageText)
 
         self.lines.append(firstHeading)
         self.insertPageText(firstPage)
@@ -1681,10 +1918,14 @@ class ScriptView(Gtk.Box):
             heading = headings[i]
             self.textBuffer.insert(self.textView.insertIter(), '\n', len('\n'))
 
+            pageText = " > " + heading.page.title
+            if self.control.currentStory().isScreenplay:
+                pageText = ""
+
             if self.control.sequenceVisible:
-                self.insertHeading(heading.sequence.title + " > " + heading.scene.title + " > " + heading.page.title)
+                self.insertHeading(heading.sequence.title + " > " + heading.scene.title + pageText)
             else:
-                self.insertHeading(heading.scene.title + " > " + heading.page.title)
+                self.insertHeading(heading.scene.title + pageText)
 
             self.lines.append(heading)
             self.insertPageText(pg)

@@ -60,7 +60,6 @@ class IndexListBox(Gtk.ListBox):
                 return 1
 
     def do_row_selected(self, row):
-        self.control.p("page do row sel", self.resetLowerIndexs)
 
         if row:
             currentStory = self.control.currentStory()
@@ -70,7 +69,6 @@ class IndexListBox(Gtk.ListBox):
             self.control.app.window.show_all()
 
     def do_map(self):
-        self.control.p("page do mapl", self.resetLowerIndexs)
 
         Gtk.ListBox.do_map(self)
 

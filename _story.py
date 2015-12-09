@@ -70,6 +70,13 @@ class Line(object):
         data['tag'] = self.tag
         return data
 
+    def before(self, control):
+        index = control.scriptView.lines.index(self)
+        if index == 0:
+            return self
+        else:
+            return  control.scriptView.lines[index - 1]
+
 
 class Sequence(object):
 
@@ -205,6 +212,10 @@ class Story(object):
         self.horizontalPanePosition = 150
 
         self.names = []
+        self.intExt = ['INT', 'EXT']
+        self.locations = []
+        self.times = []
+        self.isScreenplay = False
 
     def newSequence(self, prepend=False):
         sequence = Sequence()
@@ -294,12 +305,7 @@ class Story(object):
         self.notes=data['notes']
         self.info = data['info']
 
-
-        self.control.p(data['index'])
-
         self.index = StoryIndex(data['index'])
-
-        self.control.p("index", self.index.__dict__)
 
         for sequence in data['sequences']:
             title=sequence['title']
@@ -313,6 +319,8 @@ class Story(object):
 
         self.updateCompletionNames()
 
+        if 'isScreenplay' in data.keys():
+            self.isScreenplay = data['isScreenplay']
 
     def updateCompletionNames(self):
         self.names = []
@@ -411,6 +419,7 @@ class Story(object):
         data["notes"] = self.notes
         data['info'] = self.info
         data['horizontalPanePosition'] = self.control.scriptView.paned.get_position()
+        data['isScreenplay'] = self.isScreenplay
         return data
 
     def currentIssue(self):
