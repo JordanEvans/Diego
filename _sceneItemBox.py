@@ -114,11 +114,13 @@ class IndexListBox(Gtk.ListBox):
             currentStory.index.page = 0
             currentStory.index.line = 0
 
-        self.control.scriptView.loadScene()
-
-        currentStory.updateCompletionNames()
-
+        # self.control.scriptView.loadScene()
         self.control.category = 'scene'
+        self.control.scriptView.resetAndLoad()
+
+        # currentStory.updateCompletionNames()
+        #
+        # self.control.category = 'scene'
 
         self.currentRowIndex = rowIndex
 

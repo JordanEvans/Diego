@@ -58,6 +58,7 @@ class StoryIndex(object):
     def data(self):
         return self.__dict__
 
+
 class Line(object):
     def __init__(self, text='', tag='description'):
         self.text = text
@@ -215,7 +216,8 @@ class Story(object):
         self.names = []
         self.intExt = ['INT', 'EXT']
         self.locations = []
-        self.times = []
+        self.times = ["DAY", "NIGHT", "DUSK", "DAWN"]
+        self.times.sort()
         self.isScreenplay = False
 
     def addLocation(self, location):
@@ -224,6 +226,13 @@ class Story(object):
         if location not in self.locations:
             self.locations.append(location)
         self.locations.sort()
+
+    def addTime(self, time):
+        if time == '':
+            return
+        if time not in self.times:
+            self.times.append(time)
+        self.times.sort()
 
     def newSequence(self, prepend=False):
         sequence = Sequence()
@@ -330,6 +339,7 @@ class Story(object):
         if 'isScreenplay' in data.keys():
             self.isScreenplay = data['isScreenplay']
             self.updateLocations()
+            self.updateTimes()
 
     def updateCompletionNames(self):
         self.names = []
@@ -352,6 +362,18 @@ class Story(object):
                         if line.tag == 'sceneHeading':
                             loc = sh.location(line.text)
                             self.addLocation(loc)
+
+        self.locations.sort()
+
+    def updateTimes(self):
+        sh = _script.SceneHeading()
+        for sequence in self.sequences:
+            for scene in sequence.scenes:
+                for page in scene.pages:
+                    for line in page.lines:
+                        if line.tag == 'sceneHeading':
+                            tim = sh.time(line.text)
+                            self.addTime(tim)
 
         self.locations.sort()
 

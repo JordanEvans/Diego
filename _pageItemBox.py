@@ -97,14 +97,17 @@ class IndexListBox(Gtk.ListBox):
         if rowIndex != self.currentRowIndex:
             currentStory.index.line = 0
 
-        self.control.scriptView.loadPage()
+        self.control.category = 'page'
+        self.control.scriptView.resetAndLoad()
+
+        # self.control.scriptView.loadPage()
         #
         # self.control.currentStory().index.page = self.get_children().index(row)
         # self.control.currentStory().index.line = 0
 
-        currentStory.updateCompletionNames()
+        # currentStory.updateCompletionNames()
 
-        self.control.category = 'page'
+        # self.control.category = 'page'
 
         self.currentRowIndex = rowIndex
 

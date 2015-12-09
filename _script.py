@@ -109,6 +109,13 @@ class SceneHeading(object):
         else:
             return ""
 
+    def time(self, text):
+        components = self.componentsFromString(text)
+        if len(components) > 2:
+            return components[2]
+        else:
+            return ""
+
 
 class NameIter(object):
 
@@ -214,7 +221,7 @@ class TextView(Gtk.TextView):
         self.sceneHeadingIter = None
 
         self.intExts = ["INT.", "EXT."]
-        self.times = ["DAY", "NIGHT"]
+
 
     def buttonPress(self, widget, event):
 
@@ -470,11 +477,11 @@ class TextView(Gtk.TextView):
                 component = sh.cursorComponent(self.control.currentLine().text, self.control.currentStory().index.offset)
 
                 if component == 'intExt':
-                    prefixBase = list(self.intExts)
+                    prefixBase = self.intExts
                 elif component == 'location':
-                    prefixBase = list(self.control.currentStory().locations)
+                    prefixBase = self.control.currentStory().locations
                 elif component == 'time':
-                    prefixBase = self.times
+                    prefixBase = self.control.currentStory().times
                 else:
                     # Notation will not have completion
                     return
@@ -1093,10 +1100,13 @@ class TextView(Gtk.TextView):
         if self.tagIter.tag() == "character":
             self.control.currentStory().addName(self.control.currentLine().text)
 
-        if self.tagIter.tag() == "sceneHeading":
+        if self.control.currentLine().tag == "sceneHeading":
             sh = SceneHeading()
             location = sh.location(self.control.currentLine().text)
             self.control.currentStory().addLocation(location)
+            time = sh.time(self.control.currentLine().text)
+            self.control.currentStory().addTime(time)
+
 
         # In case the cursor is at the end of a heading line, allow a new line to be created.
         if currentCharIsHeading:
@@ -1974,6 +1984,7 @@ class ScriptView(Gtk.Box):
         self.control.doMarkSetIndexUpdate = False
         # self.addZeroWidthSpace(lastTag)
         self.control.doMarkSetIndexUpdate = True
+        return lastTag
 
     def loadPage(self):
         self.lines = []
@@ -2027,6 +2038,7 @@ class ScriptView(Gtk.Box):
         self.control.doMarkSetIndexUpdate = False
         # self.addZeroWidthSpace(lastTag)
         self.control.doMarkSetIndexUpdate = True
+        return lastTag
 
     def infoTextViewKeyPress(self, widget, event):
 
