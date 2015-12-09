@@ -2,13 +2,13 @@
 
 <h3>Simple. Organized. Fast.</h3>
 
-Diego's goal is to be The Simplest and the Fastest Scriptwriting software for Graphic Novel writers. Diego seconds as well as specscripting software.
+Diego's goal is to be The Simplest and the Fastest Scriptwriting software for Graphic Novel writers. Diego also seconds as specscript software.
 
 Diego has traded feature bloat for simplicy which means only features that are neccessary to get the job done. Diego's design centers around keeping the writers hands on the keyboard. Keyboard shortcuts replace the common interface cluttered with buttons and menus and submenus.
 
 Each Story, Scene and Page has an Info/Abstract Text area that allows the writer to outline their story by creating abstracts. This text area works as a  convenient place to store premises for new story ideas that may turn into a full script at some point.
 
-When Diego saves, three documents are created: the Diego document, an RTF for extra tweeking if neccessary and a PDF.
+When Diego saves, three documents are created: the Diego document, an RTF for extra tweeking, and a PDF.
 
 <img src="http://specscripter.com/screenshot.png">
 
@@ -99,3 +99,7 @@ Go to Story, Scene, or Page View. Type single word in Find Entry.
 <b>Screenplay Mode</b>
 
 Toggle the Screenplay Switch to Active. The first line of a scene now will autocomplete for Int/Ext, Location and Time.
+
+<b>Autocomplete Int/Ext, Location and Time</b>
+
+Activate Screenplay Mode. On first line of a scene, hold down Shift Key and press the letter twice that starts with word you want to autocomplete.

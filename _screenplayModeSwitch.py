@@ -20,10 +20,12 @@ class Switch(Gtk.Switch):
 
         if switch.get_active():
             self.control.indexView.stack.remove(self.control.pageItemBox)
+            self.control.appBox.panelLabelBox.remove(self.control.panelLabel)
             self.control.currentStory().isScreenplay = True
             self.set_tooltip_text("Sceenplay Mode Is Active")
         else:
             self.control.indexView.stack.add_titled(self.control.pageItemBox, "page", "Page")
+            self.control.appBox.panelLabelBox.add(self.control.panelLabel)
             self.control.currentStory().isScreenplay = False
             self.control.scriptView.removeScreenplayTags()
             self.set_tooltip_text("Sceenplay Mode Is Not Active")

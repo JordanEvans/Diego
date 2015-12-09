@@ -27,9 +27,9 @@ class AppBox(Gtk.Box):
         self.control.appHeaderBar.pack_start(vbox)
 
         # Add the Panel box
-        panelLabelBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        panelLabelBox.pack_start(self.control.panelLabel, 1, 1, 1)
-        self.control.appHeaderBar.pack_start(panelLabelBox)
+        self.panelLabelBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.panelLabelBox.pack_start(self.control.panelLabel, 1, 1, 1)
+        self.control.appHeaderBar.pack_start(self.panelLabelBox)
 
         # Add SearchEntry
         self.control.appHeaderBar.pack_end(self.control.searchEntry)

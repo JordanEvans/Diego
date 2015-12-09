@@ -265,7 +265,7 @@ class TextView(Gtk.TextView):
         # sh = SceneHeading()
         # sh.completeLine(self.control.currentLine().text, self.control.currentStory().index.offset)
 
-        self.printTags()
+        # self.printTags()
 
     def keyPress(self, widget, event):
         self.forcingWordEvent = False
@@ -469,8 +469,6 @@ class TextView(Gtk.TextView):
                 sh = SceneHeading()
                 component = sh.cursorComponent(self.control.currentLine().text, self.control.currentStory().index.offset)
 
-                self.control.p("comp", component)
-
                 if component == 'intExt':
                     prefixBase = list(self.intExts)
                 elif component == 'location':
@@ -480,8 +478,6 @@ class TextView(Gtk.TextView):
                 else:
                     # Notation will not have completion
                     return
-
-                self.control.p("base", prefixBase)
 
                 for prefix in prefixBase:
                     if prefix.startswith(character) and prefix not in prefixes:
@@ -840,7 +836,7 @@ class TextView(Gtk.TextView):
                                                      editable=False)
 
         self.sceneHeadingTag = self.buffer.create_tag("sceneHeading",
-                                                     background_rgba=Gdk.RGBA(0.0, 0.0, 1.0, 0.1), #descriptionBackground,
+                                                     background_rgba=descriptionBackground, #Gdk.RGBA(0.0, 0.0, 1.0, 0.1), #descriptionBackground,
                                                      pixels_inside_wrap=pixelsInsideWrap,
                                                      pixels_above_lines=10,
                                                      pixels_below_lines=10,
@@ -1832,7 +1828,6 @@ class ScriptView(Gtk.Box):
 
     def loadStory(self):
 
-        self.control.p("ls")
         self.lines = []
 
         st = self.control.currentStory()
@@ -1909,8 +1904,6 @@ class ScriptView(Gtk.Box):
         # but the last line can't have a new line following it so... ZWS.
 
         # This must only be called at the very end of inserting text in a reloading of TextView.
-
-        self.control.p("zws")
 
         insertIter = self.textView.insertIter()
         self.textBuffer.insert_with_tags_by_name(insertIter, ZERO_WIDTH_SPACE, lastTag)
@@ -2174,10 +2167,8 @@ class ScriptView(Gtk.Box):
 
     def resetAndLoad(self):
 
-        self.control.p("rsl")
         self.reset()
         category = self.control.category
-        self.control.p("cat", category)
 
         if category == 'story':
             lastTag = self.control.scriptView.loadStory()
