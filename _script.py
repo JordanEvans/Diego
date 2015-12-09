@@ -12,7 +12,7 @@ NON_WORD_CHARACTERS = [' ', '\n', ',', ':', ';', '!', '"', "'", HEADING]
 class TagIter(object):
 
     def __init__(self):
-        self.tags = ['description', 'character', 'dialog', 'parenthetic', 'sceneHeading']
+        self.tags = ['description', 'character', 'dialog', 'parenthetic']#, 'sceneHeading']
         self.index = 0
 
     def tag(self):
@@ -36,7 +36,7 @@ class TagIter(object):
     def updateMode(self, control):
         self.index = 0
         if control.currentStory().isScreenplay:
-            self.tags = ['description', 'character', 'dialog', 'parenthetic', 'sceneHeading']
+            self.tags = ['description', 'character', 'dialog', 'parenthetic']#, 'sceneHeading']
         else:
             self.tags = ['description', 'character', 'dialog', 'parenthetic']
 
@@ -101,6 +101,13 @@ class SceneHeading(object):
     def completeLine(self, line, offset):
         #components = self.componentsFromString(line.text)
         print self.cursorComponent(line, offset)
+
+    def location(self, text):
+        components = self.componentsFromString(text)
+        if len(components) > 1:
+            return components[1]
+        else:
+            return ""
 
 
 class NameIter(object):
@@ -207,7 +214,6 @@ class TextView(Gtk.TextView):
         self.sceneHeadingIter = None
 
         self.intExts = ["INT.", "EXT."]
-        self.locations = []
         self.times = ["DAY", "NIGHT"]
 
     def buttonPress(self, widget, event):
@@ -258,6 +264,8 @@ class TextView(Gtk.TextView):
 
         # sh = SceneHeading()
         # sh.completeLine(self.control.currentLine().text, self.control.currentStory().index.offset)
+
+        self.printTags()
 
     def keyPress(self, widget, event):
         self.forcingWordEvent = False
@@ -322,11 +330,15 @@ class TextView(Gtk.TextView):
         self.sceneHeadingIter = None
 
         if event.keyval == 65289: # doing formating for the tab character now.
-            if self.control.currentLine().tag != 'heading':
-                self.tagIter.increment()
-                self.control.currentLine().tag = self.tagIter.tag()
+            currentLine = self.control.currentLine()
+            if currentLine.tag not in ['heading', 'sceneHeading']:
 
-                tag = self.updateLineTag(formatingLastLineWhenEmpty=True)
+                self.tagIter.increment()
+
+                currentLine.tag = self.tagIter.tag()
+                index = self.control.scriptView.lines.index(currentLine)
+
+                tag = self.updateLineTag(line=index, formatingLastLineWhenEmpty=True, autoSceneHeading=False)
                 self.control.currentStory().saved = False
                 self.formatingLine = True
                 self.resetGlobalMargin(tag)
@@ -348,10 +360,14 @@ class TextView(Gtk.TextView):
             return 1
 
         if event.keyval == 32 and insertIter.get_line_offset() == 0: # format line
-            #or (lineEmpty and event.keyval != 65293):
+
+            # Do not format a Scene Heading, the first line of a scene.
+            currentLine = self.control.currentLine()
+            if currentLine.tag in ['heading', 'sceneHeading']:
+                return 1
 
             self.tagIter.increment()
-            self.control.currentLine().tag = self.tagIter.tag()
+            currentLine.tag = self.tagIter.tag()
 
             tag = self.updateLineTag(formatingLastLineWhenEmpty=True)
             self.control.currentStory().saved = False
@@ -412,6 +428,30 @@ class TextView(Gtk.TextView):
 
         return 1
 
+    def keyRelease(self, widget, event):
+
+        visibleRect = self.get_visible_rect()
+        insertIter = self.insertIter()
+        insertRect = self.get_iter_location(insertIter)
+        if (insertRect.y >= visibleRect.y) and (insertRect.y + insertRect.height <= visibleRect.y + visibleRect.height):
+            pass
+        else:
+            self.scroll_to_iter(insertIter, 0.1, False, 0.0, 0.0)
+
+        self.control.scriptView.updateCurrentStoryIndex()
+
+        if self.backspaceEvent or self.deleteEvent:
+            self.updateLineTag()
+
+        if self.arrowPress or self.formatingLine or self.newLineEvent or self.deleteEvent or self.backspaceEvent:
+            self.updatePanel()
+
+        if self.arrowPress:
+            # In case the line has changed, TagIter needs current line tag.
+            self.tagIter.load(self.control.currentLine().tag)
+
+        # self.printTags()
+
     def completeSceneHeading(self, event):
 
         insertIter = self.insertIter()
@@ -429,15 +469,19 @@ class TextView(Gtk.TextView):
                 sh = SceneHeading()
                 component = sh.cursorComponent(self.control.currentLine().text, self.control.currentStory().index.offset)
 
+                self.control.p("comp", component)
+
                 if component == 'intExt':
-                    prefixBase = self.intExts
+                    prefixBase = list(self.intExts)
                 elif component == 'location':
-                    prefixBase = self.locations
+                    prefixBase = list(self.control.currentStory().locations)
                 elif component == 'time':
                     prefixBase = self.times
                 else:
                     # Notation will not have completion
                     return
+
+                self.control.p("base", prefixBase)
 
                 for prefix in prefixBase:
                     if prefix.startswith(character) and prefix not in prefixes:
@@ -638,28 +682,6 @@ class TextView(Gtk.TextView):
 
                         return 1
 
-    def keyRelease(self, widget, event):
-
-        visibleRect = self.get_visible_rect()
-        insertIter = self.insertIter()
-        insertRect = self.get_iter_location(insertIter)
-        if (insertRect.y >= visibleRect.y) and (insertRect.y + insertRect.height <= visibleRect.y + visibleRect.height):
-            pass
-        else:
-            self.scroll_to_iter(insertIter, 0.1, False, 0.0, 0.0)
-
-        self.control.scriptView.updateCurrentStoryIndex()
-
-        if self.backspaceEvent or self.deleteEvent:
-            self.updateLineTag()
-
-        if self.arrowPress or self.formatingLine or self.newLineEvent or self.deleteEvent or self.backspaceEvent:
-            self.updatePanel()
-
-        if self.arrowPress:
-            # In case the line has changed, TagIter needs current line tag.
-            self.tagIter.load(self.control.currentLine().tag)
-
     def resetTags(self, width=None):
 
         if width == None:
@@ -818,7 +840,7 @@ class TextView(Gtk.TextView):
                                                      editable=False)
 
         self.sceneHeadingTag = self.buffer.create_tag("sceneHeading",
-                                                     background_rgba=descriptionBackground, #Gdk.RGBA(0.0, 0.0, 1.0, 0.1), #descriptionBackground,
+                                                     background_rgba=Gdk.RGBA(0.0, 0.0, 1.0, 0.1), #descriptionBackground,
                                                      pixels_inside_wrap=pixelsInsideWrap,
                                                      pixels_above_lines=10,
                                                      pixels_below_lines=10,
@@ -887,6 +909,22 @@ class TextView(Gtk.TextView):
 
     def completeCharacterName(self, name, wordHasLength):
 
+        currentLine = self.control.currentLine()
+
+        # Lower case letters in words that are not the first character of a word and not upper case.
+        if currentLine.tag not in ["character", "sceneHeading"]:
+            lowered = []
+            first = True
+            for c in name:
+                if c.isupper() and not first:
+                    lowered.append(c.lower())
+                else:
+                    lowered.append(c)
+                    first = False
+                if c == ' ':
+                    first = True
+            name = "".join(lowered)
+
         ace = _event.AutocompleteCharacterEvent(self.control, name)
         self.control.currentStory().eventManager.addEvent(ace)
 
@@ -895,8 +933,6 @@ class TextView(Gtk.TextView):
 
         offset = self.control.currentStory().index.offset
         text = self.control.currentLine().text
-
-        currentLine = self.control.currentLine()
 
         if wordHasLength:
             currentLine.text = text[:offset - 0] + name + text[offset - 0:]
@@ -943,12 +979,13 @@ class TextView(Gtk.TextView):
             margin = self.dialogLeftMargin
         elif tag == 'parenthetic':
             margin = self.parentheticLeftMargin
-
+        elif tag == 'sceneHeading':
+            margin = self.descriptionLeftMargin
         if margin != None:
             self.props.left_margin = margin
             #self.updateLineTag(True)
 
-    def updateLineTag(self, line=None, formatingLastLineWhenEmpty=False):
+    def updateLineTag(self, line=None, formatingLastLineWhenEmpty=False, autoSceneHeading=True):
 
         if line != None:
             cp = self.control.currentPage()
@@ -985,13 +1022,14 @@ class TextView(Gtk.TextView):
             endIter.forward_to_line_end()
 
         tag = updateLine.tag
-        screenplayMode = self.control.currentStory().isScreenplay
-        if not screenplayMode and tag == 'sceneHeading':
-            tag = 'description'
-        if screenplayMode:
-            if self.control.currentLine().before(self.control).tag == 'heading':
-                tag = "sceneHeading"
-                self.control.currentLine().tag = 'sceneHeading'
+        if autoSceneHeading:
+            screenplayMode = self.control.currentStory().isScreenplay
+            if not screenplayMode and tag == 'sceneHeading':
+                tag = 'description'
+            if screenplayMode:
+                if self.control.currentLine().before(self.control).tag == 'heading':
+                    tag = "sceneHeading"
+                    self.control.currentLine().tag = 'sceneHeading'
 
         self.buffer.apply_tag_by_name(tag, startIter, endIter)
 
@@ -1009,7 +1047,7 @@ class TextView(Gtk.TextView):
         character = charIter.forward_char()
         while character:
             tagNames = [name.props.name for name in charIter.get_tags()]
-            gself.control.p(charIter.get_char(), tagNames)
+            self.control.p(charIter.get_char(), tagNames)
             character = charIter.forward_char()
 
     def iterInfo(self, iter):
@@ -1059,6 +1097,11 @@ class TextView(Gtk.TextView):
         if self.tagIter.tag() == "character":
             self.control.currentStory().addName(self.control.currentLine().text)
 
+        if self.tagIter.tag() == "sceneHeading":
+            sh = SceneHeading()
+            location = sh.location(self.control.currentLine().text)
+            self.control.currentStory().addLocation(location)
+
         # In case the cursor is at the end of a heading line, allow a new line to be created.
         if currentCharIsHeading:
             # return
@@ -1101,9 +1144,10 @@ class TextView(Gtk.TextView):
             newLineTag = 'description'
             components = SceneHeading().componentsFromString(currentLine.text)
             if len(components) > 1:
-                if components[1] not in self.locations:
-                    self.locations.append(components[1])
-                    self.locations.sort()
+                self.control.currentStory().addLocation(components[1])
+                # if components[1] not in self.locations:
+                #     self.locations.append(components[1])
+                #     self.locations.sort()
 
         self.tagIter.load(newLineTag)
 
@@ -1142,7 +1186,6 @@ class TextView(Gtk.TextView):
                 sc,ec,text = startIter.get_char(), endIter.get_char(), self.buffer.get_text(startIter, endIter, True)
                 self.buffer.remove_all_tags(startIter, endIter)
                 self.buffer.apply_tag_by_name(newLineTag, startIter, endIter)
-
 
         else:
 
@@ -1193,8 +1236,6 @@ class TextView(Gtk.TextView):
 
         self.updateLineTag(previousLineIndex)
         tag = self.updateLineTag()
-
-        print "return tag", tag
 
         return 1
 
@@ -1789,8 +1830,9 @@ class ScriptView(Gtk.Box):
         self.infoTextView.props.left_margin = self.textView.descriptionLeftMargin
         self.infoTextView.props.right_margin = self.textView.descriptionRightMargin
 
-    def loadStory(self, addZeroSpaceChar=True):
+    def loadStory(self):
 
+        self.control.p("ls")
         self.lines = []
 
         st = self.control.currentStory()
@@ -1820,12 +1862,10 @@ class ScriptView(Gtk.Box):
         for ln in firstPage.lines:
             ln.heading = firstHeading
 
-
         for i in range(len(pages)):
             pg = pages[i]
             heading = headings[i]
             self.textBuffer.insert(self.textView.insertIter(), '\n', len('\n'))
-
 
             pageText = " > " + heading.page.title
             if self.control.currentStory().isScreenplay:
@@ -1850,16 +1890,14 @@ class ScriptView(Gtk.Box):
         self.infoTextView.get_buffer().delete(self.infoTextView.get_buffer().get_start_iter(), self.infoTextView.get_buffer().get_end_iter())
         self.infoTextView.get_buffer().insert(self.infoTextView.get_buffer().get_start_iter(), st.info)
 
-        if addZeroSpaceChar:
-            self.addZeroWidthSpace(lastTag)
-
-        if not self.control.screenplayModeSwitch.activating:
-            print "self.control.currentStory().isScreenplay", self.control.currentStory().isScreenplay
-            if self.control.currentStory().isScreenplay:
-                self.control.screenplayModeSwitch.set_state(True)
-            else:
-                self.control.screenplayModeSwitch.set_state(False)
-            self.control.screenplayModeSwitch.callHandlerCode = False
+        # if not self.control.screenplayModeSwitch.activating:
+        #     if self.control.currentStory().isScreenplay:
+        #         self.control.screenplayModeSwitch.set_state(True)
+        #     else:
+        #         self.control.screenplayModeSwitch.set_state(False)
+        #     self.control.screenplayModeSwitch.callHandlerCode = False
+        #
+        # self.textView.tagIter.updateMode(self.control)
 
         return lastTag
 
@@ -1871,6 +1909,8 @@ class ScriptView(Gtk.Box):
         # but the last line can't have a new line following it so... ZWS.
 
         # This must only be called at the very end of inserting text in a reloading of TextView.
+
+        self.control.p("zws")
 
         insertIter = self.textView.insertIter()
         self.textBuffer.insert_with_tags_by_name(insertIter, ZERO_WIDTH_SPACE, lastTag)
@@ -1939,7 +1979,7 @@ class ScriptView(Gtk.Box):
         self.infoTextView.get_buffer().insert(self.infoTextView.get_buffer().get_start_iter(), currentScene.info)
 
         self.control.doMarkSetIndexUpdate = False
-        self.addZeroWidthSpace(lastTag)
+        # self.addZeroWidthSpace(lastTag)
         self.control.doMarkSetIndexUpdate = True
 
     def loadPage(self):
@@ -1992,7 +2032,7 @@ class ScriptView(Gtk.Box):
         self.infoTextView.get_buffer().insert(self.infoTextView.get_buffer().get_start_iter(), currentPage.info)
 
         self.control.doMarkSetIndexUpdate = False
-        self.addZeroWidthSpace(lastTag)
+        # self.addZeroWidthSpace(lastTag)
         self.control.doMarkSetIndexUpdate = True
 
     def infoTextViewKeyPress(self, widget, event):
@@ -2134,8 +2174,10 @@ class ScriptView(Gtk.Box):
 
     def resetAndLoad(self):
 
+        self.control.p("rsl")
         self.reset()
         category = self.control.category
+        self.control.p("cat", category)
 
         if category == 'story':
             lastTag = self.control.scriptView.loadStory()
@@ -2155,6 +2197,15 @@ class ScriptView(Gtk.Box):
         self.control.category = category
 
         self.control.scriptView.addZeroWidthSpace(lastTag)
+
+        if not self.control.screenplayModeSwitch.activating:
+            if self.control.currentStory().isScreenplay:
+                self.control.screenplayModeSwitch.set_state(True)
+            else:
+                self.control.screenplayModeSwitch.set_state(False)
+            self.control.screenplayModeSwitch.callHandlerCode = False
+
+        self.textView.tagIter.updateMode(self.control)
 
     def reset(self):
         self.textView.get_buffer().set_text("")
@@ -2240,3 +2291,12 @@ class ScriptView(Gtk.Box):
                 for pg in sc.pages:
                     pg.title = "Page " + str(pgCount +1)
                     pgCount +=1
+
+    def removeScreenplayTags(self):
+        st = self.control.currentStory()
+        for sq in st.sequences:
+            for sc in sq.scenes:
+                for pg in sc.pages:
+                    for ln in pg.lines:
+                        if ln.tag == 'sceneHeading':
+                            ln.tag = 'description'

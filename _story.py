@@ -5,6 +5,7 @@ import json
 import _event
 import _dialog
 import _rtf
+import _script
 
 from _event import EventManager
 
@@ -217,6 +218,13 @@ class Story(object):
         self.times = []
         self.isScreenplay = False
 
+    def addLocation(self, location):
+        if location == '':
+            return
+        if location not in self.locations:
+            self.locations.append(location)
+        self.locations.sort()
+
     def newSequence(self, prepend=False):
         sequence = Sequence()
 
@@ -321,6 +329,7 @@ class Story(object):
 
         if 'isScreenplay' in data.keys():
             self.isScreenplay = data['isScreenplay']
+            self.updateLocations()
 
     def updateCompletionNames(self):
         self.names = []
@@ -333,6 +342,18 @@ class Story(object):
                                 self.names.append(line.text)
 
         self.names.sort()
+
+    def updateLocations(self):
+        sh = _script.SceneHeading()
+        for sequence in self.sequences:
+            for scene in sequence.scenes:
+                for page in scene.pages:
+                    for line in page.lines:
+                        if line.tag == 'sceneHeading':
+                            loc = sh.location(line.text)
+                            self.addLocation(loc)
+
+        self.locations.sort()
 
     def save(self,):
         if self.path == None:

@@ -78,6 +78,10 @@ class Control(object):
         self.printCount += 1
         print self.printCount, args
 
+        raiseException = 0
+        if raiseException == self.printCount:
+            raise Exception()
+
     def load(self, data=True):
         self.historyEnabled = False
 

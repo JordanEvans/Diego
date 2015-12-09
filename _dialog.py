@@ -36,13 +36,14 @@ class FindAndReplaceDialog(Gtk.Dialog):
 
     def findAndReplace(self):
         self.control.currentStory().findAndReplace(self.findEntry.get_text(), self.replaceEntry.get_text())
-        self.control.scriptView.reset()
-        if self.control.category == 'story':
-            self.control.scriptView.loadStory()
-        elif self.control.category == 'scene':
-            self.control.scriptView.loadScene()
-        elif self.control.category == 'page':
-            self.control.scriptView.loadPage()
+        # self.control.scriptView.reset()
+        # if self.control.category == 'story':
+        #     self.control.scriptView.resetAndLoad()
+        # elif self.control.category == 'scene':
+        #     self.control.scriptView.resetAndLoad()
+        # elif self.control.category == 'page':
+
+        self.control.scriptView.resetAndLoad()
 
 def saveFile(control):
     dialog = Gtk.FileChooserDialog("Save story", control.app.window,
