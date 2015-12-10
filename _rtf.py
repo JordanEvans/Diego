@@ -72,7 +72,7 @@ class RTF(object):
             f.write(self.contactParagraph(line))
             linesLeft -=1
 
-    def exportScreenplay(self, exportPath):
+    def exportScript(self, exportPath, isScreenplay=False):
 
         if exportPath == "":
             return
@@ -84,46 +84,40 @@ class RTF(object):
         
         title = self.control.currentStory().title
         author = getpass.getuser()
-        # contact = None
-        # for info in self.control.doc.storyInfos:
-        #     if info.label.lower() == 'contact':
-        #         contact = info.text
-        self.titlePage(f, title, author, contact='')
 
-        panelNumber = 1
+        self.titlePage(f, title, author, contact='')
 
         sceneNumber = 0
         pageNumber = 0
 
         for scene in self.control.currentSequence().scenes:
 
-            sceneNumber += 1
-
-            sceneHeading = str(sceneNumber) + ". " + scene.title
-
-            f.write(self.sceneParagraph(sceneHeading))
+            if not isScreenplay:
+                sceneNumber += 1
+                sceneHeading = str(sceneNumber) + ". " + scene.title
+                f.write(self.sceneParagraph(sceneHeading))
 
             for page in scene.pages:
-                pageNumber += 1
 
-                pageHeading = "Page " + str(pageNumber)
-
-                f.write(self.pageParagraph(pageHeading))
-                f.write(self.descriptionParagraph(""))
+                if not isScreenplay:
+                    pageNumber += 1
+                    pageHeading = "Page " + str(pageNumber)
+                    f.write(self.pageParagraph(pageHeading))
+                    f.write(self.descriptionParagraph(""))
 
                 panelNumber = 0
 
                 for line in page.lines:
 
                     if line.tag == 'description':
-                        panelNumber += 1
-
-                        panelHeading = "Panel " + str(panelNumber)
-                        f.write(self.descriptionParagraph(panelHeading))
+                        if not isScreenplay:
+                            panelNumber += 1
+                            panelHeading = "Panel " + str(panelNumber)
+                            f.write(self.descriptionParagraph(panelHeading))
 
                     cn = line.tag
 
-                    if cn == 'description':
+                    if cn in ['description', 'sceneHeading']:
                         f.write(self.descriptionParagraph(line.text))
                         f.write(self.descriptionParagraph(""))
 

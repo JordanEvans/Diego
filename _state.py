@@ -69,7 +69,7 @@ class State(object):
                         self.width = data['windowWidth']
                         self.height = data['windowHeight']
                         self.control.scriptView.infoViewFontSize = data['infoViewFontSize']
-                        self.control.scriptView.infoTextView.modify_font(Pango.FontDescription("Sans " + str(data['infoViewFontSize'])))
+                        self.control.scriptView.infoTextView.modify_font(Pango.FontDescription("Courier Prime " + str(data['infoViewFontSize'])))
                         self.control.saveDir = data['saveDir']
                         self.control.windowPosition = data['windowPosition']
                     except:

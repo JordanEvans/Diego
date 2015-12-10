@@ -9,6 +9,14 @@ ZERO_WIDTH_SPACE = u'\u200B'.encode('utf-8')
 HEADING = '\xef\xbf\xbc'
 NON_WORD_CHARACTERS = [' ', '\n', ',', ':', ';', '!', '"', "'", HEADING]
 
+DESCRIPTION_WIDTH = 52.0 #40.3125
+DIALOG_LEFT_FACTOR = 0.34
+CHARACTER_LEFT_FACTOR = 0.536
+PARENTHETIC_LEFT_FACTOR = 0.45
+CHARACTER_WIDTH_FACTOR = 0.35
+DIALOG_WIDTH_FACTOR = 0.5
+PARENTHETIC_WIDTH_FACTOR = 0.50
+
 class TagIter(object):
 
     def __init__(self):
@@ -175,14 +183,14 @@ class TextView(Gtk.TextView):
 
         self.fontSize = 10
         self.width = 749
-        self.descriptionWidth = int(40.3125 * self.fontSize) #549
-        self.characterWidth = self.descriptionWidth * 0.5
-        self.dialogWidth = self.descriptionWidth * 0.7
+        self.descriptionWidth = int(DESCRIPTION_WIDTH * self.fontSize) #549
+        self.characterWidth = self.descriptionWidth * CHARACTER_WIDTH_FACTOR
+        self.dialogWidth = self.descriptionWidth * DIALOG_WIDTH_FACTOR
 
         descriptionLeftMargin = self.descriptionWidth * 0.1
-        characterLeftMargin = self.descriptionWidth * 0.55
-        dialogLeftMargin = self.descriptionWidth * 0.3
-        parentheticLeftMargin = self.descriptionWidth * 0.45
+        characterLeftMargin = self.descriptionWidth * CHARACTER_LEFT_FACTOR
+        dialogLeftMargin = self.descriptionWidth * DIALOG_LEFT_FACTOR
+        parentheticLeftMargin = self.descriptionWidth * PARENTHETIC_LEFT_FACTOR
 
         self.descriptionLeftMargin = descriptionLeftMargin
         self.characterLeftMargin = characterLeftMargin
@@ -221,7 +229,6 @@ class TextView(Gtk.TextView):
         self.sceneHeadingIter = None
 
         self.intExts = ["INT.", "EXT."]
-
 
     def buttonPress(self, widget, event):
 
@@ -691,15 +698,15 @@ class TextView(Gtk.TextView):
             width = self.get_allocated_width()
         self.width = width
 
-        descriptionWidth = int(40.3125 * self.fontSize)
-        characterWidth = self.descriptionWidth * 0.5
-        dialogWidth = self.descriptionWidth * 0.70
-        parentheticWidth = self.descriptionWidth * 0.60
+        descriptionWidth = int(DESCRIPTION_WIDTH * self.fontSize)
+        characterWidth = self.descriptionWidth * CHARACTER_WIDTH_FACTOR
+        dialogWidth = self.descriptionWidth * DIALOG_WIDTH_FACTOR
+        parentheticWidth = self.descriptionWidth * PARENTHETIC_WIDTH_FACTOR
 
         descriptionLeftMargin = descriptionWidth * 0.1
-        characterLeftMargin = descriptionWidth * 0.55
-        dialogLeftMargin = descriptionWidth * 0.3
-        parentheticLeftMargin = descriptionWidth * 0.45
+        characterLeftMargin = descriptionWidth * CHARACTER_LEFT_FACTOR
+        dialogLeftMargin = descriptionWidth * DIALOG_LEFT_FACTOR
+        parentheticLeftMargin = descriptionWidth * PARENTHETIC_LEFT_FACTOR
 
         descriptionRightMargin = self.width - (descriptionLeftMargin + descriptionWidth)
         characterRightMargin = self.width - (characterLeftMargin + characterWidth)
@@ -761,23 +768,23 @@ class TextView(Gtk.TextView):
         self.parentheticFindTag.props.right_margin = self.parentheticRightMargin
         self.sceneHeadingTag.props.right_margin = self.descriptionRightMargin
 
-        self.descriptionTag.props.font = "Sans " + str(self.fontSize)
-        self.characterTag.props.font = "Sans " + str(self.fontSize)
-        self.dialogTag.props.font = "Sans " + str(self.fontSize)
-        self.parentheticTag.props.font = "Sans " + str(self.fontSize)
-        self.sceneHeadingTag.props.font = "Sans " + str(self.fontSize)
+        self.descriptionTag.props.font = "Courier Prime " + str(self.fontSize)
+        self.characterTag.props.font = "Courier Prime " + str(self.fontSize)
+        self.dialogTag.props.font = "Courier Prime " + str(self.fontSize)
+        self.parentheticTag.props.font = "Courier Prime " + str(self.fontSize)
+        self.sceneHeadingTag.props.font = "Courier Prime " + str(self.fontSize)
 
-        self.descriptionFindTag.props.font = "Sans " + str(self.fontSize)
-        self.characterFindTag.props.font = "Sans " + str(self.fontSize)
-        self.dialogFindTag.props.font = "Sans " + str(self.fontSize)
-        self.parentheticFindTag.props.font = "Sans " + str(self.fontSize)
-        self.sceneHeadingFindTag.props.font = "Sans " + str(self.fontSize)
+        self.descriptionFindTag.props.font = "Courier Prime " + str(self.fontSize)
+        self.characterFindTag.props.font = "Courier Prime " + str(self.fontSize)
+        self.dialogFindTag.props.font = "Courier Prime " + str(self.fontSize)
+        self.parentheticFindTag.props.font = "Courier Prime " + str(self.fontSize)
+        self.sceneHeadingFindTag.props.font = "Courier Prime " + str(self.fontSize)
 
         self.control.scriptView.infoTextView.props.left_margin = self.control.scriptView.textView.descriptionLeftMargin
         self.control.scriptView.infoTextView.props.right_margin = self.control.scriptView.textView.descriptionRightMargin
 
         # Fixing last line tag issue.
-        self.modify_font(Pango.FontDescription("Sans " + str(self.fontSize)))
+        self.modify_font(Pango.FontDescription("Courier Prime " + str(self.fontSize)))
         self.props.left_margin = self.descriptionLeftMargin
 
     def createTags(self):
@@ -802,7 +809,7 @@ class TextView(Gtk.TextView):
                                                      pixels_below_lines=10,
                                                      left_margin=self.descriptionLeftMargin,
                                                      right_margin=self.descriptionRightMargin,
-                                                     font="Sans " + str(self.fontSize))
+                                                     font="Courier Prime " + str(self.fontSize))
 
         self.characterTag = self.buffer.create_tag("character",
                                                    background_rgba=characterBackground,
@@ -812,7 +819,7 @@ class TextView(Gtk.TextView):
                                                    pixels_inside_wrap=pixelsInsideWrap,
                                                    pixels_above_lines=10,
                                                    pixels_below_lines=0,
-                                                   font="Sans " + str(self.fontSize))
+                                                   font="Courier Prime " + str(self.fontSize))
 
         self.dialogTag = self.buffer.create_tag("dialog",
                                                 background_rgba=dialogBackground,
@@ -821,7 +828,7 @@ class TextView(Gtk.TextView):
                                                 pixels_inside_wrap=pixelsInsideWrap,
                                                 pixels_above_lines=0,
                                                 pixels_below_lines=10,
-                                                font="Sans " + str(self.fontSize))
+                                                font="Courier Prime " + str(self.fontSize))
 
         self.parentheticTag = self.buffer.create_tag("parenthetic",
                                                      background_rgba=descriptionBackground,
@@ -830,7 +837,7 @@ class TextView(Gtk.TextView):
                                                      pixels_below_lines=0,
                                                      left_margin=self.parentheticLeftMargin,
                                                      right_margin=self.descriptionRightMargin,
-                                                     font="Sans " + str(self.fontSize))
+                                                     font="Courier Prime " + str(self.fontSize))
 
         self.headingTag = self.buffer.create_tag("heading",
                                                      background_rgba=descriptionBackground,
@@ -839,7 +846,7 @@ class TextView(Gtk.TextView):
                                                      pixels_below_lines=10,
                                                      left_margin=self.descriptionLeftMargin,
                                                      right_margin=self.descriptionRightMargin,
-                                                     font="Sans " + str(self.fontSize),
+                                                     font="Courier Prime " + str(self.fontSize),
                                                      editable=False)
 
         self.sceneHeadingTag = self.buffer.create_tag("sceneHeading",
@@ -849,7 +856,7 @@ class TextView(Gtk.TextView):
                                                      pixels_below_lines=10,
                                                      left_margin=self.descriptionLeftMargin,
                                                      right_margin=self.descriptionRightMargin,
-                                                     font="Sans " + str(self.fontSize))
+                                                     font="Courier Prime " + str(self.fontSize))
 
 
         ## Find Tags
@@ -861,7 +868,7 @@ class TextView(Gtk.TextView):
                                                      pixels_below_lines=10,
                                                      left_margin=self.descriptionLeftMargin,
                                                      right_margin=self.descriptionRightMargin,
-                                                     font="Sans " + str(self.fontSize))
+                                                     font="Courier Prime " + str(self.fontSize))
 
         self.characterFindTag = self.buffer.create_tag("characterFind",
                                                    background_rgba=findColor,
@@ -871,7 +878,7 @@ class TextView(Gtk.TextView):
                                                    pixels_inside_wrap=pixelsInsideWrap,
                                                    pixels_above_lines=10,
                                                    pixels_below_lines=0,
-                                                   font="Sans " + str(self.fontSize))
+                                                   font="Courier Prime " + str(self.fontSize))
 
         self.dialogFindTag = self.buffer.create_tag("dialogFind",
                                                 background_rgba=findColor,
@@ -880,7 +887,7 @@ class TextView(Gtk.TextView):
                                                 pixels_inside_wrap=pixelsInsideWrap,
                                                 pixels_above_lines=0,
                                                 pixels_below_lines=10,
-                                                font="Sans " + str(self.fontSize))
+                                                font="Courier Prime " + str(self.fontSize))
 
         self.parentheticFindTag = self.buffer.create_tag("parentheticFind",
                                                      background_rgba=findColor,
@@ -889,7 +896,7 @@ class TextView(Gtk.TextView):
                                                      pixels_below_lines=0,
                                                      left_margin=self.parentheticLeftMargin,
                                                      right_margin=self.descriptionRightMargin,
-                                                     font="Sans " + str(self.fontSize))
+                                                     font="Courier Prime " + str(self.fontSize))
 
 
         self.sceneHeadingFindTag = self.buffer.create_tag("sceneHeadingFind",
@@ -899,7 +906,7 @@ class TextView(Gtk.TextView):
                                                      pixels_below_lines=10,
                                                      left_margin=self.descriptionLeftMargin,
                                                      right_margin=self.descriptionRightMargin,
-                                                     font="Sans " + str(self.fontSize))
+                                                     font="Courier Prime " + str(self.fontSize))
 
     def do_size_allocate(self, allocation):
 
@@ -2047,13 +2054,13 @@ class ScriptView(Gtk.Box):
             if event.keyval == 45: # minus key
                 if self.control.scriptView.infoViewFontSize > 4:
                     self.infoViewFontSize -= 1
-                    self.infoTextView.modify_font(Pango.FontDescription("Sans " + str(self.infoViewFontSize)))
+                    self.infoTextView.modify_font(Pango.FontDescription("Courier Prime " + str(self.infoViewFontSize)))
                     self.infoTextView.props.left_margin = self.textView.descriptionLeftMargin
                     self.infoTextView.props.right_margin = self.textView.descriptionRightMargin
 
             elif event.keyval==61: # equal key
                 self.infoViewFontSize += 1
-                self.infoTextView.modify_font(Pango.FontDescription("Sans " + str(self.infoViewFontSize)))
+                self.infoTextView.modify_font(Pango.FontDescription("Courier Prime " + str(self.infoViewFontSize)))
                 self.infoTextView.props.left_margin = self.textView.descriptionLeftMargin
                 self.infoTextView.props.right_margin = self.textView.descriptionRightMargin
 

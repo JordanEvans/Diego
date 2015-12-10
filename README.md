@@ -1,6 +1,6 @@
 # Diego
 
-<h3>Simple. Organized. Fast.</h3>
+<h3>Simple. Fast. Organized.</h3>
 
 Diego's goal is to be The Simplest and the Fastest Scriptwriting software for Graphic Novel writers. Diego also seconds as specscript software.
 
@@ -17,6 +17,9 @@ When Diego saves, three documents are created: the Diego document, an RTF for ex
 Linux Operationing System
 
 Pygtk 3.14.15 installed.
+
+<p><a href="http://quoteunquoteapps.com/courierprime/">Courier Prime Font Installed</a> has no
+title attribute.</p>
 
 Here's some instructions for usage:
 

@@ -397,7 +397,7 @@ class Story(object):
         self.saved = True
 
         rtf = _rtf.RTF(self.control)
-        rtf.exportScreenplay(path + ".rtf")
+        rtf.exportScript(path + ".rtf", self.control.currentStory().isScreenplay)
         rtfPath = path + ".rtf"
 
         cwd = os.getcwd()
