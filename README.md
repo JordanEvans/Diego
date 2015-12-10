@@ -20,8 +20,7 @@ Pygtk 3.14.15 installed.
 
 <p><a href="http://quoteunquoteapps.com/courierprime/">Courier Prime Font</a> Needs to be installed for correct format in viewing and exporting.</p>
 
-Here's some instructions for usage:
-
+<h2>How To Use Diego</h2>
 <i>At this time the app is in development and only meant for testing.</i>
 
 <b>How To Run The App</b>
