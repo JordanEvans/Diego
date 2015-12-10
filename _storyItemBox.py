@@ -71,26 +71,9 @@ class IndexListBox(Gtk.ListBox):
             row.grab_focus()
 
     def resetAndLoad(self, row, resetIndex=True):
-
         self.control.index = self.get_children().index(row)
-
-        # self.control.scriptView.reset()
-        # self.control.scriptView.load()
-        # lastTag = self.control.scriptView.loadStory(addZeroSpaceChar=False)
-        #
-        # self.control.scriptView.updateTitles()
-        #
-        # self.control.app.updateWindowTitle()
-        #
-        # self.control.currentStory().updateCompletionNames()
-        #
-        # self.control.scriptView.paned.set_position(self.control.currentStory().horizontalPanePosition)
-        #
         self.control.category = 'story'
-
         self.control.scriptView.resetAndLoad()
-
-        # self.control.scriptView.addZeroWidthSpace(lastTag)
 
 class ScrolledListBox(Gtk.Box):
 

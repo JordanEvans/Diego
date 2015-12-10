@@ -9,13 +9,14 @@ ZERO_WIDTH_SPACE = u'\u200B'.encode('utf-8')
 HEADING = '\xef\xbf\xbc'
 NON_WORD_CHARACTERS = [' ', '\n', ',', ':', ';', '!', '"', "'", HEADING]
 
-DESCRIPTION_WIDTH = 52.0 #40.3125
-DIALOG_LEFT_FACTOR = 0.34
-CHARACTER_LEFT_FACTOR = 0.536
-PARENTHETIC_LEFT_FACTOR = 0.45
+DESCRIPTION_WIDTH = 52.0
 CHARACTER_WIDTH_FACTOR = 0.35
 DIALOG_WIDTH_FACTOR = 0.5
 PARENTHETIC_WIDTH_FACTOR = 0.50
+
+DIALOG_LEFT_FACTOR = 0.34
+CHARACTER_LEFT_FACTOR = 0.536
+PARENTHETIC_LEFT_FACTOR = 0.45
 
 class TagIter(object):
 
@@ -1963,25 +1964,26 @@ class ScriptView(Gtk.Box):
         for ln in firstPage.lines:
             ln.heading = firstHeading
 
-        for i in range(len(pages)):
-            pg = pages[i]
-            heading = headings[i]
-            self.textBuffer.insert(self.textView.insertIter(), '\n', len('\n'))
+        if not self.currentStory().isScreenplay:
+            for i in range(len(pages)):
+                pg = pages[i]
+                heading = headings[i]
+                self.textBuffer.insert(self.textView.insertIter(), '\n', len('\n'))
 
-            pageText = " > " + heading.page.title
-            if self.control.currentStory().isScreenplay:
-                pageText = ""
+                pageText = " > " + heading.page.title
+                if self.control.currentStory().isScreenplay:
+                    pageText = ""
 
-            if self.control.sequenceVisible:
-                self.insertHeading(heading.sequence.title + " > " + heading.scene.title + pageText)
-            else:
-                self.insertHeading(heading.scene.title + pageText)
+                if self.control.sequenceVisible:
+                    self.insertHeading(heading.sequence.title + " > " + heading.scene.title + pageText)
+                else:
+                    self.insertHeading(heading.scene.title + pageText)
 
-            self.lines.append(heading)
-            self.insertPageText(pg)
-            self.lines += pg.lines
-            for ln in pg.lines:
-                ln.heading = heading
+                self.lines.append(heading)
+                self.insertPageText(pg)
+                self.lines += pg.lines
+                for ln in pg.lines:
+                    ln.heading = heading
 
         lastTag = self.applyTags()
         self.textView.updatePanel()
