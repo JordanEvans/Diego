@@ -18,8 +18,7 @@ Linux Operationing System
 
 Pygtk 3.14.15 installed.
 
-<p><a href="http://quoteunquoteapps.com/courierprime/">Courier Prime Font Installed</a> has no
-title attribute.</p>
+<p><a href="http://quoteunquoteapps.com/courierprime/">Courier Prime Font</a> Needs to be installed for correct format in viewing and exporting.</p>
 
 Here's some instructions for usage:
 
