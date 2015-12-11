@@ -340,41 +340,6 @@ class Story(object):
             self.updateLocations()
             self.updateTimes()
 
-    def updateCompletionNames(self):
-        self.names = []
-        for sequence in self.sequences:
-            for scene in sequence.scenes:
-                for page in scene.pages:
-                    for line in page.lines:
-                        if line.tag == 'character':
-                            if len(line.text.lstrip().rstrip()) and line.text not in self.names:
-                                self.names.append(line.text)
-
-        self.names.sort()
-
-    def updateLocations(self):
-        sh = _script.SceneHeading()
-        for sequence in self.sequences:
-            for scene in sequence.scenes:
-                for page in scene.pages:
-                    for line in page.lines:
-                        if line.tag == 'sceneHeading':
-                            loc = sh.location(line.text)
-                            self.addLocation(loc)
-
-        self.locations.sort()
-
-    def updateTimes(self):
-        sh = _script.SceneHeading()
-        for sequence in self.sequences:
-            for scene in sequence.scenes:
-                for page in scene.pages:
-                    for line in page.lines:
-                        if line.tag == 'sceneHeading':
-                            tim = sh.time(line.text)
-                            self.addTime(tim)
-
-        self.locations.sort()
 
     def save(self,):
         if self.path == None:
@@ -405,6 +370,9 @@ class Story(object):
         os.chdir(cwd)
 
         self.updateCompletionNames()
+        self.updateLocations()
+        self.updateTimes()
+
         # self.control.scriptView.textView.updateNameMenu()
 
     def default(self):
@@ -504,3 +472,39 @@ class Story(object):
         if time not in self.times:
             self.times.append(time)
         self.times.sort()
+
+    def updateCompletionNames(self):
+        self.names = []
+        for sequence in self.sequences:
+            for scene in sequence.scenes:
+                for page in scene.pages:
+                    for line in page.lines:
+                        if line.tag == 'character':
+                            if len(line.text.lstrip().rstrip()) and line.text not in self.names:
+                                self.names.append(line.text)
+
+        self.names.sort()
+
+    def updateLocations(self):
+        sh = _script.SceneHeading()
+        for sequence in self.sequences:
+            for scene in sequence.scenes:
+                for page in scene.pages:
+                    for line in page.lines:
+                        if line.tag == 'sceneHeading':
+                            loc = sh.location(line.text)
+                            self.addLocation(loc)
+
+        self.locations.sort()
+
+    def updateTimes(self):
+        sh = _script.SceneHeading()
+        for sequence in self.sequences:
+            for scene in sequence.scenes:
+                for page in scene.pages:
+                    for line in page.lines:
+                        if line.tag == 'sceneHeading':
+                            tim = sh.time(line.text)
+                            self.addTime(tim)
+
+        self.locations.sort()

@@ -293,10 +293,12 @@ class TextView(Gtk.TextView):
         self.cutPress = False
         self.formatingLine = False
 
-        currentLine = self.control.currentLine()
+        # currentLine = self.control.currentLine()
         insertIter = self.insertIter()
-        currentLineIndex = insertIter.get_line()
-        lineEmpty = len(currentLine.text) == 0
+        # currentLineIndex = insertIter.get_line()
+        # lineEmpty = len(currentLine.text) == 0
+        # currentChar = insertIter.get_char()
+        # currentLineOffset = insertIter.get_line_offset()
 
         currentCharIsHeading = False
         currentTags = insertIter.get_tags()
@@ -426,27 +428,6 @@ class TextView(Gtk.TextView):
 
         if (event.keyval == 65293): # new line
             return self.returnPress()
-
-        elif (event.keyval == 65535) and nextCharIsHeading and lineEmpty: # delete on before a heading on empty line
-
-            insertIter.backward_char()
-            self.buffer.place_cursor(insertIter)
-            self.control.scriptView.updateCurrentStoryIndex()
-            self.deletePress()
-
-        elif (event.keyval == 65535) and currentCharIsHeading: # delete on heading
-
-            insertIter.forward_char()
-            self.buffer.place_cursor(insertIter)
-            self.control.scriptView.updateCurrentStoryIndex()
-            self.deletePress()
-
-        elif (event.keyval == 65288) and prevCharIsHeading and lineEmpty: # backspace on heading
-            # insertIter.forward_char()
-            # self.buffer.place_cursor(insertIter)
-            # self.control.scriptView.updateCurrentStoryIndex()
-            self.deletePress()
-            return 1
 
         elif (event.keyval == 65288): # backspace
             self.backspacePress()
@@ -1334,6 +1315,10 @@ class TextView(Gtk.TextView):
         nextCharIsHeading = False
         prevCharIsHeading = False
 
+        currentLine = self.control.currentLine()
+        currentLineOffset = insertIter.get_line_offset()
+        lineEmpty = len(currentLine.text) == 0
+
         bounds = self.buffer.get_selection_bounds()
         if len(bounds):
             selectStart, selectEnd = bounds
@@ -1357,17 +1342,33 @@ class TextView(Gtk.TextView):
             if "heading" in names or backwardChar == HEADING:
                 prevCharIsHeading = True
 
-        if not len(bounds) and currentCharIsNewLine and forwardChar == HEADING:
-            if insertIter.get_chars_in_line() > 1:
-                return 1
+        # if not len(bounds) and currentCharIsNewLine and forwardChar == HEADING:
+        #     if insertIter.get_chars_in_line() > 1:
+        #         return 1
 
-        if len(bounds) and nextCharIsHeading and prevCharIsHeading:
-            return 1
+        # if len(bounds) and nextCharIsHeading and prevCharIsHeading:
+        #     return 1
 
         if currentChar == ZERO_WIDTH_SPACE:
             return 1
 
-        if currentChar and not nextCharIsHeading:
+        if nextCharIsHeading: # delete on heading, or just before
+            movedIter = self.insertIter()
+
+            if currentChar == '\n' and currentLineOffset == 1:
+                movedIter.forward_chars(1)
+
+            elif currentChar == '\n':
+                movedIter.forward_chars(3)
+
+            else:
+                movedIter.forward_chars(2)
+
+            self.buffer.place_cursor(movedIter)
+            self.control.scriptView.updateCurrentStoryIndex()
+            return 1
+
+        if currentChar:# and not nextCharIsHeading:
 
             self.forceWordEvent()
             self.setSelectionClipboard()
@@ -1393,6 +1394,11 @@ class TextView(Gtk.TextView):
         insertIter = self.insertIter()
         currentChar = insertIter.get_char()
         currentCharIsNewLine = currentChar == '\n'
+
+        currentLine = self.control.currentLine()
+        currentLineOffset = insertIter.get_line_offset()
+        lineEmpty = len(currentLine.text) == 0
+        currentLineIndex = insertIter.get_line()
 
         insertIter = self.insertIter()
         characterCount = insertIter.get_chars_in_line()
@@ -1428,18 +1434,39 @@ class TextView(Gtk.TextView):
         self.control.scriptView.textView.markSet()
         self.setSelectionClipboard()
 
-        # Will not backspace if a heading is there, but will use the backspace as cut event if there is a selection.
-        if prevCharIsHeading and len(self.control.scriptView.textView.selectedClipboard) == 0:
+        # # Will not backspace if a heading is there, but will use the backspace as cut event if there is a selection.
+        # if prevCharIsHeading and len(self.control.scriptView.textView.selectedClipboard) == 0:
+        #     return 1
+
+        # if currentCharIsHeading:
+        #     return 1
+
+        # if currentChar == HEADING and not prevCharIsHeading:
+        #     currentLine = insertIter.get_line()
+        #     prevLineIter = self.get_buffer().get_iter_at_line(currentLine-1)
+        #     if prevLineIter.get_chars_in_line() > 1:
+        #         return 1
+
+        if prevCharIsHeading and lineEmpty: # backspace on heading
+            self.deletePress()
             return 1
 
-        if currentCharIsHeading:
+        elif currentCharIsHeading and canGoBackward: # backspace on heading
+            movedIter = self.insertIter()
+            if currentLineOffset == 1:
+                movedIter.backward_chars(2)
+            else:
+                movedIter.backward_char()
+            self.buffer.place_cursor(movedIter)
+            self.control.scriptView.updateCurrentStoryIndex()
             return 1
 
-        if currentChar == HEADING and not prevCharIsHeading:
-            currentLine = insertIter.get_line()
-            prevLineIter = self.get_buffer().get_iter_at_line(currentLine-1)
-            if prevLineIter.get_chars_in_line() > 1:
-                return 1
+        elif prevCharIsHeading and currentLineIndex > 1: # backspace on heading
+            movedIter = self.insertIter()
+            movedIter.backward_chars(3)
+            self.buffer.place_cursor(movedIter)
+            self.control.scriptView.updateCurrentStoryIndex()
+            return 1
 
         self.forceWordEvent()
         #self.setSelectionClipboard()
@@ -1813,7 +1840,7 @@ class TextView(Gtk.TextView):
     def insertingOnFirstIter(self, event):
         isStartIter = self.insertIter().is_start()
         if isStartIter:
-            if event.keyval not in [65361, 65362, 65363, 65364, 65366, 65367]: # allow arrows, pageup/down,
+            if event.keyval not in [65361, 65362, 65363, 65364, 65366, 65367, 65535]: # allow arrows, pageup/down,
                 return 1
         return 0
 
