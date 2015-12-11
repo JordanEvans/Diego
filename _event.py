@@ -510,7 +510,7 @@ class CutEvent(Event):
     def undo(self):
         Event.undo(self)
 
-class AutocompleteCharacterEvent(Event):
+class AutocompleteEvent(Event):
     def __init__(self, control, name):
         Event.__init__(self)
 

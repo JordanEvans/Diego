@@ -147,6 +147,19 @@ class Scene(object):
         for page in self.pages:
             page.findAndReplace(find, replace)
 
+    def names(self, control):
+        names = []
+        for p in self.pages:
+            for l in p.lines:
+                if l.tag == 'character' and l.text not in names:
+                    names.append(l.text)
+
+        snames = control.currentStory().names
+        for n in names:
+            if n in snames:
+                snames.remove(n)
+
+        return names + snames
 
 class Page(object):
 
@@ -219,20 +232,6 @@ class Story(object):
         self.times = ["DAY", "NIGHT", "DUSK", "DAWN"]
         self.times.sort()
         self.isScreenplay = False
-
-    def addLocation(self, location):
-        if location == '':
-            return
-        if location not in self.locations:
-            self.locations.append(location)
-        self.locations.sort()
-
-    def addTime(self, time):
-        if time == '':
-            return
-        if time not in self.times:
-            self.times.append(time)
-        self.times.sort()
 
     def newSequence(self, prepend=False):
         sequence = Sequence()
@@ -491,3 +490,17 @@ class Story(object):
         if len(name) and name not in self.names:
             self.names.append(name)
             self.names.sort()
+
+    def addLocation(self, location):
+        if location == '':
+            return
+        if location not in self.locations:
+            self.locations.append(location)
+        self.locations.sort()
+
+    def addTime(self, time):
+        if time == '':
+            return
+        if time not in self.times:
+            self.times.append(time)
+        self.times.sort()

@@ -107,9 +107,9 @@ class SceneHeading(object):
 
         return component
 
-    def completeLine(self, line, offset):
-        #components = self.componentsFromString(line.text)
-        print self.cursorComponent(line, offset)
+    # def completeLine(self, line, offset):
+    #     #components = self.componentsFromString(line.text)
+    #     print self.cursorComponent(line, offset)
 
     def location(self, text):
         components = self.componentsFromString(text)
@@ -233,6 +233,8 @@ class TextView(Gtk.TextView):
 
     def buttonPress(self, widget, event):
 
+        # self.printTags()
+
         self.forceWordEvent()
 
         # # Update names in the scene where the cursor is moving from a character line.
@@ -291,7 +293,38 @@ class TextView(Gtk.TextView):
         self.cutPress = False
         self.formatingLine = False
 
+        currentLine = self.control.currentLine()
         insertIter = self.insertIter()
+        currentLineIndex = insertIter.get_line()
+        lineEmpty = len(currentLine.text) == 0
+
+        currentCharIsHeading = False
+        currentTags = insertIter.get_tags()
+        names = [name.props.name for name in currentTags]
+        if "heading" in names:
+            currentCharIsHeading = True
+
+        backwardIter = self.insertIter()
+        canGoBackward = backwardIter.backward_char()
+        backwardChar = backwardIter.get_char()
+
+        prevCharIsHeading = False
+        if canGoBackward:
+            backwardTags = backwardIter.get_tags()
+            names = [name.props.name for name in backwardTags]
+            if "heading" in names or backwardChar == HEADING:
+                prevCharIsHeading = True
+
+        forwardIter = self.insertIter()
+        canGoForward = forwardIter.forward_char()
+        forwardChar = forwardIter.get_char()
+
+        nextCharIsHeading = False
+        if canGoForward:
+            forwardTags = forwardIter.get_tags()
+            names = [name.props.name for name in forwardTags]
+            if "heading" in names or backwardChar == HEADING:
+                nextCharIsHeading = True
 
         if self.removeCrossPageSelection():
             return 1
@@ -345,7 +378,7 @@ class TextView(Gtk.TextView):
         self.sceneHeadingIter = None
 
         if event.keyval == 65289: # doing formating for the tab character now.
-            currentLine = self.control.currentLine()
+
             if currentLine.tag not in ['heading', 'sceneHeading']:
 
                 self.tagIter.increment()
@@ -394,10 +427,29 @@ class TextView(Gtk.TextView):
         if (event.keyval == 65293): # new line
             return self.returnPress()
 
+        elif (event.keyval == 65535) and nextCharIsHeading and lineEmpty: # delete on before a heading on empty line
+
+            insertIter.backward_char()
+            self.buffer.place_cursor(insertIter)
+            self.control.scriptView.updateCurrentStoryIndex()
+            self.deletePress()
+
+        elif (event.keyval == 65535) and currentCharIsHeading: # delete on heading
+
+            insertIter.forward_char()
+            self.buffer.place_cursor(insertIter)
+            self.control.scriptView.updateCurrentStoryIndex()
+            self.deletePress()
+
+        elif (event.keyval == 65288) and prevCharIsHeading and lineEmpty: # backspace on heading
+            # insertIter.forward_char()
+            # self.buffer.place_cursor(insertIter)
+            # self.control.scriptView.updateCurrentStoryIndex()
+            self.deletePress()
+            return 1
+
         elif (event.keyval == 65288): # backspace
             self.backspacePress()
-            # if self.tagIter.tag() == 'character':
-            #     self.control.currentScene().updateCompletionNames()
             return 1
 
         elif (event.keyval == 65535): # delete
@@ -529,7 +581,7 @@ class TextView(Gtk.TextView):
                         self.buffer.delete(startIter,endIter)
 
                         # complete the current iters name
-                        self.completeCharacterName(self.sceneHeadingIter.name(), wordHasLength)
+                        self.completeWordOnLine(self.sceneHeadingIter.name(), wordHasLength, True)
 
                         return 1
 
@@ -558,7 +610,7 @@ class TextView(Gtk.TextView):
 
                         # Bring the next name forward and complete it.
                         self.sceneHeadingIter.increment()
-                        self.completeCharacterName(self.sceneHeadingIter.name(), 0)
+                        self.completeWordOnLine(self.sceneHeadingIter.name(), 0, True)
 
                         return 1
 
@@ -583,7 +635,7 @@ class TextView(Gtk.TextView):
 
                         # Reset the NameIter and complete
                         self.sceneHeadingIter = NameIter(prefixes, character)
-                        self.completeCharacterName(self.sceneHeadingIter.name(), 0)
+                        self.completeWordOnLine(self.sceneHeadingIter.name(), 0, True)
 
                         return 1
 
@@ -600,7 +652,7 @@ class TextView(Gtk.TextView):
             wordHasLength = len(self.word)
             if (char == character and wordHasLength) or self.nameIter != None:
 
-                for name in self.control.currentStory().names:
+                for name in self.control.currentScene().names(self.control):
                     if name.startswith(character) and name not in prefixes:
                         prefixes.append(name)
 
@@ -635,7 +687,7 @@ class TextView(Gtk.TextView):
                         self.buffer.delete(startIter,endIter)
 
                         # complete the current iters name
-                        self.completeCharacterName(self.nameIter.name(), wordHasLength)
+                        self.completeWordOnLine(self.nameIter.name(), wordHasLength)
 
                         return 1
 
@@ -664,7 +716,7 @@ class TextView(Gtk.TextView):
 
                         # Bring the next name forward and complete it.
                         self.nameIter.increment()
-                        self.completeCharacterName(self.nameIter.name(), 0)
+                        self.completeWordOnLine(self.nameIter.name(), 0)
 
                         return 1
 
@@ -689,9 +741,49 @@ class TextView(Gtk.TextView):
 
                         # Reset the NameIter and complete
                         self.nameIter = NameIter(prefixes, character)
-                        self.completeCharacterName(self.nameIter.name(), 0)
+                        self.completeWordOnLine(self.nameIter.name(), 0)
 
                         return 1
+
+    def completeWordOnLine(self, name, wordHasLength, isSceneHeading=False):
+
+        currentLine = self.control.currentLine()
+
+        # Lower case letters in words that are not the first character of a word and not upper case.
+        if currentLine.tag not in ["character", "sceneHeading"]:
+            lowered = []
+            first = True
+            for c in name:
+                if c.isupper() and not first:
+                    lowered.append(c.lower())
+                else:
+                    lowered.append(c)
+                    first = False
+                if c == ' ':
+                    first = True
+            name = "".join(lowered)
+
+        ace = _event.AutocompleteEvent(self.control, name)
+        self.control.currentStory().eventManager.addEvent(ace)
+
+        insertIter = self.insertIter()
+        self.buffer.insert(insertIter, name, len(name))
+
+        offset = self.control.currentStory().index.offset
+        text = self.control.currentLine().text
+
+        if wordHasLength:
+            currentLine.text = text[:offset - 0] + name + text[offset - 0:]
+        else:
+            currentLine.text = text[:offset - 1] + name + text[offset - 1:]
+
+        index = self.control.scriptView.lines.index(currentLine)
+
+        if len(name):
+            tag = self.tagIter.tag()
+            if isSceneHeading:
+                tag = "sceneHeading"
+            self.formatLine(index, tag)
 
     def resetTags(self, width=None):
 
@@ -918,43 +1010,6 @@ class TextView(Gtk.TextView):
             self.resetTags(allocation.width)
             self.settingMargin = True
 
-    def completeCharacterName(self, name, wordHasLength):
-
-        currentLine = self.control.currentLine()
-
-        # Lower case letters in words that are not the first character of a word and not upper case.
-        if currentLine.tag not in ["character", "sceneHeading"]:
-            lowered = []
-            first = True
-            for c in name:
-                if c.isupper() and not first:
-                    lowered.append(c.lower())
-                else:
-                    lowered.append(c)
-                    first = False
-                if c == ' ':
-                    first = True
-            name = "".join(lowered)
-
-        ace = _event.AutocompleteCharacterEvent(self.control, name)
-        self.control.currentStory().eventManager.addEvent(ace)
-
-        insertIter = self.insertIter()
-        self.buffer.insert(insertIter, name, len(name))
-
-        offset = self.control.currentStory().index.offset
-        text = self.control.currentLine().text
-
-        if wordHasLength:
-            currentLine.text = text[:offset - 0] + name + text[offset - 0:]
-        else:
-            currentLine.text = text[:offset - 1] + name + text[offset - 1:]
-
-        index = self.control.scriptView.lines.index(currentLine)
-
-        if len(name):
-            self.formatLine(index, self.tagIter.tag())
-
     def insertPrefix(self):
 
         spaceCount = 0
@@ -998,6 +1053,8 @@ class TextView(Gtk.TextView):
 
     def updateLineTag(self, line=None, formatingLastLineWhenEmpty=False, autoSceneHeading=True):
 
+
+        # print self.iterInfo(self.insertIter())
         if line != None:
             cp = self.control.currentPage()
             updateLine = self.control.scriptView.lines[line]
@@ -1060,11 +1117,6 @@ class TextView(Gtk.TextView):
             tagNames = [name.props.name for name in charIter.get_tags()]
             self.control.p(charIter.get_char(), tagNames)
             character = charIter.forward_char()
-
-    def iterInfo(self, iter):
-        info = iter.get_line(), iter.get_offset(), iter.get_char(), [name.props.name for name in iter.get_tags()]
-        print "insert", info
-        return info
 
     def returnPress(self):
 
@@ -1133,9 +1185,11 @@ class TextView(Gtk.TextView):
             tag = self.control.currentLine().tag
             self.tagIter.load(tag)
 
-        # if self.tagIter.tag() == 'character':
-        #     self.control.currentScene().updateCompletionNames()
+            # After moving cursor forward the previous line index needs updated.
+            previousLineIndex += 1
 
+
+        # Deletes a selection if needed.
         cutEvent = self.chainDeleteSelectedTextEvent()
         if cutEvent != None :
             cutEvent.chained = False
@@ -1154,14 +1208,14 @@ class TextView(Gtk.TextView):
         else:
             newLineTag = currentLine.tag
 
+        # If it's a scene heading, updates time and location components.
         if currentLine.tag == 'sceneHeading':
             newLineTag = 'description'
             components = SceneHeading().componentsFromString(currentLine.text)
             if len(components) > 1:
                 self.control.currentStory().addLocation(components[1])
-                # if components[1] not in self.locations:
-                #     self.locations.append(components[1])
-                #     self.locations.sort()
+            if len(components) > 2:
+                self.control.currentStory().addTime(components[2])
 
         self.tagIter.load(newLineTag)
 
@@ -1245,11 +1299,21 @@ class TextView(Gtk.TextView):
             insertIter.backward_chars(len(carryText))
             self.buffer.place_cursor(insertIter)
 
+        tag = self.updateLineTag(previousLineIndex) # Formats the line just made.
+
+        line = self.insertIter().get_line()
+        # When hitting enter after a heading and is a screenplay, the existing sceneheading line will be pushed down,
+        # so it must be turned to a description. This also keeps the zwc from being a sceneheading unless its below one.
+        if currentCharIsHeading and self.control.currentStory().isScreenplay:
+            self.formatLine(line + 1, 'description')
+            self.control.scriptView.lines[line + 1].tag = "description"
+
+        # If on last line, this needs to be done so that fommatting shows for an empty line.
+        if line == len(self.control.scriptView.lines) - 1:
+            tag = self.updateLineTag() # This formats the next line.
+
         self.newLineEvent = True
         self.control.currentStory().saved = False
-
-        self.updateLineTag(previousLineIndex)
-        tag = self.updateLineTag()
 
         return 1
 
@@ -1592,6 +1656,8 @@ class TextView(Gtk.TextView):
         endIter.forward_to_line_end()
         endIter.forward_char()
 
+        text = self.buffer.get_text(startIter, endIter, True)
+
         self.buffer.remove_all_tags(startIter, endIter)
         self.buffer.apply_tag_by_name(tag, startIter, endIter)
 
@@ -1750,6 +1816,11 @@ class TextView(Gtk.TextView):
             if event.keyval not in [65361, 65362, 65363, 65364, 65366, 65367]: # allow arrows, pageup/down,
                 return 1
         return 0
+
+    def iterInfo(self, iter):
+        info = ['line', iter.get_line()], ['line offset', iter.get_line_offset()], ['buffer offset', iter.get_offset()], ["at char", iter.get_char()],["tags", [name.props.name for name in iter.get_tags()]]
+        print "insert", info
+        return info
 
     def insertIter(self):
         return self.get_buffer().get_iter_at_mark(self.get_buffer().get_insert())
@@ -2086,7 +2157,7 @@ class ScriptView(Gtk.Box):
 
         anchor = self.textBuffer.create_child_anchor(self.textView.insertIter())
         entry = Gtk.Label()
-        entry.set_markup("""<span font_family='monospace' font='9.0' foreground='#99bbff' >""" + text + """</span>""")
+        entry.set_markup("""<span font_family='monospace' font='9.0' foreground='#bbbbbb' >""" + text + """</span>""")
 
         self.textView.add_child_at_anchor(entry, anchor)
 

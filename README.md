@@ -45,9 +45,9 @@ If the line is empty, just press the Spacebar. If the line has text, then place 
 
 <i>Optionally, pressing tab will reformat the line no matter where the cursor is placed on the line.</i>
 
-<b>How to Auto Complete Names</b>
+<b>How To Autocomplete</b>
 
-Hold down shift. Type the first letter of the characters name. Press same character to cycle through potential names.
+Diego uses The Double Cap Method. Hold shift and press the character twice that begins with the word you are looking for. Keep pressing with the shift down to cycle through candidates. There are three things that autcomplete in Diego: Character Names and for screenplays Locations and Times.
 
 <i>Characters in current scene are listed first. Character in rest of story follow in completion list.</i>
 
@@ -100,7 +100,3 @@ Go to Story, Scene, or Page View. Type single word in Find Entry.
 <b>Screenplay Mode</b>
 
 Toggle the Screenplay Switch to Active. The first line of a scene now will autocomplete for Int/Ext, Location and Time.
-
-<b>Autocomplete Int/Ext, Location and Time</b>
-
-Activate Screenplay Mode. On first line of a scene, hold down Shift Key and press the letter twice that starts with word you want to autocomplete.
