@@ -37,7 +37,6 @@ class App(object):
         # but control.state may provide stories to load,
         # if app was previously opened and stories were made.
 
-
         self.control.load()
 
         # Some misc follow up stuff.

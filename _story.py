@@ -186,7 +186,7 @@ class Page(object):
         find = unicode(find)
         replace = unicode(replace)
         for line in self.lines:
-            splitText = re.findall(r"[\w']+|[ .,!?;]", line.text)
+            splitText = re.findall(r"[\w']+|[ .,!?;-]", line.text)
             newLine = []
             for split in splitText:
                 if split == find:
@@ -232,6 +232,8 @@ class Story(object):
         self.times = ["DAY", "NIGHT", "DUSK", "DAWN"]
         self.times.sort()
         self.isScreenplay = False
+
+        self.firstAppearances = []
 
     def newSequence(self, prepend=False):
         sequence = Sequence()
@@ -339,7 +341,6 @@ class Story(object):
             self.isScreenplay = data['isScreenplay']
             self.updateLocations()
             self.updateTimes()
-
 
     def save(self,):
         if self.path == None:
@@ -508,3 +509,17 @@ class Story(object):
                             self.addTime(tim)
 
         self.locations.sort()
+
+    def updateFirstAppearancesAtLine(self, line):
+        splitText = re.findall(r"[\w']+|[ .,!?;-]", line.text)
+        for name in self.names:
+            if name in splitText and name not in self.firstAppearances:
+                self.firstAppearances.append(name)
+                line.text = "".join(splitText)
+
+    def updateFirstAppearances(self):
+        for sequence in self.sequences:
+            for scene in sequence.scenes:
+                for page in scene.pages:
+                    for line in page.lines:
+                        self.updateFirstAppearancesAtLine(line)

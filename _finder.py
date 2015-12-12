@@ -89,7 +89,7 @@ class View(Gtk.Box):
                             if line.tag != 'heading':
                                 line.findTags = []
 
-                                splitText = re.findall(r"[\w']+|[ .,!?;]", line.text)
+                                splitText = re.findall(r"[\w']+|[ .,!?;-]", line.text)
 
                                 if find in splitText:
                                     offset = 0
@@ -104,7 +104,7 @@ class View(Gtk.Box):
                 for line in page.lines:
                     line.findTags = []
 
-                    splitText = re.findall(r"[\w']+|[ .,!?;]", line.text)
+                    splitText = re.findall(r"[\w']+|[ .,!?;-]", line.text)
 
                     if find in splitText:
                         offset = 0
@@ -117,7 +117,7 @@ class View(Gtk.Box):
         elif self.control.category == 'page':
             for line in self.control.currentPage().lines:
                 line.findTags = []
-                splitText = re.findall(r"[\w']+|[ .,!?;]", line.text)
+                splitText = re.findall(r"[\w']+|[ .,!?;-]", line.text)
 
                 if find in splitText:
                     offset = 0

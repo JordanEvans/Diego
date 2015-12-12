@@ -293,12 +293,7 @@ class TextView(Gtk.TextView):
         self.cutPress = False
         self.formatingLine = False
 
-        # currentLine = self.control.currentLine()
         insertIter = self.insertIter()
-        # currentLineIndex = insertIter.get_line()
-        # lineEmpty = len(currentLine.text) == 0
-        # currentChar = insertIter.get_char()
-        # currentLineOffset = insertIter.get_line_offset()
 
         currentCharIsHeading = False
         currentTags = insertIter.get_tags()
@@ -1034,7 +1029,6 @@ class TextView(Gtk.TextView):
 
     def updateLineTag(self, line=None, formatingLastLineWhenEmpty=False, autoSceneHeading=True):
 
-
         # print self.iterInfo(self.insertIter())
         if line != None:
             cp = self.control.currentPage()
@@ -1330,6 +1324,16 @@ class TextView(Gtk.TextView):
                 if selectStart.get_char() == HEADING:
                     return 1
 
+        if currentChar:# and not nextCharIsHeading:
+            self.forceWordEvent()
+            self.setSelectionClipboard()
+            cutEvent = self.chainDeleteSelectedTextEvent()
+
+            if cutEvent:
+                self.control.currentStory().saved = False
+                self.updateLineTag()
+                return 1
+
         if canGoForward:
             forwardTags = forwardIter.get_tags()
             names = [name.props.name for name in forwardTags]
@@ -1341,13 +1345,6 @@ class TextView(Gtk.TextView):
             names = [name.props.name for name in backwardTags]
             if "heading" in names or backwardChar == HEADING:
                 prevCharIsHeading = True
-
-        # if not len(bounds) and currentCharIsNewLine and forwardChar == HEADING:
-        #     if insertIter.get_chars_in_line() > 1:
-        #         return 1
-
-        # if len(bounds) and nextCharIsHeading and prevCharIsHeading:
-        #     return 1
 
         if currentChar == ZERO_WIDTH_SPACE:
             return 1
@@ -1368,25 +1365,14 @@ class TextView(Gtk.TextView):
             self.control.scriptView.updateCurrentStoryIndex()
             return 1
 
-        if currentChar:# and not nextCharIsHeading:
-
-            self.forceWordEvent()
-            self.setSelectionClipboard()
-            cutEvent = self.chainDeleteSelectedTextEvent()
-            if cutEvent:
-                self.control.currentStory().saved = False
-                self.updateLineTag()
-                return 1
-
+        if currentChar:
             self.deleteEvent = True
             nextIter = self.insertIter()
             nextIter.forward_char()
             delChar = self.buffer.get_text(insertIter, nextIter, True)
             self.buffer.delete(insertIter, nextIter)
             self.control.currentStory().saved = False
-
             self.control.currentStory().eventManager.addEvent(_event.DeleteEvent(self.control, delChar))
-
         else:
             return 1
 
@@ -1397,8 +1383,10 @@ class TextView(Gtk.TextView):
 
         currentLine = self.control.currentLine()
         currentLineOffset = insertIter.get_line_offset()
+        currentCharOffset = insertIter.get_offset()
         lineEmpty = len(currentLine.text) == 0
         currentLineIndex = insertIter.get_line()
+        lastIterOffset = self.buffer.get_end_iter().get_offset()
 
         insertIter = self.insertIter()
         characterCount = insertIter.get_chars_in_line()
@@ -1434,20 +1422,13 @@ class TextView(Gtk.TextView):
         self.control.scriptView.textView.markSet()
         self.setSelectionClipboard()
 
-        # # Will not backspace if a heading is there, but will use the backspace as cut event if there is a selection.
-        # if prevCharIsHeading and len(self.control.scriptView.textView.selectedClipboard) == 0:
-        #     return 1
+        if currentLineIndex == 0:
+            return 1
 
-        # if currentCharIsHeading:
-        #     return 1
+        if currentLineIndex == 1 and currentLineOffset == 0:
+            return 1
 
-        # if currentChar == HEADING and not prevCharIsHeading:
-        #     currentLine = insertIter.get_line()
-        #     prevLineIter = self.get_buffer().get_iter_at_line(currentLine-1)
-        #     if prevLineIter.get_chars_in_line() > 1:
-        #         return 1
-
-        if prevCharIsHeading and lineEmpty: # backspace on heading
+        if prevCharIsHeading and lineEmpty and (lastIterOffset - 1) != currentCharOffset: # backspace on heading
             self.deletePress()
             return 1
 
@@ -1520,7 +1501,10 @@ class TextView(Gtk.TextView):
 
             self.selectedClipboard = []
 
-            self.formatLine(cutEvent.textViewLine, self.control.scriptView.lines[cutEvent.textViewLine].tag)
+            # print "tag", self.control.scriptView.lines[cutEvent.textViewLine].tag
+            #self.formatLine(cutEvent.textViewLine, self.control.scriptView.lines[cutEvent.textViewLine].tag)
+
+            self.updateLineTag(cutEvent.textViewLine, self.control.scriptView.lines[cutEvent.textViewLine].tag)
 
             self.control.scriptView.updateCurrentStoryIndex()
 
