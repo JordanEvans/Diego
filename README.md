@@ -2,13 +2,13 @@
 
 <h3>Simple. Fast. Organized.</h3>
 
-Diego's goal is to be The Simplest and the Fastest Scriptwriting software for Graphic Novel writers. Diego also seconds as specscript software.
+Diego's goal is to be The Simplest and the Fastest Scriptwriting software for Graphic Novel writers. Diego seconds as specscript software as well.
 
-Diego has traded feature bloat for simplicity. Only features that are neccessary to get the job done are added. Diego's design centers around keeping the writers hands on the keyboard. Keyboard shortcuts replace the common interface cluttered with buttons and menus and submenus.
+Diego has traded feature bloat for simplicity. Only features that are necessary to get the job done are added. Diego's design centers around keeping the writers hands on the keyboard. Keyboard shortcuts replace the common interface cluttered with buttons and menus and sub-menus.
 
-Each Story, Scene and Page has an Info/Abstract Text area that allows the writer to outline their story by creating abstracts. This text area works as a  convenient place to store premises for new story ideas that may turn into a full script at some point.
+Each Story, Scene and Page has an Info/Abstract Text area that allows the writer to outline their story by creating abstracts. This text area works as a convenient place to store premises for new story ideas that may turn into a full script at some point.
 
-When Diego saves, three documents are created: the Diego document, an RTF for extra tweeking, and a PDF.
+When Diego saves, three documents are created: the Diego document, an RTF for extra tweaking, and a PDF.
 
 <img src="http://specscripter.com/screenshot.png">
 
@@ -41,13 +41,13 @@ Select an item in the Scene or Page View. Hit Delete key. Deleting a Scene will 
 
 <b>How to Format A Line as Description, Character, Parenthetic or Dialog</b>
 
-If the line is empty, just press the Spacebar. If the line has text, then place the cursor at the beginning of the line and hit Spacebar.
+If the line is empty, press the Spacebar. If the line has text, then place the cursor at the beginning of the line and hit Spacebar.
 
 <i>Optionally, pressing tab will reformat the line no matter where the cursor is placed on the line.</i>
 
-<b>How To Autocomplete</b>
+<b>How To Auto-complete</b>
 
-Diego uses The Double Cap Method. Hold shift and press the character twice that begins with the word you are looking for. Keep pressing with the shift down to cycle through candidates. There are three things that autcomplete in Diego: Character Names and for screenplays Locations and Times.
+Diego uses The Double Cap Method. Hold down the Shift Key and press the character of the word you are looking for 2 times. Keep pressing the first letter of the word with the shift down to cycle through candidates. There are three things that auto-complete in Diego: Character Names and for screenplays Locations and Times.
 
 <i>Characters in current scene are listed first. Character in rest of story follow in completion list.</i>
 
@@ -99,4 +99,16 @@ Go to Story, Scene, or Page View. Type single word in Find Entry.
 
 <b>Screenplay Mode</b>
 
-Toggle the Screenplay Switch to Active. The first line of a scene now will autocomplete for Int/Ext, Location and Time.
+Toggle the Screenplay Switch to Active. The first line of a scene now will auto-complete for Int/Ext, Location and Time.
+
+<b>Set Author/Contact Information</b>
+
+Press Atl + i, this information will be inserted into rtf and pdfs.
+
+<i>Not implemented yet.</i>
+
+<b>Move A Scene/Page</b>
+
+Select the Scene or Page to be moved in the Scene/Page View.  Hold down Control key and press up or down arrow key.
+
+<i>Not implemented yet.</i>
