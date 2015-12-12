@@ -90,6 +90,8 @@ class Control(object):
 
     def wordMispelled(self, word):
 
+        word = unicode(word)
+
         # If word comes in in all lower, then it must be in the dict as all lower or it's mispelled.
         allLower = True
         for c in word:
@@ -107,6 +109,9 @@ class Control(object):
         capitalized = word[0].upper()
         if len(word) > 1:
             capitalized += word[1:].lower()
+
+        lower = unicode(lower)
+        capitalized = unicode(capitalized)
 
         if word not in self.trie and lower not in self.trie and capitalized not in self.trie:
             return True

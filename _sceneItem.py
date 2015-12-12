@@ -7,7 +7,7 @@ class Data(object):
 
     def __init__(self, control):
         self.control = control
-        
+
         self.name = ''
         self.intExt = ''
         self.location = ''

@@ -63,9 +63,7 @@ class Line(object):
     def __init__(self, text='', tag='description'):
         self.text = text
         self.tag = tag
-
         self.findTags = [] # does not go in data.
-
         self.mispelled = []
 
     def data(self):
@@ -84,10 +82,11 @@ class Line(object):
     def updateMispelled(self, control):
 
         self.mispelled = []
-        words = re.findall(r"[\w']+|[ .,!?;-;=:'\"@#$^&*(){}]", self.text)
+        words = re.findall(r"[\w']+|[ .,!?;-=:'\"@#$^&*(){}]", self.text)
         self.mispelled = []
         offset = 0
         for w in words:
+            w = unicode(w)
             if control.wordMispelled(w):
                 mw = MispelledWord(w, offset)
                 self.mispelled.append(mw)
@@ -282,6 +281,8 @@ class Story(object):
         self.isScreenplay = False
 
         self.firstAppearances = []
+
+        print  re.findall(r"[\w']+|[ .,!?;-=:'\"@#$^&*(){}]", 'the - test')
 
     def newSequence(self, prepend=False):
         sequence = Sequence()
