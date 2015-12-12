@@ -66,6 +66,8 @@ class Line(object):
 
         self.findTags = [] # does not go in data.
 
+        self.mispelled = []
+
     def data(self):
         data = {}
         data['text'] = self.text
@@ -79,6 +81,51 @@ class Line(object):
         else:
             return  control.scriptView.lines[index - 1]
 
+    def updateMispelled(self, control):
+
+        self.mispelled = []
+        words = re.findall(r"[\w']+|[ .,!?;-;=:'\"@#$^&*(){}]", self.text)
+        self.mispelled = []
+        offset = 0
+        for w in words:
+            if control.wordMispelled(w):
+                mw = MispelledWord(w, offset)
+                self.mispelled.append(mw)
+            offset += len(w)
+
+    def applyMispelledTags(self, control, cursorWordOnly=False):
+
+        if not cursorWordOnly:
+            for word in self.mispelled:
+
+                lineIndex = control.scriptView.lines.index(self)
+
+                startIter = control.scriptView.textView.buffer.get_iter_at_line(lineIndex)
+                startIter.forward_chars(word.offset)
+                endIter = control.scriptView.textView.buffer.get_iter_at_line(lineIndex)
+                endIter.forward_chars(word.offset + len(word.word))
+
+                control.scriptView.textView.buffer.remove_all_tags(startIter, endIter)
+                control.scriptView.textView.buffer.apply_tag_by_name(self.tag + "Mispelled", startIter, endIter)
+        else:
+            lineOffset = control.scriptView.textView.insertIter().get_line_offset()
+            cursorWord = None
+            for word in self.mispelled:
+                if word.offset + len(word.word) + 1 == lineOffset:
+                    cursorWord = word
+                    break
+
+            if cursorWord:
+                word = cursorWord
+                lineIndex = control.scriptView.lines.index(self)
+
+                startIter = control.scriptView.textView.buffer.get_iter_at_line(lineIndex)
+                startIter.forward_chars(word.offset)
+                endIter = control.scriptView.textView.buffer.get_iter_at_line(lineIndex)
+                endIter.forward_chars(word.offset + len(word.word))
+
+                control.scriptView.textView.buffer.remove_all_tags(startIter, endIter)
+                control.scriptView.textView.buffer.apply_tag_by_name(self.tag + "Mispelled", startIter, endIter)
 
 class Sequence(object):
 
@@ -160,6 +207,7 @@ class Scene(object):
                 snames.remove(n)
 
         return names + snames
+
 
 class Page(object):
 
@@ -523,3 +571,18 @@ class Story(object):
                 for page in scene.pages:
                     for line in page.lines:
                         self.updateFirstAppearancesAtLine(line)
+
+    def updateMispelled(self):
+        if self.control.trie:
+            for sequence in self.sequences:
+                for scene in sequence.scenes:
+                    for page in scene.pages:
+                        for line in page.lines:
+                            line.updateMispelled(self.control)
+                            if len(line.mispelled):
+                                print [o.word for o in line.mispelled]
+
+class MispelledWord(object):
+    def __init__(self, word, offset):
+        self.word = word
+        self.offset = offset

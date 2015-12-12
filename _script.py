@@ -1,4 +1,4 @@
-import string, os
+import string, os, re
 
 from gi.repository import Gtk, Gdk, GLib, Pango, GObject
 
@@ -17,6 +17,7 @@ PARENTHETIC_WIDTH_FACTOR = 0.50
 DIALOG_LEFT_FACTOR = 0.34
 CHARACTER_LEFT_FACTOR = 0.536
 PARENTHETIC_LEFT_FACTOR = 0.45
+
 
 class TagIter(object):
 
@@ -245,6 +246,14 @@ class TextView(Gtk.TextView):
         if self.tagIter.tag() == "character":
             self.control.currentStory().addName(self.control.currentLine().text)
 
+    def currentLineMispelled(self):
+        if self.control.trie:
+            currentLine = self.control.currentLine()
+            currentLine.updateMispelled(self.control)
+            currentLine.applyMispelledTags(self.control, cursorWordOnly=True)
+            self.control.mispelledLine = currentLine
+            self.control.mispelledTimer()
+
     def buttonRelease(self, widget, event):
 
         buttonReleaseScene = self.control.currentScene()
@@ -275,14 +284,15 @@ class TextView(Gtk.TextView):
             if bounds:
                 self.buffer.select_range(self.markIter(startMark), self.markIter(endMark))
 
-        # # If changing to another scene, update the completion names so they are relevant to that scene.
-        # if buttonReleaseScene != self.buttonPressScene:
-        #     buttonReleaseScene.updateCompletionNames()
-
-        # sh = SceneHeading()
-        # sh.completeLine(self.control.currentLine().text, self.control.currentStory().index.offset)
-
         # self.printTags()
+
+    def lineWords(self, line=None):
+        if line==None:
+            line = self.control.currentLine()
+
+        words = re.findall(r"[\w']+|[ .,!?;-]", line.text)
+
+        return words
 
     def keyPress(self, widget, event):
         self.forcingWordEvent = False
@@ -468,6 +478,7 @@ class TextView(Gtk.TextView):
 
         if event.keyval == 32:
             self.forcingWordEvent = True
+            self.currentLineMispelled()
 
         return 1
 
@@ -492,6 +503,9 @@ class TextView(Gtk.TextView):
         if self.arrowPress:
             # In case the line has changed, TagIter needs current line tag.
             self.tagIter.load(self.control.currentLine().tag)
+
+        # if self.forceWordEvent:
+        #     self.currentLineMispelled()
 
         # self.printTags()
 
@@ -849,6 +863,12 @@ class TextView(Gtk.TextView):
         self.parentheticFindTag.props.font = "Courier Prime " + str(self.fontSize)
         self.sceneHeadingFindTag.props.font = "Courier Prime " + str(self.fontSize)
 
+        self.descriptionMispelledTag.props.font = "Courier Prime " + str(self.fontSize)
+        self.characterMispelledTag.props.font = "Courier Prime " + str(self.fontSize)
+        self.dialogMispelledTag.props.font = "Courier Prime " + str(self.fontSize)
+        self.parentheticMispelledTag.props.font = "Courier Prime " + str(self.fontSize)
+        self.sceneHeadingMispelledTag.props.font = "Courier Prime " + str(self.fontSize)
+
         self.control.scriptView.infoTextView.props.left_margin = self.control.scriptView.textView.descriptionLeftMargin
         self.control.scriptView.infoTextView.props.right_margin = self.control.scriptView.textView.descriptionRightMargin
 
@@ -977,6 +997,60 @@ class TextView(Gtk.TextView):
                                                      right_margin=self.descriptionRightMargin,
                                                      font="Courier Prime " + str(self.fontSize))
 
+
+        # Mispelled Tags
+
+        self.descriptionMispelledTag = self.buffer.create_tag("descriptionMispelled",
+                                                     background_rgba=descriptionBackground,
+                                                     pixels_inside_wrap=pixelsInsideWrap,
+                                                     pixels_above_lines=10,
+                                                     pixels_below_lines=10,
+                                                     left_margin=self.descriptionLeftMargin,
+                                                     right_margin=self.descriptionRightMargin,
+                                                     font="Courier Prime " + str(self.fontSize),
+                                                     underline=Pango.Underline.ERROR)
+
+        self.characterMispelledTag = self.buffer.create_tag("characterMispelled",
+                                                   background_rgba=characterBackground,
+                                                   left_margin=self.characterLeftMargin,
+                                                   right_margin=self.characterRightMargin,
+                                                   justification=Gtk.Justification.LEFT,
+                                                   pixels_inside_wrap=pixelsInsideWrap,
+                                                   pixels_above_lines=10,
+                                                   pixels_below_lines=0,
+                                                   font="Courier Prime " + str(self.fontSize),
+                                                     underline=Pango.Underline.ERROR)
+
+        self.dialogMispelledTag = self.buffer.create_tag("dialogMispelled",
+                                                background_rgba=dialogBackground,
+                                                left_margin=self.dialogLeftMargin,
+                                                right_margin=self.dialogRightMargin,
+                                                pixels_inside_wrap=pixelsInsideWrap,
+                                                pixels_above_lines=0,
+                                                pixels_below_lines=10,
+                                                font="Courier Prime " + str(self.fontSize),
+                                                     underline=Pango.Underline.ERROR)
+
+        self.parentheticMispelledTag = self.buffer.create_tag("parentheticMispelled",
+                                                     background_rgba=descriptionBackground,
+                                                     pixels_inside_wrap=pixelsInsideWrap,
+                                                     pixels_above_lines=0,
+                                                     pixels_below_lines=0,
+                                                     left_margin=self.parentheticLeftMargin,
+                                                     right_margin=self.descriptionRightMargin,
+                                                     font="Courier Prime " + str(self.fontSize),
+                                                     underline=Pango.Underline.ERROR)
+
+        self.sceneHeadingMispelledTag = self.buffer.create_tag("sceneHeadingMispelled",
+                                                     background_rgba=descriptionBackground, #Gdk.RGBA(0.0, 0.0, 1.0, 0.1), #descriptionBackground,
+                                                     pixels_inside_wrap=pixelsInsideWrap,
+                                                     pixels_above_lines=10,
+                                                     pixels_below_lines=10,
+                                                     left_margin=self.descriptionLeftMargin,
+                                                     right_margin=self.descriptionRightMargin,
+                                                     font="Courier Prime " + str(self.fontSize),
+                                                     underline=Pango.Underline.ERROR)
+
     def do_size_allocate(self, allocation):
 
         if self.settingMargin:
@@ -1070,9 +1144,9 @@ class TextView(Gtk.TextView):
             if not screenplayMode and tag == 'sceneHeading':
                 tag = 'description'
             if screenplayMode:
-                if self.control.currentLine().before(self.control).tag == 'heading':
+                if updateLine.before(self.control).tag == 'heading':
                     tag = "sceneHeading"
-                    self.control.currentLine().tag = 'sceneHeading'
+                    updateLine.tag = 'sceneHeading'
 
         self.buffer.apply_tag_by_name(tag, startIter, endIter)
 
@@ -1387,6 +1461,7 @@ class TextView(Gtk.TextView):
         lineEmpty = len(currentLine.text) == 0
         currentLineIndex = insertIter.get_line()
         lastIterOffset = self.buffer.get_end_iter().get_offset()
+        currentPage = self.control.currentPage()
 
         insertIter = self.insertIter()
         characterCount = insertIter.get_chars_in_line()
@@ -1425,7 +1500,7 @@ class TextView(Gtk.TextView):
         if currentLineIndex == 0:
             return 1
 
-        if currentLineIndex == 1 and currentLineOffset == 0:
+        if currentLineIndex == 1 and currentLineOffset == 0 and len(currentPage.lines) == 1:
             return 1
 
         if prevCharIsHeading and lineEmpty and (lastIterOffset - 1) != currentCharOffset: # backspace on heading
@@ -1742,6 +1817,7 @@ class TextView(Gtk.TextView):
                 self.control.currentStory().eventManager.addEvent(_event.WordEvent(self.control, word))
                 self.word = []
 
+
     def addCharToWord(self, character, duringKeyPressEvent=False):
 
         self.word.append(character)
@@ -1993,6 +2069,8 @@ class ScriptView(Gtk.Box):
         #     self.control.screenplayModeSwitch.callHandlerCode = False
         #
         # self.textView.tagIter.updateMode(self.control)
+
+        self.control.currentStory().updateMispelled()
 
         return lastTag
 

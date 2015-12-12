@@ -1,7 +1,7 @@
 
 import os
 
-from gi.repository import Gtk, Gdk
+from gi.repository import Gtk, GObject
 
 # app
 import _appWindow
@@ -70,6 +70,48 @@ class Control(object):
         self.screenplayModeSwitch = _screenplayModeSwitch.Switch(self)
 
         self.doMarkSetIndexUpdate = True
+
+        self.trie = None
+        self.auxTries = []
+        self.mispelledLine = None
+
+    def mispelledTimer(self):
+        GObject.timeout_add(1000, self.removeMispelledTags)
+
+    def removeMispelledTags(self):
+        if self.mispelledLine:
+            try:
+                index = self.scriptView.lines.index(self.mispelledLine)
+            except:
+                self.mispelledLine = None
+            else:
+                self.scriptView.textView.updateLineTag(index)
+                self.mispelledLine = None
+
+    def wordMispelled(self, word):
+
+        # If word comes in in all lower, then it must be in the dict as all lower or it's mispelled.
+        allLower = True
+        for c in word:
+            if not c.islower():
+                allLower = False
+
+        if allLower:
+            if word not in self.trie:
+                return True
+            return False
+
+        # The dict does not contain uppercase version of words, the capitalized version will be checked. All upper will be check as well for screenplay character names, locations and times.
+
+        lower = word.lower()
+        capitalized = word[0].upper()
+        if len(word) > 1:
+            capitalized += word[1:].lower()
+
+        if word not in self.trie and lower not in self.trie and capitalized not in self.trie:
+            return True
+
+        return False
 
     def notImplemented(self):
         print "not implemented"

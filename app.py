@@ -1,5 +1,5 @@
 import sys
-import os
+import os, string
 
 from gi.repository import Gtk
 
@@ -54,7 +54,24 @@ class App(object):
         except:
             pass
 
+        try:
+            self.loadTrie()
+        except:
+            print "spellcheck not active"
 
+        pass
+
+    def loadTrie(self):
+        import marisa_trie
+
+        path = '/usr/share/dict/american-english'
+        f = open(path, 'r')
+
+        words = f.read().split('\n') + list(string.punctuation) + [' ']
+
+        wordList = [unicode(word, 'utf-8') for word in words]
+
+        self.control.trie = marisa_trie.Trie(wordList)
 
     def updateWindowTitle(self):
         try:
