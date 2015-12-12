@@ -82,7 +82,7 @@ class Line(object):
     def updateMispelled(self, control):
 
         self.mispelled = []
-        words = re.findall(r"[\w']+|[ .,!?;-=:'\"@#$^&*(){}]", self.text)
+        words = re.findall(r"[\w']+|[ .,!?;\-=:'\"@#$^&*(){}]", self.text)
         self.mispelled = []
         offset = 0
         for w in words:
@@ -282,7 +282,7 @@ class Story(object):
 
         self.firstAppearances = []
 
-        print  re.findall(r"[\w']+|[ .,!?;-=:'\"@#$^&*(){}]", 'the - test')
+        #print  re.findall(r"[\w']+|[ .,!?;\-=:'\"@#$^&*(){}]", 'the - test')
 
     def newSequence(self, prepend=False):
         sequence = Sequence()

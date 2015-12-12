@@ -18,6 +18,8 @@ DIALOG_LEFT_FACTOR = 0.34
 CHARACTER_LEFT_FACTOR = 0.536
 PARENTHETIC_LEFT_FACTOR = 0.45
 
+TEXT_VIEW_FACTOR = 1.41667
+
 
 class TagIter(object):
 
@@ -777,11 +779,21 @@ class TextView(Gtk.TextView):
 
     def resetTags(self, width=None):
 
+        try:
+            self.control.scriptView
+        except:
+            return
+
+        self.settingMargin = True
+
+
         if width == None:
             width = self.get_allocated_width()
         self.width = width
 
         descriptionWidth = int(DESCRIPTION_WIDTH * self.fontSize)
+        self.control.scriptView.scrolledWindow2.set_size_request(self.descriptionWidth * TEXT_VIEW_FACTOR, 0)
+
         characterWidth = self.descriptionWidth * CHARACTER_WIDTH_FACTOR
         dialogWidth = self.descriptionWidth * DIALOG_WIDTH_FACTOR
         parentheticWidth = self.descriptionWidth * PARENTHETIC_WIDTH_FACTOR
@@ -801,7 +813,7 @@ class TextView(Gtk.TextView):
         self.dialogLeftMargin = dialogLeftMargin
         self.parentheticLeftMargin = parentheticLeftMargin
 
-        if descriptionRightMargin < 50:
+        if descriptionRightMargin < 1:
             return
         # if characterLeftMargin < 0:
         #     return
@@ -875,6 +887,10 @@ class TextView(Gtk.TextView):
         # Fixing last line tag issue.
         self.modify_font(Pango.FontDescription("Courier Prime " + str(self.fontSize)))
         self.props.left_margin = self.descriptionLeftMargin
+
+        # self.control.scriptView.scrolledWindow2.set_size_request(self.descriptionWidth * TEXT_VIEW_FACTOR, 0)
+
+        self.settingMargin = False
 
     def createTags(self):
         pixelsInsideWrap = 2
@@ -1985,11 +2001,19 @@ class ScriptView(Gtk.Box):
 
         props = self.infoTextView.props
         self.paned.add1(self.scrolledWindow)
-        self.paned.add2(vbox)
+
+        eventBox = Gtk.EventBox()
+        eventBox.modify_bg(Gtk.StateFlags.NORMAL, Gdk.RGBA(1.0, 1.0, 1.0, 0.0).to_color())
+        eventBox.add(vbox)
+        self.paned.add2(eventBox)
 
         self.scrolledWindow2 = Gtk.ScrolledWindow()
         self.scrolledWindow2.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-        vbox.pack_start(self.scrolledWindow2, 1, 1, 0)
+        self.scrolledWindow2.set_size_request(700, 400)
+        self.scrolledWindow2.set_halign(Gtk.Align.CENTER)
+        hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        hbox.pack_start(self.scrolledWindow2, 1, 1, 0)
+        vbox.pack_start(hbox, 1, 1, 0)
 
         self.createTextView()
         self.scrolledWindow2.add(self.textView)
