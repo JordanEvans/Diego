@@ -5,7 +5,7 @@ from gi.repository import Gtk, GObject
 
 # app
 import _appWindow
-import _finder
+import _search
 import _screenplayModeSwitch
 
 # data
@@ -69,7 +69,7 @@ class Control(object):
         self.appHeaderBar = Gtk.HeaderBar()
         self.headerBar = Gtk.HeaderBar()
         self.pathLabel = Gtk.Label()
-        self.searchEntry = _finder.View(self)
+        self.searchView = _search.View(self)
         self.screenplayModeSwitch = _screenplayModeSwitch.Switch(self)
 
         self.doMarkSetIndexUpdate = True

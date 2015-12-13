@@ -862,7 +862,13 @@ class TextView(Gtk.TextView):
         self.characterFindTag.props.left_margin = self.characterLeftMargin
         self.dialogFindTag.props.left_margin = self.dialogLeftMargin
         self.parentheticFindTag.props.left_margin = self.parentheticLeftMargin
-        self.sceneHeadingTag.props.left_margin = self.descriptionLeftMargin
+        self.sceneHeadingFindTag.props.left_margin = self.descriptionLeftMargin
+
+        self.descriptionScrollTag.props.left_margin = self.descriptionLeftMargin
+        self.characterScrollTag.props.left_margin = self.characterLeftMargin
+        self.dialogScrollTag.props.left_margin = self.dialogLeftMargin
+        self.parentheticScrollTag.props.left_margin = self.parentheticLeftMargin
+        self.sceneHeadingScrollTag.props.left_margin = self.descriptionLeftMargin
 
         self.sceneHeadingMispelledTag.props.left_margin = self.descriptionLeftMargin
         self.descriptionMispelledTag.props.left_margin = self.descriptionLeftMargin
@@ -880,7 +886,13 @@ class TextView(Gtk.TextView):
         self.characterFindTag.props.right_margin = self.characterRightMargin
         self.dialogFindTag.props.right_margin = self.dialogRightMargin
         self.parentheticFindTag.props.right_margin = self.parentheticRightMargin
-        self.sceneHeadingTag.props.right_margin = self.descriptionRightMargin
+        self.sceneHeadingFindTag.props.right_margin = self.descriptionRightMargin
+
+        self.descriptionScrollTag.props.right_margin = self.descriptionRightMargin
+        self.characterScrollTag.props.right_margin = self.characterRightMargin
+        self.dialogScrollTag.props.right_margin = self.dialogRightMargin
+        self.parentheticScrollTag.props.right_margin = self.parentheticRightMargin
+        self.sceneHeadingScrollTag.props.right_margin = self.descriptionRightMargin
 
         self.descriptionTag.props.font = "Courier Prime " + str(self.fontSize)
         self.characterTag.props.font = "Courier Prime " + str(self.fontSize)
@@ -893,6 +905,12 @@ class TextView(Gtk.TextView):
         self.dialogFindTag.props.font = "Courier Prime " + str(self.fontSize)
         self.parentheticFindTag.props.font = "Courier Prime " + str(self.fontSize)
         self.sceneHeadingFindTag.props.font = "Courier Prime " + str(self.fontSize)
+
+        self.descriptionScrollTag.props.font = "Courier Prime " + str(self.fontSize)
+        self.characterScrollTag.props.font = "Courier Prime " + str(self.fontSize)
+        self.dialogScrollTag.props.font = "Courier Prime " + str(self.fontSize)
+        self.parentheticScrollTag.props.font = "Courier Prime " + str(self.fontSize)
+        self.sceneHeadingScrollTag.props.font = "Courier Prime " + str(self.fontSize)
 
         self.descriptionMispelledTag.props.font = "Courier Prime " + str(self.fontSize)
         self.characterMispelledTag.props.font = "Courier Prime " + str(self.fontSize)
@@ -927,6 +945,7 @@ class TextView(Gtk.TextView):
             dialogBackground = whiteColor
 
         findColor = Gdk.RGBA(0.0, 0.1, 1.8, 0.15)
+        scrollColor = Gdk.RGBA(0.3, 0.7, 0.3, 0.8)
 
         self.descriptionTag = self.buffer.create_tag("description",
                                                      background_rgba=descriptionBackground,
@@ -1087,6 +1106,56 @@ class TextView(Gtk.TextView):
                                                      right_margin=self.descriptionRightMargin,
                                                      font="Courier Prime " + str(self.fontSize),
                                                      underline=Pango.Underline.ERROR)
+
+
+        ## Scroll Tags
+
+        self.descriptionScrollTag = self.buffer.create_tag("descriptionScroll",
+                                                     background_rgba=scrollColor,
+                                                     pixels_inside_wrap=pixelsInsideWrap,
+                                                     pixels_above_lines=10,
+                                                     pixels_below_lines=10,
+                                                     left_margin=self.descriptionLeftMargin,
+                                                     right_margin=self.descriptionRightMargin,
+                                                     font="Courier Prime " + str(self.fontSize))
+
+        self.characterScrollTag = self.buffer.create_tag("characterScroll",
+                                                   background_rgba=scrollColor,
+                                                   left_margin=self.characterLeftMargin,
+                                                   right_margin=self.characterRightMargin,
+                                                   justification=Gtk.Justification.LEFT,
+                                                   pixels_inside_wrap=pixelsInsideWrap,
+                                                   pixels_above_lines=10,
+                                                   pixels_below_lines=0,
+                                                   font="Courier Prime " + str(self.fontSize))
+
+        self.dialogScrollTag = self.buffer.create_tag("dialogScroll",
+                                                background_rgba=scrollColor,
+                                                left_margin=self.dialogLeftMargin,
+                                                right_margin=self.dialogRightMargin,
+                                                pixels_inside_wrap=pixelsInsideWrap,
+                                                pixels_above_lines=0,
+                                                pixels_below_lines=10,
+                                                font="Courier Prime " + str(self.fontSize))
+
+        self.parentheticScrollTag = self.buffer.create_tag("parentheticScroll",
+                                                     background_rgba=scrollColor,
+                                                     pixels_inside_wrap=pixelsInsideWrap,
+                                                     pixels_above_lines=0,
+                                                     pixels_below_lines=0,
+                                                     left_margin=self.parentheticLeftMargin,
+                                                     right_margin=self.descriptionRightMargin,
+                                                     font="Courier Prime " + str(self.fontSize))
+
+
+        self.sceneHeadingScrollTag = self.buffer.create_tag("sceneHeadingScroll",
+                                                     background_rgba=scrollColor, #descriptionBackground,
+                                                     pixels_inside_wrap=pixelsInsideWrap,
+                                                     pixels_above_lines=10,
+                                                     pixels_below_lines=10,
+                                                     left_margin=self.descriptionLeftMargin,
+                                                     right_margin=self.descriptionRightMargin,
+                                                     font="Courier Prime " + str(self.fontSize))
 
     def do_size_allocate(self, allocation):
 
@@ -1619,9 +1688,6 @@ class TextView(Gtk.TextView):
 
             self.selectedClipboard = []
 
-            # print "tag", self.control.scriptView.lines[cutEvent.textViewLine].tag
-            #self.formatLine(cutEvent.textViewLine, self.control.scriptView.lines[cutEvent.textViewLine].tag)
-
             self.updateLineTag(cutEvent.textViewLine, self.control.scriptView.lines[cutEvent.textViewLine].tag)
 
             self.control.scriptView.updateCurrentStoryIndex()
@@ -1792,7 +1858,6 @@ class TextView(Gtk.TextView):
                 f.write(word.rstrip().lstrip() + '\n')
             f.close()
             self.control.app.loadAddWordTrie()
-
 
         removeWords.append(word)
         f = open(self.control.removeWordPath, 'w')
@@ -2261,16 +2326,10 @@ class ScriptView(Gtk.Box):
         self.infoTextView.get_buffer().delete(self.infoTextView.get_buffer().get_start_iter(), self.infoTextView.get_buffer().get_end_iter())
         self.infoTextView.get_buffer().insert(self.infoTextView.get_buffer().get_start_iter(), st.info)
 
-        # if not self.control.screenplayModeSwitch.activating:
-        #     if self.control.currentStory().isScreenplay:
-        #         self.control.screenplayModeSwitch.set_state(True)
-        #     else:
-        #         self.control.screenplayModeSwitch.set_state(False)
-        #     self.control.screenplayModeSwitch.callHandlerCode = False
-        #
-        # self.textView.tagIter.updateMode(self.control)
-
         self.control.currentStory().updateMispelled()
+
+        self.control.searchView.reset()
+        self.control.searchView.find = None
 
         return lastTag
 
@@ -2353,6 +2412,10 @@ class ScriptView(Gtk.Box):
         self.control.doMarkSetIndexUpdate = False
         # self.addZeroWidthSpace(lastTag)
         self.control.doMarkSetIndexUpdate = True
+
+        self.control.searchView.reset()
+        self.control.searchView.find = None
+
         return lastTag
 
     def loadPage(self):
@@ -2407,6 +2470,10 @@ class ScriptView(Gtk.Box):
         self.control.doMarkSetIndexUpdate = False
         # self.addZeroWidthSpace(lastTag)
         self.control.doMarkSetIndexUpdate = True
+
+        self.control.searchView.reset()
+        self.control.searchView.find = None
+
         return lastTag
 
     def infoTextViewKeyPress(self, widget, event):

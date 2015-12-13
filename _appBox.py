@@ -32,7 +32,7 @@ class AppBox(Gtk.Box):
         self.control.appHeaderBar.pack_start(self.panelLabelBox)
 
         # Add SearchEntry
-        self.control.appHeaderBar.pack_end(self.control.searchEntry)
+        self.control.appHeaderBar.pack_end(self.control.searchView)
 
         # Add Screenplay Mode Switch
         self.control.appHeaderBar.pack_end(self.control.screenplayModeSwitch)
