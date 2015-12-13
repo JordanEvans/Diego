@@ -14,9 +14,17 @@ When Diego saves, three documents are created: the Diego document, an RTF for ex
 
 <b>System Requirements</b>
 
-Linux Operationing System
+Linux Operationing System (Windows soon)
+
+python 2.7
 
 Pygtk 3.14.15 installed.
+
+<b> Optional</b>
+
+<p><a href="https://pypi.python.org/pypi/marisa-trie">marisa-trie</a>marisa-trie is needed for spell checking</p>
+
+<p><a href="https://www.libreoffice.org/download/libreoffice-fresh/">LibreOffice</a>LibreOffice is needed to create pdf's</p>
 
 <p><a href="http://quoteunquoteapps.com/courierprime/">Courier Prime Font</a> Needs to be installed for correct format in viewing and exporting.</p>
 
