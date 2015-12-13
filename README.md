@@ -10,23 +10,27 @@ Each Story, Scene and Page has an Info/Abstract Text area that allows the writer
 
 When Diego saves, three documents are created: the Diego document, an RTF for extra tweaking, and a PDF.
 
-<img src="http://specscripter.com/screenshot.png">
+<img src="http://specscripter.com/graphicNovelMode.png">
+
+<img src="http://specscripter.com/screenplayMode.png">
+
+<img src="http://specscripter.com/outlineMode.png">
 
 <b>System Requirements</b>
 
-Linux Operationing System (Windows soon)
+Linux Operationing System (Windows very soon.)
 
-python 2.7
+Python 2.7
 
-Pygtk 3.14.15 installed.
+Pygtk 3.14.15 + installed.
 
 <b> Optional</b>
 
-<p><a href="https://pypi.python.org/pypi/marisa-trie">marisa-trie</a>marisa-trie is needed for spell checking</p>
+<p><a href="https://pypi.python.org/pypi/marisa-trie">marisa-trie</a> marisa-trie is needed for spell checking</p>
 
-<p><a href="https://www.libreoffice.org/download/libreoffice-fresh/">LibreOffice</a>LibreOffice is needed to create pdf's</p>
+<p><a href="https://www.libreoffice.org/download/libreoffice-fresh/">LibreOffice</a> LibreOffice is needed to create pdf's</p>
 
-<p><a href="http://quoteunquoteapps.com/courierprime/">Courier Prime Font</a> Needs to be installed for correct format in viewing and exporting.</p>
+<p><a href="http://quoteunquoteapps.com/courierprime/">Courier Prime Font</a> Courier Prime is needed for correct formatting in viewing and exporting.</p>
 
 <h2>How To Use Diego</h2>
 <i>At this time the app is in development and only meant for testing.</i>
