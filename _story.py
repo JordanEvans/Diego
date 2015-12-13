@@ -9,6 +9,8 @@ import _script
 
 from _event import EventManager
 
+DEFAULT_TIMES = ["DAY", "NIGHT", "DUSK", "DAWN"]
+
 class StoryIndex(object):
 
     def __init__(self, indexDict=None):
@@ -80,7 +82,7 @@ class Line(object):
             return  control.scriptView.lines[index - 1]
 
     def updateMispelled(self, control):
-
+        control.scriptView.textView.forceWordEvent()
         self.mispelled = []
         words = re.findall(r"[\w']+|[ .,!?;\-=:'\"@#$^&*(){}]", self.text)
         self.mispelled = []
@@ -276,7 +278,7 @@ class Story(object):
         self.names = []
         self.intExt = ['INT', 'EXT']
         self.locations = []
-        self.times = ["DAY", "NIGHT", "DUSK", "DAWN"]
+        self.times = DEFAULT_TIMES
         self.times.sort()
         self.isScreenplay = False
 
@@ -536,6 +538,7 @@ class Story(object):
         self.names.sort()
 
     def updateLocations(self):
+        self.locations = []
         sh = _script.SceneHeading()
         for sequence in self.sequences:
             for scene in sequence.scenes:
@@ -548,6 +551,7 @@ class Story(object):
         self.locations.sort()
 
     def updateTimes(self):
+        self.times = DEFAULT_TIMES
         sh = _script.SceneHeading()
         for sequence in self.sequences:
             for scene in sequence.scenes:
@@ -580,8 +584,8 @@ class Story(object):
                     for page in scene.pages:
                         for line in page.lines:
                             line.updateMispelled(self.control)
-                            if len(line.mispelled):
-                                print [o.word for o in line.mispelled]
+                            # if len(line.mispelled):
+                            #     print [o.word for o in line.mispelled]
 
 class MispelledWord(object):
     def __init__(self, word, offset):

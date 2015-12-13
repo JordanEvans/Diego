@@ -240,13 +240,21 @@ class TextView(Gtk.TextView):
 
         self.forceWordEvent()
 
-        # # Update names in the scene where the cursor is moving from a character line.
-        # self.buttonPressScene = self.control.currentScene()
-        # if self.tagIter.tag() == 'character':
-        #     self.buttonPressScene.updateCompletionNames()
+        self.updateNameLocationAndTime()
 
-        if self.tagIter.tag() == "character":
-            self.control.currentStory().addName(self.control.currentLine().text)
+    def updateNameLocationAndTime(self, line=None):
+
+        if not line:
+            line = self.control.currentLine()
+        tag = line.tag
+
+        # Update the character names if on a character line.
+        if tag == "character":
+            self.control.currentStory().addName(line.text)
+
+        # Update location and time if coming from a scene heading
+        if tag == 'sceneHeading':
+            self.updateLocationAndTime(line)
 
     def currentLineMispelled(self):
         if self.control.trie:
@@ -447,9 +455,7 @@ class TextView(Gtk.TextView):
         elif event.keyval in [65361,65362,65363,65364]: # arrow key
             self.forceWordEvent()
             self.arrowPress = True
-
-            if self.tagIter.tag() == 'character':
-                self.control.currentScene().updateCompletionNames()
+            self.updateNameLocationAndTime()
 
             return 0
 
@@ -480,6 +486,10 @@ class TextView(Gtk.TextView):
 
         if event.keyval == 32:
             self.forcingWordEvent = True
+            self.currentLineMispelled()
+
+        # Do this to spellcheck check parenthetic.
+        if event.keyval == 41:
             self.currentLineMispelled()
 
         return 1
@@ -786,7 +796,6 @@ class TextView(Gtk.TextView):
 
         self.settingMargin = True
 
-
         if width == None:
             width = self.get_allocated_width()
         self.width = width
@@ -794,19 +803,23 @@ class TextView(Gtk.TextView):
         descriptionWidth = int(DESCRIPTION_WIDTH * self.fontSize)
         self.control.scriptView.scrolledWindow2.set_size_request(self.descriptionWidth * TEXT_VIEW_FACTOR, 0)
 
+        centeringFactor = 0
+        if self.width:
+            centeringFactor = (self.width - descriptionWidth) / 2.55
+
         characterWidth = self.descriptionWidth * CHARACTER_WIDTH_FACTOR
         dialogWidth = self.descriptionWidth * DIALOG_WIDTH_FACTOR
         parentheticWidth = self.descriptionWidth * PARENTHETIC_WIDTH_FACTOR
 
-        descriptionLeftMargin = descriptionWidth * 0.1
-        characterLeftMargin = descriptionWidth * CHARACTER_LEFT_FACTOR
-        dialogLeftMargin = descriptionWidth * DIALOG_LEFT_FACTOR
-        parentheticLeftMargin = descriptionWidth * PARENTHETIC_LEFT_FACTOR
+        descriptionLeftMargin = descriptionWidth * 0.1 + centeringFactor
+        characterLeftMargin = descriptionWidth * CHARACTER_LEFT_FACTOR + centeringFactor
+        dialogLeftMargin = descriptionWidth * DIALOG_LEFT_FACTOR + centeringFactor
+        parentheticLeftMargin = descriptionWidth * PARENTHETIC_LEFT_FACTOR + centeringFactor
 
-        descriptionRightMargin = self.width - (descriptionLeftMargin + descriptionWidth)
-        characterRightMargin = self.width - (characterLeftMargin + characterWidth)
-        dialogRightMargin = self.width - (dialogLeftMargin + dialogWidth)
-        parentheticRightMargin = self.width - (dialogLeftMargin + parentheticWidth)
+        descriptionRightMargin = self.width - (descriptionLeftMargin + descriptionWidth) #- centeringFactor
+        characterRightMargin = self.width - (characterLeftMargin + characterWidth) #+ centeringFactor
+        dialogRightMargin = self.width - (dialogLeftMargin + dialogWidth)# + centeringFactor
+        parentheticRightMargin = self.width - (dialogLeftMargin + parentheticWidth)# + centeringFactor
 
         self.descriptionLeftMargin = descriptionLeftMargin
         self.characterLeftMargin = characterLeftMargin
@@ -851,6 +864,12 @@ class TextView(Gtk.TextView):
         self.parentheticFindTag.props.left_margin = self.parentheticLeftMargin
         self.sceneHeadingTag.props.left_margin = self.descriptionLeftMargin
 
+        self.sceneHeadingMispelledTag.props.left_margin = self.descriptionLeftMargin
+        self.descriptionMispelledTag.props.left_margin = self.descriptionLeftMargin
+        self.characterMispelledTag.props.left_margin = self.characterLeftMargin
+        self.dialogMispelledTag.props.left_margin = self.dialogLeftMargin
+        self.parentheticMispelledTag.props.left_margin = self.parentheticLeftMargin
+
         self.descriptionTag.props.right_margin = self.descriptionRightMargin
         self.characterTag.props.right_margin = self.characterRightMargin
         self.dialogTag.props.right_margin = self.dialogRightMargin
@@ -883,6 +902,8 @@ class TextView(Gtk.TextView):
 
         self.control.scriptView.infoTextView.props.left_margin = self.control.scriptView.textView.descriptionLeftMargin
         self.control.scriptView.infoTextView.props.right_margin = self.control.scriptView.textView.descriptionRightMargin
+
+        self.control.scriptView.scrolledWindow.set_size_request(self.descriptionWidth * TEXT_VIEW_FACTOR, 0)
 
         # Fixing last line tag issue.
         self.modify_font(Pango.FontDescription("Courier Prime " + str(self.fontSize)))
@@ -1222,15 +1243,17 @@ class TextView(Gtk.TextView):
 
         self.forceWordEvent()
 
-        if self.tagIter.tag() == "character":
-            self.control.currentStory().addName(self.control.currentLine().text)
+        self.updateNameLocationAndTime()
 
-        if self.control.currentLine().tag == "sceneHeading":
-            sh = SceneHeading()
-            location = sh.location(self.control.currentLine().text)
-            self.control.currentStory().addLocation(location)
-            time = sh.time(self.control.currentLine().text)
-            self.control.currentStory().addTime(time)
+        # if self.tagIter.tag() == "character":
+        #     self.control.currentStory().addName(self.control.currentLine().text)
+        #
+        # if self.control.currentLine().tag == "sceneHeading":
+        #     sh = SceneHeading()
+        #     location = sh.location(self.control.currentLine().text)
+        #     self.control.currentStory().addLocation(location)
+        #     time = sh.time(self.control.currentLine().text)
+        #     self.control.currentStory().addTime(time)
 
 
         # In case the cursor is at the end of a heading line, allow a new line to be created.
@@ -1276,11 +1299,7 @@ class TextView(Gtk.TextView):
         # If it's a scene heading, updates time and location components.
         if currentLine.tag == 'sceneHeading':
             newLineTag = 'description'
-            components = SceneHeading().componentsFromString(currentLine.text)
-            if len(components) > 1:
-                self.control.currentStory().addLocation(components[1])
-            if len(components) > 2:
-                self.control.currentStory().addTime(components[2])
+            self.updateLocationAndTime(currentLine)
 
         self.tagIter.load(newLineTag)
 
@@ -1381,6 +1400,14 @@ class TextView(Gtk.TextView):
         self.control.currentStory().saved = False
 
         return 1
+
+    def updateLocationAndTime(self, line):
+        components = SceneHeading().componentsFromString(line.text)
+        cs = self.control.currentStory()
+        if len(components) > 1:
+            cs.addLocation(components[1])
+        if len(components) > 2:
+            cs.addTime(components[2])
 
     def deletePress(self):
 
@@ -1833,7 +1860,6 @@ class TextView(Gtk.TextView):
                 self.control.currentStory().eventManager.addEvent(_event.WordEvent(self.control, word))
                 self.word = []
 
-
     def addCharToWord(self, character, duringKeyPressEvent=False):
 
         self.word.append(character)
@@ -1987,8 +2013,6 @@ class ScriptView(Gtk.Box):
         self.paned.connect('map-event', self.acceptPosition)
         self.pack_start(self.paned, 1, 1, 0)
 
-        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-
         self.infoTextView = Gtk.TextView()
         self.infoViewFontSize = 16
         self.infoTextView.connect('key-release-event', self.updateInfo)
@@ -1997,10 +2021,28 @@ class ScriptView(Gtk.Box):
         self.scrolledWindow = Gtk.ScrolledWindow()
         self.scrolledWindow.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
 
+        props = self.infoTextView.props
+
+        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+
+        eventBox = Gtk.EventBox()
+        eventBox.modify_bg(Gtk.StateFlags.NORMAL, Gdk.RGBA(1.0, 1.0, 1.0, 0.0).to_color())
+        eventBox.add(vbox)
+        self.paned.add1(eventBox)
+
+        # children = self.scrolledWindow2.get_children()
+        self.scrolledWindow.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+        # self.scrolledWindow.set_size_request(700, 400)
+        # self.scrolledWindow.set_halign(Gtk.Align.CENTER)
+        hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        hbox.pack_start(self.scrolledWindow, 1, 1, 0)
+        vbox.pack_start(hbox, 1, 1, 0)
+
         self.scrolledWindow.add(self.infoTextView)
 
-        props = self.infoTextView.props
         self.paned.add1(self.scrolledWindow)
+
+        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
 
         eventBox = Gtk.EventBox()
         eventBox.modify_bg(Gtk.StateFlags.NORMAL, Gdk.RGBA(1.0, 1.0, 1.0, 0.0).to_color())
@@ -2008,9 +2050,9 @@ class ScriptView(Gtk.Box):
         self.paned.add2(eventBox)
 
         self.scrolledWindow2 = Gtk.ScrolledWindow()
-        self.scrolledWindow2.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-        self.scrolledWindow2.set_size_request(700, 400)
-        self.scrolledWindow2.set_halign(Gtk.Align.CENTER)
+        self.scrolledWindow2.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+        # self.scrolledWindow2.set_size_request(200, 400)
+        # self.scrolledWindow2.set_halign(Gtk.Align.CENTER)
         hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         hbox.pack_start(self.scrolledWindow2, 1, 1, 0)
         vbox.pack_start(hbox, 1, 1, 0)
