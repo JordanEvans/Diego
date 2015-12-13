@@ -10,9 +10,15 @@ Each Story, Scene and Page has an Info/Abstract Text area that allows the writer
 
 When Diego saves, three documents are created: the Diego document, an RTF for extra tweaking, and a PDF.
 
+<b>Graphic Novel Mode</b>
+
 ![Graphic Novel Mode](http://specscripter.com/graphicNovelMode.png "Graphic Novel Mode")
 
+<b>Screenplay Mode</b>
+
 ![Screenplay Mode](http://specscripter.com/screenplayMode.png "Screenplay Mode")
+
+<b>Outlining Mode</b>
 
 ![Outlining Mode](http://specscripter.com/outlineMode.png "Outlining Mode")
 
