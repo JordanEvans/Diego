@@ -47,6 +47,9 @@ class Control(object):
         self.testingTags = True
         self.updateNamesGlobally = True
 
+        self.addWordPath = os.path.expanduser(('~')) + '/.config/diego/addedWords'
+        self.removeWordPath = os.path.expanduser(('~')) + '/.config/diego/removeWords'
+
         self.config = Config(self)
         self.preferences = Preferences(self)
         self.state = State(self)
@@ -74,6 +77,8 @@ class Control(object):
         self.trie = None
         self.auxTries = []
         self.mispelledLine = None
+        self.addTrie = None
+        self.removeTrie = None
 
     def mispelledTimer(self):
         GObject.timeout_add(1000, self.removeMispelledTags)
@@ -99,8 +104,12 @@ class Control(object):
                 allLower = False
 
         if allLower:
-            if word not in self.trie:
+            if word not in self.trie and word not in self.addTrie:
                 return True
+
+            if word in self.removeTrie:
+                return True
+
             return False
 
         # The dict does not contain uppercase version of words, the capitalized version will be checked. All upper will be check as well for screenplay character names, locations and times.
@@ -113,7 +122,13 @@ class Control(object):
         lower = unicode(lower)
         capitalized = unicode(capitalized)
 
-        if word not in self.trie and lower not in self.trie and capitalized not in self.trie:
+        notInTrie = word not in self.trie and lower not in self.trie and capitalized not in self.trie
+        notInAddTrie = word not in self.addTrie and lower not in self.addTrie and capitalized not in self.addTrie
+
+        if notInTrie and notInAddTrie:
+            return True
+
+        if word in self.removeTrie or lower in self.removeTrie or capitalized in self.removeTrie:
             return True
 
         return False

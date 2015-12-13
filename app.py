@@ -56,6 +56,8 @@ class App(object):
 
         try:
             self.loadTrie()
+            self.loadAddWordTrie()
+            self.loadRemoveWordTrie()
         except:
             print "spellcheck not active"
 
@@ -63,15 +65,28 @@ class App(object):
 
     def loadTrie(self):
         import marisa_trie
-
         path = '/usr/share/dict/american-english'
         f = open(path, 'r')
-
         words = f.read().split('\n') + list(string.punctuation) + [' ']
-
         wordList = [unicode(word, 'utf-8') for word in words]
-
         self.control.trie = marisa_trie.Trie(wordList)
+
+        self.loadAddWordTrie()
+        self.control.remove = marisa_trie.Trie()
+
+    def loadAddWordTrie(self):
+        import marisa_trie
+        f = open(self.control.addWordPath, 'r')
+        words = f.read().split('\n')
+        wordList = [unicode(word, 'utf-8') for word in words]
+        self.control.addTrie = marisa_trie.Trie(wordList)
+
+    def loadRemoveWordTrie(self):
+        import marisa_trie
+        f = open(self.control.removeWordPath, 'r')
+        words = f.read().split('\n')
+        wordList = [unicode(word, 'utf-8') for word in words]
+        self.control.removeTrie = marisa_trie.Trie(wordList)
 
     def updateWindowTitle(self):
         try:

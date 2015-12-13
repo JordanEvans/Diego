@@ -1710,8 +1710,142 @@ class TextView(Gtk.TextView):
 
         self.buffer.connect("mark-set", self.markSet)
 
-    def do_drag_drop(self, context, x, y, time):
+        self.connect("populate-popup", self.populatePopup)
 
+    def populatePopup(self, textView, popup):
+
+        sep = Gtk.SeparatorMenuItem()
+        popup.append(sep)
+        sep.show()
+
+        addSelectedWord = self.addSelectedWord()
+        if len(addSelectedWord):
+            addWord = Gtk.MenuItem("Add " + addSelectedWord + " to Dictionary")
+            popup.append(addWord)
+            addWord.show()
+            addWord.connect('activate', self.addWord, addSelectedWord)
+
+        removeSelectedWord = self.removeSelectedWord()
+        if len(removeSelectedWord):
+            removeWord = Gtk.MenuItem("Remove " + removeSelectedWord + " from Dictionary")
+            popup.append(removeWord)
+            removeWord.show()
+            removeWord.connect('activate', self.removeWord, removeSelectedWord)
+
+        authorContact = Gtk.MenuItem("Set Author/Contact")
+        popup.append(authorContact)
+        authorContact.show()
+        authorContact.connect('activate', self.authorContact)
+
+    def addWord(self, arg, word):
+        f = open(self.control.addWordPath, 'r')
+        addWords = f.read().split('\n')
+        f.close()
+
+        f = open(self.control.removeWordPath, 'r')
+        removeWords = f.read().split('\n')
+        f.close()
+
+        while '' in addWords:
+            addWords.remove('')
+
+        while '' in removeWords:
+            removeWords.remove('')
+
+        if word in removeWords:
+            removeWords.remove(word)
+            f = open(self.control.removeWordPath, 'w')
+            for word in removeWords:
+                f.write(word.rstrip().lstrip() + '\n')
+            f.close()
+            self.control.app.loadRemoveWordTrie()
+
+        if self.control.wordMispelled(word):
+
+            addWords.append(word)
+            f = open(self.control.addWordPath, 'w')
+            for word in addWords:
+                f.write(word.rstrip().lstrip() + '\n')
+            f.close()
+            self.control.app.loadAddWordTrie()
+
+    def removeWord(self, arg, word):
+
+        f = open(self.control.addWordPath, 'r')
+        addWords = f.read().split('\n')
+        f.close()
+
+        f = open(self.control.removeWordPath, 'r')
+        removeWords = f.read().split('\n')
+        f.close()
+
+        while '' in addWords:
+            addWords.remove('')
+
+        while '' in removeWords:
+            removeWords.remove('')
+
+        if word in addWords:
+            addWords.remove(word)
+            f = open(self.control.addWordPath, 'w')
+            for word in addWords:
+                f.write(word.rstrip().lstrip() + '\n')
+            f.close()
+            self.control.app.loadAddWordTrie()
+
+
+        removeWords.append(word)
+        f = open(self.control.removeWordPath, 'w')
+        for word in removeWords:
+            f.write(word.rstrip().lstrip() + '\n')
+        f.close()
+
+        self.control.app.loadRemoveWordTrie()
+
+    def addSelectedWord(self):
+        word = ''
+        self.setSelectionClipboard()
+        if len(self.selectedClipboard):
+
+            # Stop the deletion of the ZERO_WIDTH_SPACE
+            endOffset = self.endIter().get_offset()
+            if self.selectionIterEnd.get_offset() == endOffset:
+                self.selectionIterEnd.backward_char()
+
+            word = self.buffer.get_text(self.selectionIterStart, self.selectionIterEnd, False)
+
+            if len(word.split(" ")) > 1:
+                return ''
+
+            if not self.control.wordMispelled(word):
+                word = ''
+
+        return word
+
+    def removeSelectedWord(self):
+        word = ''
+        self.setSelectionClipboard()
+        if len(self.selectedClipboard):
+
+            # Stop the deletion of the ZERO_WIDTH_SPACE
+            endOffset = self.endIter().get_offset()
+            if self.selectionIterEnd.get_offset() == endOffset:
+                self.selectionIterEnd.backward_char()
+
+            word = self.buffer.get_text(self.selectionIterStart, self.selectionIterEnd, False)
+
+            if len(word.split(" ")) > 1:
+                return ''
+
+            if self.control.wordMispelled(word):
+                word = ''
+
+        return word
+
+    def authorContact(self, arg):
+        print 'authorContact'
+
+    def do_drag_drop(self, context, x, y, time):
         self.control.notImplemented()
         return
 

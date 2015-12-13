@@ -16,6 +16,20 @@ class Config(object):
             except:
                 print "failed to make config dir: " + self.path
 
+        try:
+            if not os.path.exists(self.control.addWordPath):
+                f = open(self.control.addWordPath, "w")
+                f.close()
+        except:
+            print "Could not make addWord path " + self.control.addWordPath
+
+        try:
+            if not os.path.exists(self.control.removeWordPath):
+                f = open(self.control.removeWordPath, "w")
+                f.close()
+        except:
+            print "Could not make removeWord path " + self.control.removeWordPath
+
     def reset(self):
         pass
 
