@@ -95,8 +95,6 @@ Hold down Control and press #.
 
 Go to Story, Scene, or Page View. Type single word in Find Entry.
 
-<i>Not implemented. Hit enter to navigate through selections.</i>
-
 <b>Screenplay Mode</b>
 
 Toggle the Screenplay Switch to Active. The first line of a scene now will auto-complete for Int/Ext, Location and Time.
