@@ -297,7 +297,7 @@ class TextView(Gtk.TextView):
             if bounds:
                 self.buffer.select_range(self.markIter(startMark), self.markIter(endMark))
 
-        self.printTags()
+        # self.printTags()
 
     def lineWords(self, line=None):
         if line==None:
@@ -1571,7 +1571,8 @@ class TextView(Gtk.TextView):
 
             tags = [self.control.currentLine().tag]
             event = _event.Deletion(self.control.currentScene(), self.control.currentPage(), self.control.currentLine(),self.control.currentStory().index.offset, delChar, tags)
-            event.deleteModelUpdate(self.control, delChar)
+            # event.deleteModelUpdate(self.control, delChar)
+            event.modelUpdate(self.control)
             self.control.currentStory().eventManager.addEvent(event)
 
         else:
@@ -1674,7 +1675,8 @@ class TextView(Gtk.TextView):
         event = _event.Deletion(self.control.currentScene(), self.control.currentPage(), self.control.currentLine(),self.control.currentStory().index.offset, backIter.get_char(), tags)
 
         self.control.currentStory().eventManager.addEvent(event)
-        event.backspaceModelUpdate(self.control, removedNewLine)
+        # event.backspaceModelUpdate(self.control, removedNewLine)
+        updateLine = event.modelUpdate(self.control, isBackspace=True)
 
         self.buffer.delete(backIter, insertIter)
 
@@ -1699,10 +1701,13 @@ class TextView(Gtk.TextView):
             text = self.buffer.get_text(self.selectionIterStart, self.selectionIterEnd, True)
             tags = [line.tag for line in self.control.copyClipboard.lines]
             event = _event.Deletion(self.control.currentScene(), self.control.currentPage(), self.control.currentLine(),self.control.currentStory().index.offset, text, tags)
-            updateLine = event.cutModelUpdate(self.control)
+            # updateLine = event.cutModelUpdate(self.control)
+
+            updateLine = event.modelUpdate(self.control)
+            # updateLine = self.control.scriptView.lines.index(updateLine)
             self.control.currentStory().eventManager.addEvent(event)
 
-            self.cutPress = True
+            # self.cutPress = True
 
             Gtk.TextView.do_cut_clipboard(self)
 
@@ -1710,7 +1715,7 @@ class TextView(Gtk.TextView):
 
             self.selectedClipboard = []
 
-            self.updateLineTag(updateLine, self.control.scriptView.lines[updateLine].tag)
+            # self.updateLineTag(updateLine, self.control.scriptView.lines[updateLine].tag)
 
             self.control.scriptView.updateCurrentStoryIndex()
 
@@ -1745,7 +1750,8 @@ class TextView(Gtk.TextView):
             text = self.buffer.get_text(self.selectionIterStart, self.selectionIterEnd, True)
             tags = [line.tag for line in self.control.copyClipboard.lines]
             event = _event.Deletion(self.control.currentScene(), self.control.currentPage(), self.control.currentLine(),self.control.currentStory().index.offset, text, tags)
-            updateLine = event.cutModelUpdate(self.control)
+            updateLine = event.modelUpdate(self.control)
+            # updateLine = event.cutModelUpdate(self.control)
             self.control.currentStory().eventManager.addEvent(event)
 
             # cutEvent.chained = True

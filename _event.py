@@ -27,10 +27,14 @@ class Insertion(Event):
         self.newLines = []
 
     def undo(self):
-        pass
+        undo = Deletion(self.scene, self.page, self.line, self.offset, self.text, self.tags)
+        undo.viewUpdate()
+        undo.modelUpdate()
 
     def redo(self):
-        pass
+        redo = Insertion(self.scene, self.page, self.line, self.offset, self.text, self.tags)
+        redo.viewUpdate()
+        redo.modelUpdate()
 
     def viewUpdate(self, control):
 
@@ -55,6 +59,7 @@ class Insertion(Event):
             last = self.line.text[self.offset:]
             text = first + word + last
             self.line.text = text
+            self.line.tag = self.tags[0]
 
         else:
             lineTags = list(self.tags)
@@ -102,84 +107,86 @@ class Deletion(Event):
         self.text = text
         self.tags = tags
 
-    def undo(self):
-        pass
-
-    def redo(self):
-        pass
+        self.isBackspace = False
+        self.pressLine = None
 
     def viewUpdate(self):
         pass
 
-    def modelUpdate(self):
-        pass
+    def modelUpdate(self, control, isBackspace=False):
 
-    def cutModelUpdate(self, control):
+        if isBackspace:
+            self.isBackspace = isBackspace
+            if self.offset == 0:
+                line = control.scriptView.currentLine()
+                self.carryText = line.text
 
-        currentPage = control.currentPage()
+                previousLine = control.scriptView.previousLine()
+                previousLine.text += self.carryText
 
-        # When more than one line is being cut, this is the leftover text of that cut line..
-        self.firstLineCarryText = ''
-        self.lastLineCarryText = ''
+                control.currentPage().lines.remove(line)
+                control.scriptView.lines.remove(line)
+            else:
+                line = control.scriptView.currentLine()
+                index = control.currentStory().index.offset
+                line.text = line.text[:index-1] + line.text[index:]
+            return
 
-        selectionOffset1 = control.scriptView.textView.selectionIterStart.get_line_offset()
-        selectionOffset2 = control.scriptView.textView.selectionIterEnd.get_line_offset()
+        lines = self.text.split("\n")
 
-        startSelectionLine = control.scriptView.textView.selectionIterStart.get_line()
-        self.offset = selectionOffset1
+        if len(lines) == 1:
+            frontString = self.line.text[:self.offset]
+            endString = self.line.text[self.offset+len(lines[0]):]
+            self.line.text = frontString + endString
+            return self.line
 
-        line1 = control.scriptView.lines[startSelectionLine]
-        self.line = currentPage.lines.index(line1)
-        textViewLine = control.scriptView.lines.index(line1)
+        elif len(lines) == 2:
 
-        self.cutClipboard = list(control.selectionClipboard.lines)
+            startLineIndex = control.scriptView.textView.selectionIterStart.get_line()
 
-        # control.scriptView.textView.copyClipboard = []
-        # for line in self.cutClipboard:
-        #     control.scriptView.textView.copyClipboard.append(_story.Line(line))
+            self.line = control.scriptView.lines[startLineIndex]
 
-        if len(self.cutClipboard) == 1:
-
-            # Only one line is selected. Cut the string between front and end.
-            frontString = line1.text[:self.offset]
-            endString = line1.text[self.offset+len(self.cutClipboard[0].text):]
-
-            # Add the front and end string and set it to current line.
-            line1.text = frontString + endString
-
-        elif len(self.cutClipboard) == 2:
+            self.offset = control.scriptView.textView.selectionIterStart.get_line_offset()
 
             # Get the text on the first line beginning at the start of the selection.
-            firstLineText = line1.text[:self.offset]
-            line1.text = firstLineText
-            self.firstLineCarryText = firstLineText
+            firstLineText = self.line.text[:self.offset]
+            self.line.text = firstLineText
+            firstLineCarryText = firstLineText
 
-            endOffset = control.scriptView.textView.selectionIterEnd.get_line_offset()
+            # endOffset = control.scriptView.textView.selectionIterEnd.get_line_offset()
+            endOffset = len(lines[1])
 
-            line2 = control.scriptView.lines[startSelectionLine +1]
+            endLineIndex = control.scriptView.textView.selectionIterEnd.get_line()
+
+            # line2 = control.scriptView.lines[startSelectionLine +1]
+            line2 = control.scriptView.lines[endLineIndex]
 
             # Get the text on the second line beginning up to the end of the selection.
             lastLineText = line2.text[endOffset:]
             line2.text = lastLineText
-            self.lastLineCarryText = lastLineText
+            lastLineCarryText = lastLineText
 
             # Remove the second line
-            currentPage.lines.remove(line2)
+            self.page.lines.remove(line2)
             control.scriptView.lines.remove(line2)
 
             # Line one will get the both texts appended.
-            line1.text = firstLineText + lastLineText
+            self.line.text = firstLineText + lastLineText
 
             # If the first line's text is all deleted, the tag on the second line will be used, unless it has no text.
             # The other two cases will keep line one's tag by default.
-            if len(self.firstLineCarryText) == 0 and len(self.lastLineCarryText) > 0:
-                line1.tag = line2.tag
+            if len(firstLineCarryText) == 0 and len(lastLineCarryText) > 0:
+                self.line.tag = line2.tag
 
         else:
 
+            startLineIndex = control.scriptView.textView.selectionIterStart.get_line()
+            self.line = control.scriptView.lines[startLineIndex]
+            self.offset = control.scriptView.textView.selectionIterStart.get_line_offset()
+
             # Get the text on the first line beginning at the start of the selection.
-            firstLineText = line1.text[:self.offset]
-            line1.text = firstLineText
+            firstLineText = self.line.text[:self.offset]
+            self.line.text = firstLineText
             self.firstLineCarryText = firstLineText
 
             lastLine = control.scriptView.lines[self.line + len(self.cutClipboard)]
@@ -194,63 +201,166 @@ class Deletion(Event):
             # Gather lines to remove.
             removeLines = []
             for i in range(len(self.cutClipboard)-1):
-                line = currentPage.lines[startSelectionLine + i]
+                line = self.page.lines[startSelectionLine + i]
                 removeLines.append(line)
 
             # Remove the middle lines and last line
             for line in removeLines:
-                currentPage.lines.remove(line)
+                self.page.lines.remove(line)
                 control.scriptView.lines.remove(line)
 
             # Set the first line text.
-            line1.text = firstLineText + lastLineText
+            self.line.text = firstLineText + lastLineText
 
-        return textViewLine
+        return self.line
 
-    def backspaceModelUpdate(self, control, removedNewLine=False):
+    def undo(self):
+        undo = Insertion(self.scene, self.page, self.line, self.offset, self.text, self.tags)
+        undo.viewUpdate()
+        undo.modelUpdate()
 
-        if removedNewLine:
-            line = control.scriptView.currentLine()
-            self.carryText = line.text
+    def redo(self):
+        redo = Deletion(self.scene, self.page, self.line, self.offset, self.text, self.tags)
+        redo.viewUpdate()
+        redo.modelUpdate()
 
-            previousLine = control.scriptView.previousLine()
-            previousLine.text += self.carryText
-
-            control.currentPage().lines.remove(line)
-            control.scriptView.lines.remove(line)
-
-        else:
-            line = control.scriptView.currentLine()
-            index = control.currentStory().index.offset
-            line.text = line.text[:index-1] + line.text[index:]
-
-    def deleteModelUpdate(self, control, delChar):
-        line = control.scriptView.currentLine()
-        index = control.currentStory().index.offset
-        lineIndex = control.scriptView.lines.index(line)
-
-        if delChar == '\n':
-            if index == 0:
-                # delete the line only
-                control.scriptView.lines.remove(line)
-                control.currentPage().lines.remove(line)
-            else:
-                # delete the line and add prepend the text to the next line
-                lineText = line.text
-                lineIndex = control.currentPage().lines.index(line)
-                lineTag = line.tag
-                nextLine = control.currentPage().lines[lineIndex + 1]
-                nextLine.text = lineText + nextLine.text
-                nextLine.tag = lineTag
-                control.scriptView.lines.remove(line)
-                control.currentPage().lines.remove(line)
-
-                # control.scriptView.textView.updateLineTag(lineIndex + 1)
-
-        else:
-            line.text = line.text[:index] + line.text[index +1:]
-
-            control.scriptView.textView.updateLineTag(lineIndex)
+    # def cutModelUpdate(self, control):
+    #
+    #     currentPage = control.currentPage()
+    #
+    #     # When more than one line is being cut, this is the leftover text of that cut line..
+    #     self.firstLineCarryText = ''
+    #     self.lastLineCarryText = ''
+    #
+    #     selectionOffset1 = control.scriptView.textView.selectionIterStart.get_line_offset()
+    #     selectionOffset2 = control.scriptView.textView.selectionIterEnd.get_line_offset()
+    #
+    #     startSelectionLine = control.scriptView.textView.selectionIterStart.get_line()
+    #     self.offset = selectionOffset1
+    #
+    #     line1 = control.scriptView.lines[startSelectionLine]
+    #     self.line = currentPage.lines.index(line1)
+    #     textViewLine = control.scriptView.lines.index(line1)
+    #
+    #     self.cutClipboard = list(control.selectionClipboard.lines)
+    #
+    #     # control.scriptView.textView.copyClipboard = []
+    #     # for line in self.cutClipboard:
+    #     #     control.scriptView.textView.copyClipboard.append(_story.Line(line))
+    #
+    #     if len(self.cutClipboard) == 1:
+    #
+    #         # Only one line is selected. Cut the string between front and end.
+    #         frontString = line1.text[:self.offset]
+    #         endString = line1.text[self.offset+len(self.cutClipboard[0].text):]
+    #
+    #         # Add the front and end string and set it to current line.
+    #         line1.text = frontString + endString
+    #
+    #     elif len(self.cutClipboard) == 2:
+    #
+    #         # Get the text on the first line beginning at the start of the selection.
+    #         firstLineText = line1.text[:self.offset]
+    #         line1.text = firstLineText
+    #         self.firstLineCarryText = firstLineText
+    #
+    #         endOffset = control.scriptView.textView.selectionIterEnd.get_line_offset()
+    #
+    #         line2 = control.scriptView.lines[startSelectionLine +1]
+    #
+    #         # Get the text on the second line beginning up to the end of the selection.
+    #         lastLineText = line2.text[endOffset:]
+    #         line2.text = lastLineText
+    #         self.lastLineCarryText = lastLineText
+    #
+    #         # Remove the second line
+    #         currentPage.lines.remove(line2)
+    #         control.scriptView.lines.remove(line2)
+    #
+    #         # Line one will get the both texts appended.
+    #         line1.text = firstLineText + lastLineText
+    #
+    #         # If the first line's text is all deleted, the tag on the second line will be used, unless it has no text.
+    #         # The other two cases will keep line one's tag by default.
+    #         if len(self.firstLineCarryText) == 0 and len(self.lastLineCarryText) > 0:
+    #             line1.tag = line2.tag
+    #
+    #     else:
+    #
+    #         # Get the text on the first line beginning at the start of the selection.
+    #         firstLineText = line1.text[:self.offset]
+    #         line1.text = firstLineText
+    #         self.firstLineCarryText = firstLineText
+    #
+    #         lastLine = control.scriptView.lines[self.line + len(self.cutClipboard)]
+    #
+    #         endOffset = control.scriptView.textView.selectionIterEnd.get_line_offset()
+    #
+    #         # Get the text on the second line beginning up to the end of the selection.
+    #         lastLineText = lastLine.text[endOffset:]
+    #         lastLine.text = lastLineText
+    #         self.lastLineCarryText = lastLineText
+    #
+    #         # Gather lines to remove.
+    #         removeLines = []
+    #         for i in range(len(self.cutClipboard)-1):
+    #             line = currentPage.lines[startSelectionLine + i]
+    #             removeLines.append(line)
+    #
+    #         # Remove the middle lines and last line
+    #         for line in removeLines:
+    #             currentPage.lines.remove(line)
+    #             control.scriptView.lines.remove(line)
+    #
+    #         # Set the first line text.
+    #         line1.text = firstLineText + lastLineText
+    #
+    #     return textViewLine
+    #
+    # # def backspaceModelUpdate(self, control, removedNewLine=False):
+    # #
+    # #     if removedNewLine:
+    # #         line = control.scriptView.currentLine()
+    # #         self.carryText = line.text
+    # #
+    # #         previousLine = control.scriptView.previousLine()
+    # #         previousLine.text += self.carryText
+    # #
+    # #         control.currentPage().lines.remove(line)
+    # #         control.scriptView.lines.remove(line)
+    # #
+    # #     else:
+    # #         line = control.scriptView.currentLine()
+    # #         index = control.currentStory().index.offset
+    # #         line.text = line.text[:index-1] + line.text[index:]
+    # #
+    # # def deleteModelUpdate(self, control, delChar):
+    # #     line = control.scriptView.currentLine()
+    # #     index = control.currentStory().index.offset
+    # #     lineIndex = control.scriptView.lines.index(line)
+    # #
+    # #     if delChar == '\n':
+    # #         if index == 0:
+    # #             # delete the line only
+    # #             control.scriptView.lines.remove(line)
+    # #             control.currentPage().lines.remove(line)
+    # #         else:
+    # #             # delete the line and add prepend the text to the next line
+    # #             lineText = line.text
+    # #             lineIndex = control.currentPage().lines.index(line)
+    # #             lineTag = line.tag
+    # #             nextLine = control.currentPage().lines[lineIndex + 1]
+    # #             nextLine.text = lineText + nextLine.text
+    # #             nextLine.tag = lineTag
+    # #             control.scriptView.lines.remove(line)
+    # #             control.currentPage().lines.remove(line)
+    # #
+    # #             # control.scriptView.textView.updateLineTag(lineIndex + 1)
+    # #
+    # #     else:
+    # #         line.text = line.text[:index] + line.text[index +1:]
+    # #
+    # #         control.scriptView.textView.updateLineTag(lineIndex)
 
 
 class Format(Event):
