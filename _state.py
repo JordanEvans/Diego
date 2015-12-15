@@ -11,6 +11,8 @@ class State(object):
         self.control = control
         self.path = self.control.config.path + "/" + "state"
         # self.infoViewFontSize = 12
+        self.author = ''
+        self.contact = ''
 
     def shutdown(self, ):
         self.save()
@@ -27,6 +29,9 @@ class State(object):
         data['saveDir'] = self.control.saveDir
         data['windowPosition'] = self.control.app.window.get_position()
         data['storyIndex'] = self.control.index
+        data['author'] = self.author
+        data['contact'] = self.contact
+
         try:
             with open(self.path, 'w') as fp:
                 json.dump(data, fp)
@@ -53,6 +58,9 @@ class State(object):
                         raise Exception()
 
                     try:
+
+                        while None in data['storyPaths']:
+                            data['storyPaths'].remove(None)
                         for storyPath in data['storyPaths']:
                             if storyPath and os.path.exists(storyPath):
                                 story = _story.Story(self.control, storyPath)
@@ -72,6 +80,10 @@ class State(object):
                         self.control.scriptView.infoTextView.modify_font(Pango.FontDescription("Courier Prime " + str(data['infoViewFontSize'])))
                         self.control.saveDir = data['saveDir']
                         self.control.windowPosition = data['windowPosition']
+
+                        self.author = data['author']
+                        self.contact = data['contact']
+
                     except:
                         exceptionText = "State Data Error : State file did not load open. The state file data may be corrupted."
                         raise Exception()
@@ -81,7 +93,7 @@ class State(object):
                         self.control.index = data['storyIndex']
                     else:
                         exceptionText = "Story Index Error: State file did not load open. The state file data may be corrupted."
-                        raise Exception()
+                        self.control.index = 0
 
                 except:
                     print "state file failed to load : " + exceptionText

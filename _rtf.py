@@ -85,7 +85,7 @@ class RTF(object):
         title = self.control.currentStory().title
         author = getpass.getuser()
 
-        self.titlePage(f, title, author, contact='')
+        self.titlePage(f, title=title, author=self.control.state.author, contact=self.control.state.contact)
 
         sceneNumber = 0
         pageNumber = 0

@@ -1,7 +1,7 @@
 
 import os
 
-from gi.repository import Gtk, GObject
+from gi.repository import Gtk, GObject, Gdk
 
 # app
 import _appWindow
@@ -79,6 +79,8 @@ class Control(object):
         self.mispelledLine = None
         self.addTrie = None
         self.removeTrie = None
+
+        self.clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
 
     def mispelledTimer(self):
         GObject.timeout_add(1000, self.removeMispelledTags)

@@ -4,6 +4,52 @@ from gi.repository import Gtk
 
 import _story
 
+class SetAuthorAndContactDialog(Gtk.Dialog):
+
+    def __init__(self, control, parent):
+        Gtk.Dialog.__init__(self, "Set Author and Contact", parent, 0, ())
+        self.control = control
+        self.set_default_size(450, 180)
+        self.set_modal(True)
+        self.set_title("Set Author and Contact")
+
+        self.connect("destroy", self.exit)
+
+        ca = self.get_content_area()
+
+        vbox = Gtk.VBox()
+        ca.add(vbox)
+
+        hbox = Gtk.HBox()
+        label = Gtk.Label("Author")
+        hbox.pack_start(label, 0, 0, 5)
+        self.authorEntry = Gtk.Entry()
+        hbox.pack_end(self.authorEntry, 0, 0, 5)
+        vbox.pack_start(hbox, 0, 0, 2)
+
+        hbox = Gtk.VBox()
+        label = Gtk.Label("Contact Info")
+        hbox.pack_start(label, 0, 0, 5)
+        self.contactTextView = Gtk.TextView()
+        hbox.pack_end(self.contactTextView, 0, 0, 5)
+        vbox.pack_start(hbox, 1, 1, 2)
+
+        self.load()
+
+        self.show_all()
+
+    def load(self):
+        self.authorEntry.set_text(self.control.state.author)
+        insertIter = self.contactTextView.get_buffer().get_start_iter()
+        self.contactTextView.get_buffer().insert(insertIter, self.control.state.contact)
+
+    def exit(self, arg):
+        self.control.state.author = self.authorEntry.get_text()
+
+        startIter = self.contactTextView.get_buffer().get_start_iter()
+        endIter = self.contactTextView.get_buffer().get_end_iter()
+        text = self.contactTextView.get_buffer().get_text(startIter, endIter, False)
+        self.control.state.contact = text
 
 class FindAndReplaceDialog(Gtk.Dialog):
 

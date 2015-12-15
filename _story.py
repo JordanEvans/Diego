@@ -322,7 +322,7 @@ class Story(object):
         self.control.currentStory().index.line = 0
 
         if self.control.historyEnabled:
-            self.control.currentStory().eventManager.addEvent(_event.NewSceneEvent(scene, self.control.currentStory().index))
+            self.control.currentStory().eventManager.addEvent(_event.Event())
         self.saved = False
 
     def newPage(self, prepend=False):
@@ -340,7 +340,7 @@ class Story(object):
         self.control.currentScene().pages.insert(position, page)
 
         if self.control.historyEnabled:
-            self.control.currentStory().eventManager.addEvent(_event.NewPageEvent(page, self.control.currentStory().index))
+            self.control.currentStory().eventManager.addEvent(_event.Event())
         self.saved = False
 
     def deletePage(self, index):

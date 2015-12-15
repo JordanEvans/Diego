@@ -4,6 +4,7 @@ from gi.repository import Gtk, Gdk, GLib, Pango, GObject
 
 import _event
 import _story
+import _dialog
 
 ZERO_WIDTH_SPACE = u'\u200B'.encode('utf-8')
 HEADING = '\xef\xbf\xbc'
@@ -233,6 +234,7 @@ class TextView(Gtk.TextView):
         self.sceneHeadingIter = None
 
         self.intExts = ["INT.", "EXT."]
+        self.selectionTags = []
 
     def buttonPress(self, widget, event):
 
@@ -279,6 +281,7 @@ class TextView(Gtk.TextView):
         self.updatePanel()
 
         tag = self.tagIter.tag()
+        # tag = self.control.currentLine().tag
         self.resetGlobalMargin(tag)
 
         # This forces the cursor before the ZERO_WIDTH_SPACE
@@ -294,7 +297,7 @@ class TextView(Gtk.TextView):
             if bounds:
                 self.buffer.select_range(self.markIter(startMark), self.markIter(endMark))
 
-        # self.printTags()
+        self.printTags()
 
     def lineWords(self, line=None):
         if line==None:
@@ -315,6 +318,7 @@ class TextView(Gtk.TextView):
 
         insertIter = self.insertIter()
 
+        currentLine = self.control.currentLine()
         currentCharIsHeading = False
         currentTags = insertIter.get_tags()
         names = [name.props.name for name in currentTags]
@@ -465,6 +469,8 @@ class TextView(Gtk.TextView):
         # if not self.deleteEvent and not self.backspaceEvent and not self.arrowPress and self.isPrintable(event.string):
         if self.isPrintable(event.string):
 
+            self.control.currentStory().index.offset += 1
+
             character = event.string
             if self.control.currentLine().tag == 'sceneHeading':
                 character = event.string.upper()
@@ -520,6 +526,8 @@ class TextView(Gtk.TextView):
         #     self.currentLineMispelled()
 
         # self.printTags()
+
+        return
 
     def completeSceneHeading(self, event):
 
@@ -765,8 +773,8 @@ class TextView(Gtk.TextView):
                     first = True
             name = "".join(lowered)
 
-        ace = _event.AutocompleteEvent(self.control, name)
-        self.control.currentStory().eventManager.addEvent(ace)
+        # ace = _event.AutocompleteEvent(self.control, name)
+        self.control.currentStory().eventManager.addEvent(_event.Event())
 
         insertIter = self.insertIter()
         self.buffer.insert(insertIter, name, len(name))
@@ -1203,9 +1211,9 @@ class TextView(Gtk.TextView):
             margin = self.parentheticLeftMargin
         elif tag == 'sceneHeading':
             margin = self.descriptionLeftMargin
+
         if margin != None:
             self.props.left_margin = margin
-            #self.updateLineTag(True)
 
     def updateLineTag(self, line=None, formatingLastLineWhenEmpty=False, autoSceneHeading=True):
 
@@ -1298,6 +1306,8 @@ class TextView(Gtk.TextView):
         nextCharIsHeading = False
         prevCharIsHeading = False
 
+        currentLineTag = self.control.currentLine().tag
+
         if canGoForward:
             forwardTags = forwardIter.get_tags()
             names = [name.props.name for name in forwardTags]
@@ -1313,17 +1323,6 @@ class TextView(Gtk.TextView):
         self.forceWordEvent()
 
         self.updateNameLocationAndTime()
-
-        # if self.tagIter.tag() == "character":
-        #     self.control.currentStory().addName(self.control.currentLine().text)
-        #
-        # if self.control.currentLine().tag == "sceneHeading":
-        #     sh = SceneHeading()
-        #     location = sh.location(self.control.currentLine().text)
-        #     self.control.currentStory().addLocation(location)
-        #     time = sh.time(self.control.currentLine().text)
-        #     self.control.currentStory().addTime(time)
-
 
         # In case the cursor is at the end of a heading line, allow a new line to be created.
         if currentCharIsHeading:
@@ -1382,92 +1381,101 @@ class TextView(Gtk.TextView):
                 insertIter = self.insertIter()
                 lineIndex = insertIter.get_line()
 
-                newLineEvent = _event.NewLineEvent(self.control, tag=newLineTag, fromHeading=True)
+                tags = [currentLineTag, newLineTag]
+                newLineEvent = _event.Insertion(self.control.currentScene(), self.control.currentPage(), self.control.currentLine(),self.control.currentStory().index.offset, '\n', tags)
+                newLineEvent.modelUpdate(self.control)
+                # newLineEvent.newLineModelUpdate(self.control, tag=newLineTag, fromHeading=True)
                 self.control.currentStory().eventManager.addEvent(newLineEvent)
 
-                self.buffer.insert(insertIter, '\n', 1)
-
-                insertIter = self.insertIter()
-                insertIter.backward_char()
-                self.buffer.place_cursor(insertIter)
-
-                # self.control.currentStory().index.line = lineIndex - 1
+                # self.buffer.insert(insertIter, '\n', 1)
+                # insertIter = self.insertIter()
+                # insertIter.backward_char()
+                # self.buffer.place_cursor(insertIter)
+                newLineEvent.viewUpdate(self.control)
 
             else:
-                newLineEvent = _event.NewLineEvent(self.control, tag=newLineTag)
+
+                tags = [currentLineTag, newLineTag]
+                newLineEvent = _event.Insertion(self.control.currentScene(), self.control.currentPage(), self.control.currentLine(),self.control.currentStory().index.offset, '\n', tags)
+                newLineEvent.modelUpdate(self.control)
                 self.control.currentStory().eventManager.addEvent(newLineEvent)
-                insertIter = self.insertIter()
-                lineIndex = insertIter.get_line()
 
-                self.buffer.insert(insertIter, '\n', 1)
+                # insertIter = self.insertIter()
+                # lineIndex = insertIter.get_line()
+                # self.buffer.insert(insertIter, '\n', 1)
+                # startIter = self.buffer.get_iter_at_line(lineIndex + 1)
+                # endIter = self.buffer.get_iter_at_line(lineIndex + 1)
+                # endIter.forward_char()
+                # self.buffer.remove_all_tags(startIter, endIter)
+                # self.buffer.apply_tag_by_name(newLineTag, startIter, endIter)
 
-                startIter = self.buffer.get_iter_at_line(lineIndex + 1)
-                endIter = self.buffer.get_iter_at_line(lineIndex + 1)
-                endIter.forward_char()
-                sc,ec,text = startIter.get_char(), endIter.get_char(), self.buffer.get_text(startIter, endIter, True)
-                self.buffer.remove_all_tags(startIter, endIter)
-                self.buffer.apply_tag_by_name(newLineTag, startIter, endIter)
+                newLineEvent.viewUpdate(self.control)
 
         else:
 
-            # Get the carry text (if any), delete it in the buffer and send it to the NewLineEvent
-            insertIter = self.insertIter()
-            of = insertIter.get_offset()
-            endLineIter = self.lineEndIter(insertIter.get_line())
-            of2 = endLineIter.get_offset()
+            # # Get the carry text (if any), delete it in the buffer and send it to the NewLineEvent
+            # insertIter = self.insertIter()
+            # #of = insertIter.get_offset()
+            # endLineIter = self.lineEndIter(insertIter.get_line())
+            # # of2 = endLineIter.get_offset()
+            #
+            # onLastLine = False
+            # if endLineIter.get_offset() == self.endIter().get_offset():
+            #     onLastLine = True
+            #     endLineIter.backward_char()
+            #
+            # carryText = self.buffer.get_text(insertIter, endLineIter, False)
+            #
+            # #Fixes the last line problem.
+            # if carryText == ZERO_WIDTH_SPACE:
+            #     carryText = ''
+            #
+            # if len(carryText):
+            #     self.buffer.delete(insertIter, endLineIter)
 
-            onLastLine = False
-            if endLineIter.get_offset() == self.endIter().get_offset():
-                onLastLine = True
-                endLineIter.backward_char()
-
-            carryText = self.buffer.get_text(insertIter, endLineIter, False)
-
-            #Fixes the last line problem.
-            if carryText == ZERO_WIDTH_SPACE:
-                carryText = ''
-
-            if len(carryText):
-                self.buffer.delete(insertIter, endLineIter)
-            newLineEvent = _event.NewLineEvent(self.control, carryText, tag=newLineTag)
+            tags = [currentLineTag, newLineTag]
+            newLineEvent = _event.Insertion(self.control.currentScene(), self.control.currentPage(), self.control.currentLine(),self.control.currentStory().index.offset, '\n', tags)
+            newLineEvent.modelUpdate(self.control)
             self.control.currentStory().eventManager.addEvent(newLineEvent)
 
-            # Insert the new line in the buffer and append the carry text.
-            insertIter = self.insertIter()
-            lineIndex = insertIter.get_line()
-            self.buffer.insert(insertIter, '\n' + carryText, len(carryText) + 1)
+            newLineEvent.viewUpdate(self.control)
 
-            # Remove all tags, starts with the new line text (if any) and stops 'after' next newLine character.
+            # # Insert the new line in the buffer and append the carry text.
+            # insertIter = self.insertIter()
+            # lineIndex = insertIter.get_line()
+            # self.buffer.insert(insertIter, '\n' + carryText, len(carryText) + 1)
+            #
+            # # Remove all tags, starts with the new line text (if any) and stops 'after' next newLine character.
+            # startIter = self.buffer.get_iter_at_line(lineIndex + 1)
+            # endIter = self.buffer.get_iter_at_line(lineIndex + 1)
+            # endIter.forward_to_line_end()
+            # endIter.forward_char()
+            #
+            # self.buffer.remove_all_tags(startIter, endIter)
+            # self.buffer.apply_tag_by_name(newLineTag, startIter, endIter)
+            #
+            # # Places the cursor on zero offset of newline.
+            # insertIter = self.insertIter()
+            # insertIter.backward_chars(len(carryText))
+            # self.buffer.place_cursor(insertIter)
 
-            startIter = self.buffer.get_iter_at_line(lineIndex + 1)
-            endIter = self.buffer.get_iter_at_line(lineIndex + 1)
-            endIter.forward_to_line_end()
-            endIter.forward_char()
-
-            self.buffer.remove_all_tags(startIter, endIter)
-            self.buffer.apply_tag_by_name(newLineTag, startIter, endIter)
-
-            # Places the cursor on zero offset of newline.
-            insertIter = self.insertIter()
-            insertIter.backward_chars(len(carryText))
-            self.buffer.place_cursor(insertIter)
-
-        tag = self.updateLineTag(previousLineIndex) # Formats the line just made.
-
-        line = self.insertIter().get_line()
-        # When hitting enter after a heading and is a screenplay, the existing sceneheading line will be pushed down,
-        # so it must be turned to a description. This also keeps the zwc from being a sceneheading unless its below one.
-        if currentCharIsHeading and self.control.currentStory().isScreenplay:
-            self.formatLine(line + 1, 'description')
-            self.control.scriptView.lines[line + 1].tag = "description"
-
-        # If on last line, this needs to be done so that fommatting shows for an empty line.
-        if line == len(self.control.scriptView.lines) - 1:
-            tag = self.updateLineTag() # This formats the next line.
+        # tag = self.updateLineTag(previousLineIndex) # Formats the line just made.
+        #
+        # line = self.insertIter().get_line()
+        # # When hitting enter after a heading and is a screenplay, the existing sceneheading line will be pushed down,
+        # # so it must be turned to a description. This also keeps the zwc from being a sceneheading unless its below one.
+        # if currentCharIsHeading and self.control.currentStory().isScreenplay:
+        #     self.formatLine(line + 1, 'description')
+        #     self.control.scriptView.lines[line + 1].tag = "description"
+        #
+        # # If on last line, this needs to be done so that fommatting shows for an empty line.
+        # if line == len(self.control.scriptView.lines) - 1:
+        #     tag = self.updateLineTag() # This formats the next line.
 
         self.newLineEvent = True
         self.control.currentStory().saved = False
 
+        self.printTags()
         return 1
 
     def updateLocationAndTime(self, line):
@@ -1558,7 +1566,14 @@ class TextView(Gtk.TextView):
             delChar = self.buffer.get_text(insertIter, nextIter, True)
             self.buffer.delete(insertIter, nextIter)
             self.control.currentStory().saved = False
-            self.control.currentStory().eventManager.addEvent(_event.DeleteEvent(self.control, delChar))
+
+            # self.control.currentStory().eventManager.addEvent(_event.DeleteEvent(self.control, delChar))
+
+            tags = [self.control.currentLine().tag]
+            event = _event.Deletion(self.control.currentScene(), self.control.currentPage(), self.control.currentLine(),self.control.currentStory().index.offset, delChar, tags)
+            event.deleteModelUpdate(self.control, delChar)
+            self.control.currentStory().eventManager.addEvent(event)
+
         else:
             return 1
 
@@ -1655,7 +1670,11 @@ class TextView(Gtk.TextView):
         else:
             removedNewLine = False
 
-        self.control.currentStory().eventManager.addEvent(_event.BackspaceEvent(self.control, removedNewLine))
+        tags = [self.control.currentLine().tag]
+        event = _event.Deletion(self.control.currentScene(), self.control.currentPage(), self.control.currentLine(),self.control.currentStory().index.offset, backIter.get_char(), tags)
+
+        self.control.currentStory().eventManager.addEvent(event)
+        event.backspaceModelUpdate(self.control, removedNewLine)
 
         self.buffer.delete(backIter, insertIter)
 
@@ -1677,8 +1696,11 @@ class TextView(Gtk.TextView):
 
             self.control.copyClipboard.lines = list(self.selectedClipboard)
 
-            cutEvent = _event.CutEvent(self.control)
-            self.control.currentStory().eventManager.addEvent(cutEvent)
+            text = self.buffer.get_text(self.selectionIterStart, self.selectionIterEnd, True)
+            tags = [line.tag for line in self.control.copyClipboard.lines]
+            event = _event.Deletion(self.control.currentScene(), self.control.currentPage(), self.control.currentLine(),self.control.currentStory().index.offset, text, tags)
+            updateLine = event.cutModelUpdate(self.control)
+            self.control.currentStory().eventManager.addEvent(event)
 
             self.cutPress = True
 
@@ -1688,12 +1710,17 @@ class TextView(Gtk.TextView):
 
             self.selectedClipboard = []
 
-            self.updateLineTag(cutEvent.textViewLine, self.control.scriptView.lines[cutEvent.textViewLine].tag)
+            self.updateLineTag(updateLine, self.control.scriptView.lines[updateLine].tag)
 
             self.control.scriptView.updateCurrentStoryIndex()
 
     def do_copy_clipboard(self):
         self.setSelectionClipboard()
+        if len(self.selectedClipboard):
+            self.selectionTags = [line.tag for line in self.selectedClipboard]
+        else:
+            self.selectionTags = []
+
         self.control.copyClipboard.lines = list(self.selectedClipboard)
         Gtk.TextView.do_copy_clipboard(self)
 
@@ -1714,9 +1741,14 @@ class TextView(Gtk.TextView):
 
             self.cutClipboard = list(self.selectedClipboard)
 
-            cutEvent = _event.CutEvent(self.control)
+            # cutEvent = _event.CutEvent(self.control)
+            text = self.buffer.get_text(self.selectionIterStart, self.selectionIterEnd, True)
+            tags = [line.tag for line in self.control.copyClipboard.lines]
+            event = _event.Deletion(self.control.currentScene(), self.control.currentPage(), self.control.currentLine(),self.control.currentStory().index.offset, text, tags)
+            updateLine = event.cutModelUpdate(self.control)
+            self.control.currentStory().eventManager.addEvent(event)
 
-            cutEvent.chained = True
+            # cutEvent.chained = True
 
             # Stop the deletion of the ZERO_WIDTH_SPACE
             endOffset = self.endIter().get_offset()
@@ -1724,11 +1756,11 @@ class TextView(Gtk.TextView):
                 self.selectionIterEnd.backward_char()
 
             self.buffer.delete(self.selectionIterStart, self.selectionIterEnd)
-            self.control.currentStory().eventManager.addEvent(cutEvent)
+            # self.control.currentStory().eventManager.addEvent(cutEvent)
 
             self.control.scriptView.updateCurrentStoryIndex()
 
-            return cutEvent
+            return event
 
     def removeCrossPageSelection(self):
         bounds = self.buffer.get_selection_bounds()
@@ -1802,6 +1834,14 @@ class TextView(Gtk.TextView):
         popup.append(authorContact)
         authorContact.show()
         authorContact.connect('activate', self.authorContact)
+
+        help = Gtk.MenuItem("Help")
+        popup.append(help)
+        help.show()
+        help.connect('activate', self.help)
+
+    def help(self):
+        pass
 
     def addWord(self, arg, word):
         f = open(self.control.addWordPath, 'r')
@@ -1908,7 +1948,7 @@ class TextView(Gtk.TextView):
         return word
 
     def authorContact(self, arg):
-        print 'authorContact'
+        _dialog.SetAuthorAndContactDialog(self.control, self.control.app.window)
 
     def do_drag_drop(self, context, x, y, time):
         self.control.notImplemented()
@@ -1994,56 +2034,29 @@ class TextView(Gtk.TextView):
 
     def pasteClipboard(self, widget=None):
 
+        self.copiedText = self.control.clipboard.wait_for_text()
+        if self.copiedText == None:
+            return
+        self.copiedText =  self.copiedText.rstrip(ZERO_WIDTH_SPACE)
+        copiedLines = self.copiedText.split('\n')
+
+        tags = self.selectionTags
+        if len(tags) == 0:
+            tags = ['description' for i in range(len(copiedLines))]
+
         if len(self.control.copyClipboard.lines) == 0:
             return
-
-        insertIter = self.insertIter()
-        lineOffset = insertIter.get_line_offset()
-        currentLine = self.control.currentLine()
-        bufferIndex = self.control.scriptView.lines.index(currentLine)
-        startLineIter = self.lineIter(bufferIndex)
-        endLineIter = self.lineIter(bufferIndex)
-        endLineIter.forward_to_line_end()
-        lineText = self.buffer.get_text(startLineIter, endLineIter, False)
 
         self.setSelectionClipboard()
         cutEvent = self.chainDeleteSelectedTextEvent()
         if cutEvent:
             self.updateLineTag()
 
-        self.pasteEvent = _event.PasteEvent(self.control)
-        self.control.currentStory().eventManager.addEvent(self.pasteEvent)
+        pasteEvent = _event.Insertion(self.control.currentScene(), self.control.currentPage(), self.control.currentLine(),self.control.currentStory().index.offset, self.copiedText, tags)
+        pasteEvent.modelUpdate(self.control)
+        self.control.currentStory().eventManager.addEvent(pasteEvent)
 
-        insertIter = self.insertIter()
-
-        if len(self.control.copyClipboard.lines) == 1:
-            self.buffer.insert(insertIter, self.control.copyClipboard.lines[0].text)
-
-        else:
-            for i in range(len(self.control.copyClipboard.lines) - 1):
-                line = self.control.copyClipboard.lines[i]
-                self.buffer.insert(insertIter, line.text + "\n")
-
-            self.buffer.insert(insertIter, self.control.copyClipboard.lines[i+1].text)
-
-        # If the line is empty that is being pasted on, then the copyClipboard determines tag.
-        # If the line is not empty and the line offset is zero, the copyClipboard determines tag.
-        if len(lineText) == 0 or lineOffset == 0:
-            line = self.pasteEvent.clipboardLines[0]
-            self.control.scriptView.lines[bufferIndex].tag = line.tag
-            for i in range(len(self.pasteEvent.clipboardLines)):
-                line = self.pasteEvent.clipboardLines[i]
-                self.formatLine(bufferIndex + i, line.tag)
-
-        # If the line is not empty and the line offset is non zero, the buffer line determines tag.
-        else:
-
-            line = self.control.scriptView.lines[bufferIndex]
-            self.formatLine(bufferIndex, line.tag)
-
-            for i in range(1, len(self.pasteEvent.clipboardLines)):
-                line = self.pasteEvent.clipboardLines[i]
-                self.formatLine(bufferIndex + i, line.tag)
+        pasteEvent.viewUpdate(self.control)
 
         self.control.currentStory().saved = False
 
@@ -2056,7 +2069,11 @@ class TextView(Gtk.TextView):
             word = ''.join(self.word)
             if len(word):
                 self.control.scriptView.updateCurrentStoryIndex()
-                self.control.currentStory().eventManager.addEvent(_event.WordEvent(self.control, word))
+                tags = [self.control.currentLine().tag]
+                event = _event.Insertion(self.control.currentScene(), self.control.currentPage(), self.control.currentLine(),self.control.currentStory().index.offset - len(word), word, tags)
+                # event.forceWordModelUpdate(self.control, word)
+                event.modelUpdate(self.control)
+                self.control.currentStory().eventManager.addEvent(event)
                 self.word = []
 
     def addCharToWord(self, character, duringKeyPressEvent=False):
@@ -2066,7 +2083,11 @@ class TextView(Gtk.TextView):
         if character == ' ':
             word = ''.join(self.word)
             self.control.scriptView.updateCurrentStoryIndex()
-            self.control.currentStory().eventManager.addEvent(_event.WordEvent(self.control, word, duringKeyPressEvent))
+            tags = [self.control.currentLine().tag]
+            event = _event.Insertion(self.control.currentScene(), self.control.currentPage(), self.control.currentLine(),self.control.currentStory().index.offset - len(word), word, tags)
+            # event.forceWordModelUpdate(self.control, word, duringKeyPressEvent)
+            event.modelUpdate(self.control)
+            self.control.currentStory().eventManager.addEvent(event)
             self.word = []
 
     def setSelectionClipboard(self):
@@ -2075,8 +2096,14 @@ class TextView(Gtk.TextView):
 
         self.selectedClipboard = []
 
+
         if len(bounds):
+
             startIter, endIter = bounds
+
+            # Do not allow selection of zero space char at end of buffer.
+            if self.endIter().get_offset() == endIter.get_offset():
+                endIter.backward_char()
 
             if startIter.get_offset() > endIter.get_offset():
                 import os
@@ -2194,6 +2221,7 @@ class TextView(Gtk.TextView):
     def focusOut(self, widget, event):
         self.forceWordEvent()
         #self.tagIter.reset()
+        self.selectionTags = []
 
     def focusIn(self, widget, event):
         pass
