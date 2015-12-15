@@ -7,6 +7,7 @@ from gi.repository import Gtk, GObject, Gdk
 import _appWindow
 import _search
 import _screenplayModeSwitch
+import _event
 
 # data
 from _config import Config
@@ -46,6 +47,7 @@ class Control(object):
         self.sequenceVisible = False
         self.testingTags = True
         self.updateNamesGlobally = True
+        self.eventManager = _event.EventManager(self)
 
         self.addWordPath = os.path.expanduser(('~')) + '/.config/diego/addedWords'
         self.removeWordPath = os.path.expanduser(('~')) + '/.config/diego/removeWords'

@@ -46,11 +46,11 @@ class Window(Gtk.Window):
 
             elif ( event.keyval == 122):
                 pass
-                # self.control.currentStory().eventManager.undo()
+                # self.control.eventManager.undo()
 
             elif ( event.keyval == 90):
                 pass
-                # self.control.currentStory().eventManager.redo()
+                # self.control.eventManager.redo()
                 
             elif ( event.keyval ==110) | (event.keyval == 78):
                 self.control.app.unsavedFileCheck()

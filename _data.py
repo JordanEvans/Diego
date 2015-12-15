@@ -152,7 +152,6 @@ class Data(object):
         self.synopsis=''
         self.notes=''
         self.sequences = []
-        self.eventManager = EventManager(self.control)
         self.index = StoryIndex()
 
         self.saved = True
@@ -169,7 +168,7 @@ class Data(object):
         self.control.currentStory().index.line = 0
 
         if self.control.historyEnabled:
-            self.control.currentStory().eventManager.addEvent(_event.NewSequenceEvent(sequence, self.control.currentStory().index))
+            self.control.eventManager.addEvent(_event.NewSequenceEvent(sequence, self.control.currentStory().index))
         self.saved = False
 
     def newScene(self):
@@ -183,7 +182,7 @@ class Data(object):
         self.control.currentStory().index.line = 0
 
         if self.control.historyEnabled:
-            self.control.currentStory().eventManager.addEvent(_event.NewSceneEvent(scene, self.control.currentStory().index))
+            self.control.eventManager.addEvent(_event.NewSceneEvent(scene, self.control.currentStory().index))
         self.saved = False
 
     def newPage(self):
@@ -195,7 +194,7 @@ class Data(object):
         self.control.currentScene().pages.insert(position, page)
 
         if self.control.historyEnabled:
-            self.control.currentStory().eventManager.addEvent(_event.NewPageEvent(page, self.control.currentStory().index))
+            self.control.eventManager.addEvent(_event.NewPageEvent(page, self.control.currentStory().index))
         self.saved = False
 
     def deletePage(self, index):
@@ -262,7 +261,6 @@ class Data(object):
     def reset(self):
         self.path = None
         self.sequences = []
-        self.eventManager = None
         self.saved = True
 
     def data(self):

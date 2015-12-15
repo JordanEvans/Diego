@@ -1,7 +1,7 @@
 
 from gi.repository import Gtk
 
-import _pageItem
+import _event
 
 class CategoryItemBox(Gtk.Box):
 
@@ -73,7 +73,7 @@ class CategoryItemBox(Gtk.Box):
 
         self.listbox.add(row)
 
-        self.currentStory().eventManager.newPageEvent(pageData)
+        self.control.eventManager.newPageEvent(_event.Event())
 
     def state(self):
         # return dictionary

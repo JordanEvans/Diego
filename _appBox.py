@@ -26,6 +26,8 @@ class AppBox(Gtk.Box):
         vbox.pack_start(self.stackSwitcherBox,0 ,0, 0)
         self.control.appHeaderBar.pack_start(vbox)
 
+        #self.control.stackSwitcher.connect('button-release-event', self.buttonRelease)
+
         # Add the Panel box
         self.panelLabelBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         self.panelLabelBox.pack_start(self.control.panelLabel, 1, 1, 1)
@@ -47,6 +49,9 @@ class AppBox(Gtk.Box):
         self.paned.add2(self.control.scriptView)
         self.paned.set_position(150)
         self.pack_start(vbox, 1, 1, 0)
+
+    def do_button_release_event(self, eventButton):
+        print eventButton.get_window()
 
     def connections(self, ):
         pass

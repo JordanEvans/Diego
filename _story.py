@@ -11,6 +11,8 @@ from _event import EventManager
 
 DEFAULT_TIMES = ["DAY", "NIGHT", "DUSK", "DAWN"]
 
+HISTORY_RECORD_LIMIT = 100
+
 class StoryIndex(object):
 
     def __init__(self, indexDict=None):
@@ -81,6 +83,13 @@ class Line(object):
         else:
             return  control.scriptView.lines[index - 1]
 
+    def after(self, control):
+        index = control.scriptView.lines.index(self)
+        if index == len(control.scriptView.lines) -1:
+            return self
+        else:
+            return  control.scriptView.lines[index + 1]
+
     def updateMispelled(self, control):
         control.scriptView.textView.forceWordEvent()
         self.mispelled = []
@@ -128,6 +137,7 @@ class Line(object):
                 control.scriptView.textView.buffer.remove_all_tags(startIter, endIter)
                 control.scriptView.textView.buffer.apply_tag_by_name(self.tag + "Mispelled", startIter, endIter)
 
+
 class Sequence(object):
 
     def __init__(self, title='Sequence', synopsis='', notes='', scenes=[], info=''):
@@ -165,12 +175,15 @@ class Sequence(object):
 
 class Scene(object):
 
-    def __init__(self, title='Scene', synopsis='', notes='', pages=[], info=''):
+    def __init__(self, title='Scene', synopsis='', notes='', pages=[], info='', events=[]):
         self.title = title
         self.synopsis=synopsis
         self.notes=notes
         self.pages = []
         self.info = info
+
+        self.events = events
+        self.eventIndex = 0
 
         if len(pages) == 0:
             self.pages = [Page()]
@@ -188,6 +201,10 @@ class Scene(object):
         data["notes"] = self.notes
         data["pages"] = pages
         data['info'] = self.info
+        events = []
+
+        for record in self.events[:HISTORY_RECORD_LIMIT]:
+            events.append(record.data())
 
         return data
 
@@ -268,7 +285,7 @@ class Story(object):
         self.notes=''
         self.sequences = []
         self.info = info
-        self.eventManager = EventManager(self.control)
+
         # self.index = [0, 0, 0, 0, 0] # [sequence, scene, page, line, offset]
         self.index = StoryIndex()
 
@@ -283,8 +300,6 @@ class Story(object):
         self.isScreenplay = False
 
         self.firstAppearances = []
-
-        #print  re.findall(r"[\w']+|[ .,!?;\-=:'\"@#$^&*(){}]", 'the - test')
 
     def newSequence(self, prepend=False):
         sequence = Sequence()
@@ -303,7 +318,7 @@ class Story(object):
         self.control.currentStory().index.line = 0
 
         if self.control.historyEnabled:
-            self.control.currentStory().eventManager.addEvent(_event.NewSequenceEvent(sequence, self.control.currentStory().index))
+            self.control.eventManager.addEvent(_event.NewSequenceEvent(sequence, self.control.currentStory().index))
         self.saved = False
 
     def newScene(self, prepend=False):
@@ -322,7 +337,7 @@ class Story(object):
         self.control.currentStory().index.line = 0
 
         if self.control.historyEnabled:
-            self.control.currentStory().eventManager.addEvent(_event.Event())
+            self.control.eventManager.addEvent(_event.Event())
         self.saved = False
 
     def newPage(self, prepend=False):
@@ -340,7 +355,7 @@ class Story(object):
         self.control.currentScene().pages.insert(position, page)
 
         if self.control.historyEnabled:
-            self.control.currentStory().eventManager.addEvent(_event.Event())
+            self.control.eventManager.addEvent(_event.Event())
         self.saved = False
 
     def deletePage(self, index):
@@ -383,6 +398,11 @@ class Story(object):
             self.sequences.append(Sequence(title, synopsis, notes, scenes=sequence['scenes'], info=sequence['info']))
 
         self.control.historyEnabled = True
+
+        events = []
+        for sq in self.sequences:
+            for sc in sq.scenes:
+                self.control.eventManager.initSceneHistory(sc, events)
 
         self.horizontalPanePosition = data['horizontalPanePosition']
 
@@ -430,6 +450,7 @@ class Story(object):
     def default(self):
         self.control.historyEnabled = True
         self.sequences = [Sequence()]
+        self.control.eventManager.initSceneHistory(self, scene, events=[])
 
     def hanselGretalImport(self):
         import json
@@ -586,6 +607,7 @@ class Story(object):
                             line.updateMispelled(self.control)
                             # if len(line.mispelled):
                             #     print [o.word for o in line.mispelled]
+
 
 class MispelledWord(object):
     def __init__(self, word, offset):
