@@ -47,7 +47,7 @@ class FindIter(object):
         lineIter = self.control.scriptView.textView.iterAtLocation(index, 0)
 
         # Place character on line.
-        self.buffer.place_cursor(lineIter)
+        self.get_buffer().place_cursor(lineIter)
 
         # Update the model so the current line is next line.
         currentLine = self.control.currentLine()
@@ -117,7 +117,7 @@ class View(Gtk.Box):
 
             find = self.finds[self.scrollFindOffSet]
             lineIndex = self.control.scriptView.lines.index(find.line)
-            findIter = self.control.scriptView.textView.buffer.get_iter_at_line(lineIndex)
+            findIter = self.control.scriptView.textView.get_buffer().get_iter_at_line(lineIndex)
             findIter.forward_chars(find.offset)
             self.control.scriptView.textView.scroll_to_iter(findIter, 0, 0, 0, True)
             if self.lastScrollFind:
@@ -159,41 +159,41 @@ class View(Gtk.Box):
 
         lineIndex = self.control.scriptView.lines.index(line)
 
-        startIter = self.control.scriptView.textView.buffer.get_iter_at_line(lineIndex)
+        startIter = self.control.scriptView.textView.get_buffer().get_iter_at_line(lineIndex)
         startIter.forward_chars(offset)
-        endIter = self.control.scriptView.textView.buffer.get_iter_at_line(lineIndex)
+        endIter = self.control.scriptView.textView.get_buffer().get_iter_at_line(lineIndex)
         endIter.forward_chars(offset + len(self.find))
 
-        # sc,ec,soff, eoff, text = startIter.get_char(), endIter.get_char(), startIter.get_offset(), endIter.get_offset(), self.control.scriptView.textView.buffer.get_text(startIter, endIter, True)
+        # sc,ec,soff, eoff, text = startIter.get_char(), endIter.get_char(), startIter.get_offset(), endIter.get_offset(), self.control.scriptView.textView.get_buffer().get_text(startIter, endIter, True)
 
-        self.control.scriptView.textView.buffer.remove_all_tags(startIter, endIter)
-        self.control.scriptView.textView.buffer.apply_tag_by_name(line.tag + "Find", startIter, endIter)
+        self.control.scriptView.textView.get_buffer().remove_all_tags(startIter, endIter)
+        self.control.scriptView.textView.get_buffer().apply_tag_by_name(line.tag + "Find", startIter, endIter)
 
 
     def applyScrollTag(self, line, offset):
 
         lineIndex = self.control.scriptView.lines.index(line)
 
-        startIter = self.control.scriptView.textView.buffer.get_iter_at_line(lineIndex)
+        startIter = self.control.scriptView.textView.get_buffer().get_iter_at_line(lineIndex)
         startIter.forward_chars(offset)
-        endIter = self.control.scriptView.textView.buffer.get_iter_at_line(lineIndex)
+        endIter = self.control.scriptView.textView.get_buffer().get_iter_at_line(lineIndex)
         endIter.forward_chars(offset + len(self.find))
 
-        # sc,ec,soff, eoff, text = startIter.get_char(), endIter.get_char(), startIter.get_offset(), endIter.get_offset(), self.control.scriptView.textView.buffer.get_text(startIter, endIter, True)
+        # sc,ec,soff, eoff, text = startIter.get_char(), endIter.get_char(), startIter.get_offset(), endIter.get_offset(), self.control.scriptView.textView.get_buffer().get_text(startIter, endIter, True)
 
-        self.control.scriptView.textView.buffer.remove_all_tags(startIter, endIter)
-        self.control.scriptView.textView.buffer.apply_tag_by_name(line.tag + "Scroll", startIter, endIter)
+        self.control.scriptView.textView.get_buffer().remove_all_tags(startIter, endIter)
+        self.control.scriptView.textView.get_buffer().apply_tag_by_name(line.tag + "Scroll", startIter, endIter)
 
     def removeScrollTag(self, line, offset):
 
         lineIndex = self.control.scriptView.lines.index(line)
 
-        startIter = self.control.scriptView.textView.buffer.get_iter_at_line(lineIndex)
+        startIter = self.control.scriptView.textView.get_buffer().get_iter_at_line(lineIndex)
         startIter.forward_chars(offset)
-        endIter = self.control.scriptView.textView.buffer.get_iter_at_line(lineIndex)
+        endIter = self.control.scriptView.textView.get_buffer().get_iter_at_line(lineIndex)
         endIter.forward_chars(offset + len(self.find))
 
-        # sc,ec,soff, eoff, text = startIter.get_char(), endIter.get_char(), startIter.get_offset(), endIter.get_offset(), self.control.scriptView.textView.buffer.get_text(startIter, endIter, True)
+        # sc,ec,soff, eoff, text = startIter.get_char(), endIter.get_char(), startIter.get_offset(), endIter.get_offset(), self.control.scriptView.textView.get_buffer().get_text(startIter, endIter, True)
 
-        self.control.scriptView.textView.buffer.remove_all_tags(startIter, endIter)
-        self.control.scriptView.textView.buffer.apply_tag_by_name(line.tag, startIter, endIter)
+        self.control.scriptView.textView.get_buffer().remove_all_tags(startIter, endIter)
+        self.control.scriptView.textView.get_buffer().apply_tag_by_name(line.tag, startIter, endIter)

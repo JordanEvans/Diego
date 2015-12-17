@@ -18,7 +18,7 @@ class Insertion(Event):
         Event.__init__(self)
         self.scene = scene
         self.page = page
-        self.line = line
+        self.line = line # this the index of the page line
         self.offset = offset
         self.text = text
         self.tags = tags
@@ -50,10 +50,13 @@ class Insertion(Event):
 
     def viewUpdate(self, control, pushedOffHeading=False):
 
-        insertIter = control.scriptView.textView.insertIter()
-        control.scriptView.textView.buffer.insert(insertIter, self.text, len(self.text))
+        eventLine = self.page.lines[self.line]
+        bufferIndex = control.scriptView.lines.index(eventLine)
 
-        firstLine = control.scriptView.lines[self.line]
+        insertIter = control.scriptView.textView.iterAtLocation(bufferIndex, self.offset)
+        control.scriptView.textView.get_buffer().insert(insertIter, self.text, len(self.text))
+
+        firstLine = eventLine
 
         index = control.scriptView.lines.index(firstLine)
         for tag in self.tags:
@@ -64,13 +67,19 @@ class Insertion(Event):
         if pushedOffHeading:
             insertIter = control.scriptView.textView.insertIter()
             insertIter.backward_char()
-            control.scriptView.textView.buffer.place_cursor(insertIter)
+            control.scriptView.textView.get_buffer().place_cursor(insertIter)
+        else:
+            afterInsertIter = control.scriptView.textView.iterAtLocation(bufferIndex, self.offset)
+            afterInsertIter.forward_chars(len(self.text))
+            control.scriptView.textView.get_buffer().place_cursor(afterInsertIter)
 
     def modelUpdate(self, control, pushedOffHeading=False):
 
         lines = self.text.split("\n")
 
-        firstLine = control.scriptView.lines[self.line]
+        eventLine = self.page.lines[self.line]
+
+        firstLine = eventLine
 
         # Only inserting text, no new lines.
         if len(lines) == 1:
@@ -141,19 +150,28 @@ class Deletion(Event):
         self.isDeleteKey = False
 
     def viewUpdate(self, control):
-        startIter = control.scriptView.textView.iterAtLocation(self.line, self.offset)
 
-        endIter = control.scriptView.textView.iterAtLocation(self.line, self.offset)
+        eventLine = self.page.lines[self.line]
+        bufferIndex = control.scriptView.lines.index(eventLine)
+
+        startIter = control.scriptView.textView.iterAtLocation(bufferIndex, self.offset)
+
+        endIter = control.scriptView.textView.iterAtLocation(bufferIndex, self.offset)
         endIter.forward_chars(len(self.text))
 
-        control.scriptView.textView.buffer.delete(startIter, endIter)
+        control.scriptView.textView.get_buffer().delete(startIter, endIter)
 
-        for i in range(len(self.tags)):
-            control.scriptView.textView.updateLineTag(self.line + i, self.tags[i])
+        control.scriptView.textView.updateLineTag(bufferIndex, self.tags[0])
+
+        afterDeleteIter = control.scriptView.textView.iterAtLocation(bufferIndex, self.offset)
+        control.scriptView.textView.get_buffer().place_cursor(afterDeleteIter)
 
     def modelUpdate(self, control, isBackspaceKey=False, isDeleteKey=False):
 
-        firstLine = control.scriptView.lines.index(self.line)
+        eventLine = self.page.lines[self.line]
+        bufferIndex = control.scriptView.lines.index(eventLine)
+
+        firstLine = eventLine
         if isDeleteKey:
             self.isDeleteKey = isDeleteKey
 
@@ -193,7 +211,7 @@ class Deletion(Event):
             # Get the text on the first line beginning at the start of the selection.
             firstLineText = firstLine.text[:self.offset]
             firstLine.text = firstLineText
-            firstLineCarryText = firstLineText
+            # firstLineCarryText = firstLineText
 
             # endOffset = control.scriptView.textView.selectionIterEnd.get_line_offset()
             endOffset = len(lines[1])
@@ -209,7 +227,7 @@ class Deletion(Event):
 
             # Get the text on the second line beginning up to the end of the selection.
             lastLineText = line2.text[endOffset:]
-            line2.text = lastLineText
+            # line2.text = lastLineText
             lastLineCarryText = lastLineText
 
             # Remove the second line
@@ -221,35 +239,27 @@ class Deletion(Event):
 
             # If the first line's text is all deleted, the tag on the second line will be used, unless it has no text.
             # The other two cases will keep line one's tag by default.
-            if len(firstLineCarryText) == 0 and len(lastLineCarryText) > 0:
-                firstLine.tag = line2.tag
+            # if len(firstLineCarryText) == 0 and len(lastLineCarryText) > 0:
+            #     firstLine.tag = line2.tag
 
         else:
-
-            startLineIndex = control.scriptView.textView.selectionIterStart.get_line()
-            firstLine = control.scriptView.lines[startLineIndex]
-            self.offset = control.scriptView.textView.selectionIterStart.get_line_offset()
 
             # Get the text on the first line beginning at the start of the selection.
             firstLineText = firstLine.text[:self.offset]
             firstLine.text = firstLineText
-            self.firstLineCarryText = firstLineText
+            # self.firstLineCarryText = firstLineText
 
-            endLineIndex = control.scriptView.textView.selectionIterEnd.get_line()
-            lastLine = control.scriptView.lines[endLineIndex]
-            # lastLine = control.scriptView.lines[firstLine + len(self.cutClipboard)]
-
-            endOffset = control.scriptView.textView.selectionIterEnd.get_line_offset()
+            lastLine = control.scriptView.lines[bufferIndex + len(lines) - 1]
+            endOffset = len(lines[-1])
 
             # Get the text on the second line beginning up to the end of the selection.
             lastLineText = lastLine.text[endOffset:]
-            lastLine.text = lastLineText
-            # lastLineCarryText = lastLineText
+            # lastLine.text = lastLineText
 
             # Gather lines to remove.
             removeLines = []
             for i in range(len(lines)-1):
-                line = self.page.lines[startLineIndex + i]
+                line = self.page.lines[self.line + i + 1]
                 removeLines.append(line)
 
             # Remove the middle lines and last line
@@ -266,21 +276,28 @@ class Deletion(Event):
         control.category = 'scene'
         control.indexView.stack.set_visible_child_name("scene")
 
-        return
+        redo = Insertion(self.scene, self.page, self.line, self.offset, self.text, self.tags)
 
-        undo = Insertion(self.scene, self.page, self.line, self.offset, self.text, self.tags)
-        undo.viewUpdate()
-        undo.modelUpdate()
+        redo.modelUpdate(control)
+
+        redo.viewUpdate(control)
+        eventLine = self.page.lines[self.line]
+        bufferIndex = control.scriptView.lines.index(eventLine)
+        afterDeleteIter = control.scriptView.textView.iterAtLocation(bufferIndex, self.offset)
+        control.scriptView.textView.get_buffer().place_cursor(afterDeleteIter)
+
+        control.scriptView.textView.grab_focus()
 
     def redo(self, control):
         control.category = 'scene'
         control.indexView.stack.set_visible_child_name("scene")
 
-        return
-
         redo = Deletion(self.scene, self.page, self.line, self.offset, self.text, self.tags)
-        redo.viewUpdate()
-        redo.modelUpdate()
+
+        redo.viewUpdate(control)
+        redo.modelUpdate(control)
+
+        control.scriptView.textView.grab_focus()
 
     def data(self):
         return None

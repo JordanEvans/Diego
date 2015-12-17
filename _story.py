@@ -110,13 +110,13 @@ class Line(object):
 
                 lineIndex = control.scriptView.lines.index(self)
 
-                startIter = control.scriptView.textView.buffer.get_iter_at_line(lineIndex)
+                startIter = control.scriptView.textView.get_buffer().get_iter_at_line(lineIndex)
                 startIter.forward_chars(word.offset)
-                endIter = control.scriptView.textView.buffer.get_iter_at_line(lineIndex)
+                endIter = control.scriptView.textView.get_buffer().get_iter_at_line(lineIndex)
                 endIter.forward_chars(word.offset + len(word.word))
 
-                control.scriptView.textView.buffer.remove_all_tags(startIter, endIter)
-                control.scriptView.textView.buffer.apply_tag_by_name(self.tag + "Mispelled", startIter, endIter)
+                control.scriptView.textView.get_buffer().remove_all_tags(startIter, endIter)
+                control.scriptView.textView.get_buffer().apply_tag_by_name(self.tag + "Mispelled", startIter, endIter)
         else:
             lineOffset = control.scriptView.textView.insertIter().get_line_offset()
             cursorWord = None
@@ -129,13 +129,13 @@ class Line(object):
                 word = cursorWord
                 lineIndex = control.scriptView.lines.index(self)
 
-                startIter = control.scriptView.textView.buffer.get_iter_at_line(lineIndex)
+                startIter = control.scriptView.textView.get_buffer().get_iter_at_line(lineIndex)
                 startIter.forward_chars(word.offset)
-                endIter = control.scriptView.textView.buffer.get_iter_at_line(lineIndex)
+                endIter = control.scriptView.textView.get_buffer().get_iter_at_line(lineIndex)
                 endIter.forward_chars(word.offset + len(word.word))
 
-                control.scriptView.textView.buffer.remove_all_tags(startIter, endIter)
-                control.scriptView.textView.buffer.apply_tag_by_name(self.tag + "Mispelled", startIter, endIter)
+                control.scriptView.textView.get_buffer().remove_all_tags(startIter, endIter)
+                control.scriptView.textView.get_buffer().apply_tag_by_name(self.tag + "Mispelled", startIter, endIter)
 
 
 class Sequence(object):
@@ -226,6 +226,10 @@ class Scene(object):
 
         return names + snames
 
+    def correspond(self, control, verbose=False):
+        for page in self.pages:
+            page.correspond(control, verbose=verbose)
+
 
 class Page(object):
 
@@ -268,6 +272,53 @@ class Page(object):
             if line.tag == "description":
                 count += 1
         return count
+
+    def correspond(self, control, verbose=False):
+        index = 0
+        lastLine = control.scriptView.lines[-1]
+        for line in self.lines:
+            modelInfo = [line.text, line.tag]
+            bufferInfo = None
+            check = []
+            inBuffer = line in control.scriptView.lines
+
+            if inBuffer:
+                index = control.scriptView.lines.index(line)
+                lineText = control.scriptView.textView.lineText(index)
+                if line == lastLine:
+                    lineText = lineText.rstrip(_script.ZERO_WIDTH_SPACE)
+                lineTags = control.scriptView.textView.lineTags(index)
+                bufferInfo = [lineText, lineTags]
+                checkText = modelInfo[0] == lineText
+                if len(lineTags) == 1:
+                    checkTags = modelInfo[1] == lineTags[0]
+                else:
+                    checkTags = False
+                check = [checkText, checkTags]
+
+            else:
+
+                print "Model Line Not Found In Buffer"
+
+            if bufferInfo:
+
+                if verbose:
+                    print index, check, modelInfo, bufferInfo
+
+                if (not check[0] or not check[1]) and not verbose:
+                    t1 = ""
+                    t2 = ""
+                    if not check[0]:
+                        t1 = u"Text on line " + unicode(str(index), 'utf-8') + u" in model does not match buffer text: " + u"\nbuffer: " + unicode(str(list(bufferInfo[0])), 'utf-8') + u"\nmodel: " + unicode(str(list(modelInfo[0])), 'utf-8')
+                    if not check[0]:
+                        t2 = u"Tags in model does not match buffer tags: " + u"\nbuffer: " + unicode(str(bufferInfo[1]), 'utf-8') + u"\nmodel: " + unicode(str(modelInfo[1]), 'utf-8')
+
+                    verboseText = u"\n\n" + t1 + u'\n' + t2
+                    #raise Exception(verboseText)
+
+                    print verboseText
+
+            index += 1
 
 
 class Story(object):
@@ -607,6 +658,18 @@ class Story(object):
                             line.updateMispelled(self.control)
                             # if len(line.mispelled):
                             #     print [o.word for o in line.mispelled]
+
+    def correspond(self, control, verbose=False):
+        if verbose:
+            print
+            print "Model"
+        index = 0
+        for sq in self.sequences:
+            for sc in sq.scenes:
+                if verbose:
+                    print "SCENE", index, sc.title
+                sc.correspond(control, verbose=verbose)
+                index += 1
 
 
 class MispelledWord(object):

@@ -175,7 +175,6 @@ class TextView(Gtk.TextView):
         Gtk.TextView.__init__(self)
 
         self.control = control
-        self.buffer = self.get_buffer()
 
         self.selectionMarkStart = None
         self.selectionMarkEnd = None
@@ -268,16 +267,17 @@ class TextView(Gtk.TextView):
         insertIter = self.insertIter()
         if insertIter.get_offset() == self.endIter().get_offset():
             insertIter.backward_char()
-            bounds = self.buffer.get_selection_bounds()
+            bounds = self.get_buffer().get_selection_bounds()
             if bounds:
                 startMark = self.iterMark(bounds[0])
                 bounds[1].backward_char()
                 endMark = self.iterMark(bounds[1])
-            self.buffer.place_cursor(insertIter)
+            self.get_buffer().place_cursor(insertIter)
             if bounds:
-                self.buffer.select_range(self.markIter(startMark), self.markIter(endMark))
+                self.get_buffer().select_range(self.markIter(startMark), self.markIter(endMark))
 
-        self.printTags()
+        # self.printTags()
+        # self.control.currentStory().correspond(self.control, verbose=1)
 
     def keyPress(self, widget, event):
 
@@ -325,22 +325,17 @@ class TextView(Gtk.TextView):
             return 1
 
         if event.state & Gdk.ModifierType.SHIFT_MASK:
-
             if event.state & Gdk.ModifierType.CONTROL_MASK:
-                print event.keyval
                 if event.keyval==90: # undo
                     self.forceWordEvent()
                     self.control.eventManager.redo()
                     return 1
 
             if event.keyval >= 65 and event.keyval <= 90:
-
-
                 if self.control.currentLine().tag == 'sceneHeading':
                     returnValue = self.completeSceneHeading(event)
                     if returnValue:
                         return 1
-
                 else:
                     returnValue = self.completeName(event)
                     if returnValue:
@@ -388,17 +383,13 @@ class TextView(Gtk.TextView):
         if event.keyval == 65289: # doing formating for the tab character now.
 
             if currentLine.tag not in ['heading', 'sceneHeading']:
-
                 self.tagIter.increment()
-
                 currentLine.tag = self.tagIter.tag()
                 index = self.control.scriptView.lines.index(currentLine)
-
                 tag = self.updateLineTag(line=index, formatingLastLineWhenEmpty=True, autoSceneHeading=False)
                 self.control.currentStory().saved = False
                 self.formatingLine = True
                 self.resetGlobalMargin(tag)
-
             return 1
 
         if event.keyval == 65307: # esc
@@ -466,7 +457,7 @@ class TextView(Gtk.TextView):
             cutEvent = self.chainDeleteSelectedTextEvent()
             insertIter = self.insertIter()
 
-            self.buffer.insert(insertIter, character, 1)
+            self.get_buffer().insert(insertIter, character, 1)
 
             self.updateLineTag()
 
@@ -513,6 +504,7 @@ class TextView(Gtk.TextView):
         #     self.currentLineMispelled()
 
         # self.printTags()
+        # self.control.currentStory().correspond(self.control, verbose=0)
 
         return
 
@@ -566,7 +558,7 @@ class TextView(Gtk.TextView):
             # Push the cursor to the next line.
             insertIter = self.insertIter()
             insertIter.forward_char()
-            self.buffer.place_cursor(insertIter)
+            self.get_buffer().place_cursor(insertIter)
 
             # Update the model so the current line is next line.
             currentLine = self.control.currentLine()
@@ -617,14 +609,15 @@ class TextView(Gtk.TextView):
                 lineIndex = insertIter.get_line()
 
                 tags = [currentLineTag, newLineTag]
-                # newLineEvent = _event.Insertion(self.control.currentScene(), self.control.currentPage(), self.control.currentLine(),self.control.currentStory().index.offset, '\n', tags)
 
-                cl = self.control.currentLine()
                 cp = self.control.currentPage()
+                cl = self.control.currentLine()
+                pageLineIndex = cp.lines.index(cl)
+
                 lineIndex = self.control.scriptView.lines.index(cl)
                 newLineEvent = _event.Insertion(self.control.currentScene(),
                     cp,
-                    lineIndex,
+                    pageLineIndex,
                     self.control.currentStory().index.offset,
                     '\n',
                     tags)
@@ -639,14 +632,14 @@ class TextView(Gtk.TextView):
                 if nextCharIsHeading:
                     pass
                 tags = [currentLineTag, newLineTag]
-                # newLineEvent = _event.Insertion(self.control.currentScene(), self.control.currentPage(), self.control.currentLine(),self.control.currentStory().index.offset, '\n', tags)
 
                 cl = self.control.currentLine()
                 cp = self.control.currentPage()
+                pageLineIndex = cp.lines.index(cl)
                 lineIndex = self.control.scriptView.lines.index(cl)
                 event = _event.Insertion(self.control.currentScene(),
                     cp,
-                    lineIndex,
+                    pageLineIndex,
                     self.control.currentStory().index.offset,
                     '\n',
                     tags)
@@ -659,13 +652,12 @@ class TextView(Gtk.TextView):
         else:
 
             tags = [currentLineTag, newLineTag]
-            # newLineEvent = _event.Insertion(self.control.currentScene(), self.control.currentPage(), self.control.currentLine(),self.control.currentStory().index.offset, '\n', tags)
             cl = self.control.currentLine()
             cp = self.control.currentPage()
-            lineIndex = self.control.scriptView.lines.index(cl)
+            pageLineIndex = cp.lines.index(cl)
             newLineEvent = _event.Insertion(self.control.currentScene(),
                 cp,
-                lineIndex,
+                pageLineIndex,
                 self.control.currentStory().index.offset,
                 '\n',
                 tags)
@@ -701,7 +693,7 @@ class TextView(Gtk.TextView):
         currentLineOffset = insertIter.get_line_offset()
         lineEmpty = len(currentLine.text) == 0
 
-        bounds = self.buffer.get_selection_bounds()
+        bounds = self.get_buffer().get_selection_bounds()
         if len(bounds):
             selectStart, selectEnd = bounds
             if selectEnd.get_char() == HEADING:
@@ -749,24 +741,26 @@ class TextView(Gtk.TextView):
             else:
                 movedIter.forward_chars(2)
 
-            self.buffer.place_cursor(movedIter)
+            self.get_buffer().place_cursor(movedIter)
 
             self.control.scriptView.updateCurrentStoryIndex()
             return 1
 
         if currentChar:
             self.deleteEvent = True
-            # nextIter = self.insertIter()
-            # nextIter.forward_char()
-            # delChar = self.buffer.get_text(insertIter, nextIter, True)
-            # self.buffer.delete(insertIter, nextIter)
+
             self.control.currentStory().saved = False
 
-            # self.control.eventManager.addEvent(_event.DeleteEvent(self.control, delChar))
-
-            tags = [self.control.currentLine().tag]
-            event = _event.Deletion(self.control.currentScene(), self.control.currentPage(), self.control.currentLine(),self.control.currentStory().index.offset, currentChar, tags)
-            # event.deleteModelUpdate(self.control, delChar)
+            cl = self.control.currentLine()
+            cp = self.control.currentPage()
+            pageLineIndex = cp.lines.index(cl)
+            tags = [cl.tag]
+            event = _event.Deletion(self.control.currentScene(),
+                self.control.currentPage(),
+                pageLineIndex,
+                self.control.currentStory().index.offset,
+                currentChar,
+                tags)
             event.viewUpdate(self.control)
             event.modelUpdate(self.control, isDeleteKey=True)
             self.control.eventManager.addEvent(event)
@@ -786,7 +780,7 @@ class TextView(Gtk.TextView):
         currentCharOffset = insertIter.get_offset()
         lineEmpty = len(currentLine.text) == 0
         currentLineIndex = insertIter.get_line()
-        lastIterOffset = self.buffer.get_end_iter().get_offset()
+        lastIterOffset = self.get_buffer().get_end_iter().get_offset()
         currentPage = self.control.currentPage()
 
         insertIter = self.insertIter()
@@ -839,14 +833,14 @@ class TextView(Gtk.TextView):
                 movedIter.backward_chars(2)
             else:
                 movedIter.backward_char()
-            self.buffer.place_cursor(movedIter)
+            self.get_buffer().place_cursor(movedIter)
             self.control.scriptView.updateCurrentStoryIndex()
             return 1
 
-        elif prevCharIsHeading and currentLineIndex > 1: # backspace on heading
+        elif len(self.selectedClipboard) == 0 and prevCharIsHeading and currentLineIndex > 1: # backspace on heading
             movedIter = self.insertIter()
             movedIter.backward_chars(3)
-            self.buffer.place_cursor(movedIter)
+            self.get_buffer().place_cursor(movedIter)
             self.control.scriptView.updateCurrentStoryIndex()
             return 1
 
@@ -854,11 +848,11 @@ class TextView(Gtk.TextView):
             return 1
 
         self.forceWordEvent()
-        #self.setSelectionClipboard()
         cutEvent = self.chainDeleteSelectedTextEvent()
         self.updateLineTag()
         if cutEvent:
             self.control.currentStory().saved = False
+            self.get_buffer().place_cursor(self.insertIter())
             return 1
 
         self.backspaceEvent = True
@@ -872,14 +866,21 @@ class TextView(Gtk.TextView):
         else:
             removedNewLine = False
 
-        tags = [self.control.currentLine().tag]
-        event = _event.Deletion(self.control.currentScene(), self.control.currentPage(), self.control.currentLine(),self.control.currentStory().index.offset, backIter.get_char(), tags)
+        cl = self.control.currentLine()
+        cp = self.control.currentPage()
+        pageLineIndex = cp.lines.index(cl)
+        tags = [cl.tag]
+        event = _event.Deletion(self.control.currentScene(),
+            self.control.currentPage(),
+            pageLineIndex,
+            self.control.currentStory().index.offset,
+            backIter.get_char(),
+            tags)
 
         self.control.eventManager.addEvent(event)
-        # event.backspaceModelUpdate(self.control, removedNewLine)
-        updateLine = event.modelUpdate(self.control, isBackspaceKey=True)
+        event.modelUpdate(self.control, isBackspaceKey=True)
 
-        self.buffer.delete(backIter, insertIter)
+        self.get_buffer().delete(backIter, insertIter)
 
         self.control.currentStory().saved = False
 
@@ -969,7 +970,7 @@ class TextView(Gtk.TextView):
 
                         self.sceneHeadingIter = NameIter(prefixes, character)
 
-                        # get rid of first upper case that in in self.word
+                        # get rid of first upper case that is in self.word
                         self.word.pop(-1)
                         wordHasLength = len(self.word)
 
@@ -980,66 +981,107 @@ class TextView(Gtk.TextView):
                         startIter = self.insertIter()
                         endIter = self.insertIter()
                         startIter.backward_chars(1)
-                        self.buffer.delete(startIter,endIter)
+                        self.get_buffer().delete(startIter,endIter)
 
                         # complete the current iters name
-                        self.completeWordOnLine(self.sceneHeadingIter.name(), wordHasLength, True)
+                        self.completeWordOnLine(self.sceneHeadingIter.name(),
+                            wordHasLength=wordHasLength,
+                            isSceneHeading=True,
+                            isFirstCompletion=True)
 
                         return 1
 
                     elif self.sceneHeadingIter == None:
                         pass
 
-                    # Here means we atleast autocompleted once and continue to do so.
-                    elif self.sceneHeadingIter.initChar == character:
-
-                        # Delete the last completed name in the buffer.
-                        startIter = self.insertIter()
-                        endIter = self.insertIter()
-                        startIter.backward_chars(len(self.sceneHeadingIter.name()))
-                        self.buffer.delete(startIter,endIter)
-
-                        # Delete the last completed name in the model.
-                        offset = self.control.currentStory().index.offset
-                        text = self.control.currentLine().text
-                        x = text[:offset - len(self.sceneHeadingIter.name())]
-                        y = text[offset:]
-                        currentLine = self.control.currentLine()
-                        currentLine.text = text[:offset - len(self.sceneHeadingIter.name())] + text[offset:]
-
-                        # The index must be updated where the deletion began.
-                        self.control.currentStory().index.offset -= (len(self.sceneHeadingIter.name()) - 1)
-
-                        # Bring the next name forward and complete it.
-                        self.sceneHeadingIter.increment()
-                        self.completeWordOnLine(self.sceneHeadingIter.name(), 0, True)
-
-                        return 1
-
-                    # Here we have been completing, but changed the start letter of the character name.
                     else:
-                        # Delete the last completed name in the buffer.
-                        startIter = self.insertIter()
-                        endIter = self.insertIter()
-                        startIter.backward_chars(len(self.sceneHeadingIter.name()))
-                        self.buffer.delete(startIter,endIter)
 
-                        # Delete the last completed name in the model.
-                        offset = self.control.currentStory().index.offset
-                        text = self.control.currentLine().text
-                        x = text[:offset - len(self.sceneHeadingIter.name())]
-                        y = text[offset:]
+                        startIter = self.insertIter()
+                        deleteOffset = startIter.get_line_offset() - len(self.sceneHeadingIter.name())
                         currentLine = self.control.currentLine()
-                        currentLine.text = text[:offset - len(self.sceneHeadingIter.name())] + text[offset:]
+
+                        cp = self.control.currentPage()
+                        pageLineIndex = cp.lines.index(currentLine)
+                        tags = [currentLine.tag]
+                        event = _event.Deletion(self.control.currentScene(),
+                            self.control.currentPage(),
+                            pageLineIndex,
+                            deleteOffset,
+                            self.sceneHeadingIter.name(),
+                            tags)
+                        event.viewUpdate(self.control)
+                        event.modelUpdate(self.control)
+                        self.control.eventManager.addEvent(event)
 
                         # The index must be updated where the deletion began.
-                        self.control.currentStory().index.offset -= (len(self.sceneHeadingIter.name()) - 1)
+                        self.control.currentStory().index.offset = deleteOffset
 
-                        # Reset the NameIter and complete
-                        self.sceneHeadingIter = NameIter(prefixes, character)
-                        self.completeWordOnLine(self.sceneHeadingIter.name(), 0, True)
 
-                        return 1
+                        # Here means we atleast autocompleted once and continue to do so.
+                        if self.sceneHeadingIter.initChar == character:
+
+                            # startIter = self.insertIter()
+                            # deleteOffset = startIter.get_line_offset() - len(self.sceneHeadingIter.name())
+                            # currentLine = self.control.currentLine()
+                            #
+                            # cp = self.control.currentPage()
+                            # pageLineIndex = cp.lines.index(currentLine)
+                            # tags = [currentLine.tag]
+                            # event = _event.Deletion(self.control.currentScene(),
+                            #     self.control.currentPage(),
+                            #     pageLineIndex,
+                            #     deleteOffset,
+                            #     self.sceneHeadingIter.name(),
+                            #     tags)
+                            # event.viewUpdate(self.control)
+                            # event.modelUpdate(self.control)
+                            # self.control.eventManager.addEvent(event)
+                            #
+                            # # The index must be updated where the deletion began.
+                            # self.control.currentStory().index.offset = deleteOffset
+
+                            # Bring the next name forward and complete it.
+                            self.sceneHeadingIter.increment()
+                            self.completeWordOnLine(self.sceneHeadingIter.name(), 0, True)
+
+                            return 1
+
+                        # Here we have been completing, but changed the start letter of the character name.
+                        else:
+
+                            # # Delete the last completed name in the buffer.
+                            # startIter = self.insertIter()
+                            # endIter = self.insertIter()
+                            # deleteOffset = startIter.get_line_offset()
+                            # startIter.backward_chars(len(self.sceneHeadingIter.name()))
+                            # self.get_buffer().delete(startIter,endIter)
+
+                            # # Delete the last completed name in the model.
+                            # offset = self.control.currentStory().index.offset
+                            # text = self.control.currentLine().text
+                            # x = text[:offset - len(self.sceneHeadingIter.name())]
+                            # y = text[offset:]
+                            # currentLine = self.control.currentLine()
+                            # currentLine.text = text[:offset - len(self.sceneHeadingIter.name())] + text[offset:]
+
+                            # cp = self.control.currentPage()
+                            # pageLineIndex = cp.lines.index(currentLine)
+                            # tags = [currentLine.tag]
+                            # event = _event.Deletion(self.control.currentScene(),
+                            #     self.control.currentPage(),
+                            #     pageLineIndex,
+                            #     deleteOffset,
+                            #     self.sceneHeadingIter.name(),
+                            #     tags)
+
+                            # # The index must be updated where the deletion began.
+                            # self.control.currentStory().index.offset -= (len(self.sceneHeadingIter.name()) - 1)
+
+                            # Reset the NameIter and complete
+                            self.sceneHeadingIter = NameIter(prefixes, character)
+                            self.completeWordOnLine(self.sceneHeadingIter.name(), 0, True)
+
+                            return 1
 
     def completeName(self, event):
         insertIter = self.insertIter()
@@ -1086,7 +1128,7 @@ class TextView(Gtk.TextView):
                         startIter = self.insertIter()
                         endIter = self.insertIter()
                         startIter.backward_chars(1)
-                        self.buffer.delete(startIter,endIter)
+                        self.get_buffer().delete(startIter,endIter)
 
                         # complete the current iters name
                         self.completeWordOnLine(self.nameIter.name(), wordHasLength)
@@ -1103,7 +1145,7 @@ class TextView(Gtk.TextView):
                         startIter = self.insertIter()
                         endIter = self.insertIter()
                         startIter.backward_chars(len(self.nameIter.name()))
-                        self.buffer.delete(startIter,endIter)
+                        self.get_buffer().delete(startIter,endIter)
 
                         # Delete the last completed name in the model.
                         offset = self.control.currentStory().index.offset
@@ -1128,7 +1170,7 @@ class TextView(Gtk.TextView):
                         startIter = self.insertIter()
                         endIter = self.insertIter()
                         startIter.backward_chars(len(self.nameIter.name()))
-                        self.buffer.delete(startIter,endIter)
+                        self.get_buffer().delete(startIter,endIter)
 
                         # Delete the last completed name in the model.
                         offset = self.control.currentStory().index.offset
@@ -1147,12 +1189,12 @@ class TextView(Gtk.TextView):
 
                         return 1
 
-    def completeWordOnLine(self, name, wordHasLength, isSceneHeading=False):
+    def completeWordOnLine(self, name, wordHasLength, isSceneHeading=False, isFirstCompletion=False):
 
-        currentLine = self.control.currentLine()
+        cl = self.control.currentLine()
 
         # Lower case letters in words that are not the first character of a word and not upper case.
-        if currentLine.tag not in ["character", "sceneHeading"]:
+        if cl.tag not in ["character", "sceneHeading"]:
             lowered = []
             first = True
             for c in name:
@@ -1165,29 +1207,46 @@ class TextView(Gtk.TextView):
                     first = True
             name = "".join(lowered)
 
-        # ace = _event.AutocompleteEvent(self.control, name)
-        self.control.eventManager.addEvent(_event.Event())
+        completionOffsetAdjustment = 0
+        if isFirstCompletion:
+            completionOffsetAdjustment = 1
+        cp = self.control.currentPage()
+        pageLineIndex = cp.lines.index(cl)
+        pasteEvent = _event.Insertion(self.control.currentScene(),
+            self.control.currentPage(),
+            pageLineIndex,
+            self.control.currentStory().index.offset - completionOffsetAdjustment,
+            name,
+            [cl.tag])
+        self.control.eventManager.addEvent(pasteEvent)
 
-        insertIter = self.insertIter()
-        self.buffer.insert(insertIter, name, len(name))
+        self.control.p("complete")
+        pasteEvent.viewUpdate(self.control)
+        pasteEvent.modelUpdate(self.control)
 
-        offset = self.control.currentStory().index.offset
-        text = self.control.currentLine().text
+        # insertIter = self.insertIter()
+        # self.get_buffer().insert(insertIter, name, len(name))
+        #
+        # offset = self.control.currentStory().index.offset
+        # text = self.control.currentLine().text
+        #
+        # if wordHasLength:
+        #     cl.text = text[:offset - 0] + name + text[offset - 0:]
+        # else:
+        #     cl.text = text[:offset - 1] + name + text[offset - 1:]
 
-        if wordHasLength:
-            currentLine.text = text[:offset - 0] + name + text[offset - 0:]
-        else:
-            currentLine.text = text[:offset - 1] + name + text[offset - 1:]
+         #self.insertIter().get_line_offset()
 
-        index = self.control.scriptView.lines.index(currentLine)
+        index = self.control.scriptView.lines.index(cl)
 
         if len(name):
             tag = self.tagIter.tag()
             if isSceneHeading:
                 tag = "sceneHeading"
-            #self.formatLine(index, tag)
             self.control.scriptView.lines[index].tag = tag
             self.control.scriptView.textView.updateLineTag(index)
+
+        self.control.currentStory().index.offset = self.control.currentStory().index.offset - completionOffsetAdjustment + len(name)
 
     def insertPrefix(self):
 
@@ -1376,7 +1435,7 @@ class TextView(Gtk.TextView):
         findColor = Gdk.RGBA(0.0, 0.1, 1.8, 0.15)
         scrollColor = Gdk.RGBA(0.3, 0.7, 0.3, 0.8)
 
-        self.descriptionTag = self.buffer.create_tag("description",
+        self.descriptionTag = self.get_buffer().create_tag("description",
                                                      background_rgba=descriptionBackground,
                                                      pixels_inside_wrap=pixelsInsideWrap,
                                                      pixels_above_lines=10,
@@ -1385,7 +1444,7 @@ class TextView(Gtk.TextView):
                                                      right_margin=self.descriptionRightMargin,
                                                      font="Courier Prime " + str(self.fontSize))
 
-        self.characterTag = self.buffer.create_tag("character",
+        self.characterTag = self.get_buffer().create_tag("character",
                                                    background_rgba=characterBackground,
                                                    left_margin=self.characterLeftMargin,
                                                    right_margin=self.characterRightMargin,
@@ -1395,7 +1454,7 @@ class TextView(Gtk.TextView):
                                                    pixels_below_lines=0,
                                                    font="Courier Prime " + str(self.fontSize))
 
-        self.dialogTag = self.buffer.create_tag("dialog",
+        self.dialogTag = self.get_buffer().create_tag("dialog",
                                                 background_rgba=dialogBackground,
                                                 left_margin=self.dialogLeftMargin,
                                                 right_margin=self.dialogRightMargin,
@@ -1404,7 +1463,7 @@ class TextView(Gtk.TextView):
                                                 pixels_below_lines=10,
                                                 font="Courier Prime " + str(self.fontSize))
 
-        self.parentheticTag = self.buffer.create_tag("parenthetic",
+        self.parentheticTag = self.get_buffer().create_tag("parenthetic",
                                                      background_rgba=descriptionBackground,
                                                      pixels_inside_wrap=pixelsInsideWrap,
                                                      pixels_above_lines=0,
@@ -1413,7 +1472,7 @@ class TextView(Gtk.TextView):
                                                      right_margin=self.descriptionRightMargin,
                                                      font="Courier Prime " + str(self.fontSize))
 
-        self.headingTag = self.buffer.create_tag("heading",
+        self.headingTag = self.get_buffer().create_tag("heading",
                                                      background_rgba=descriptionBackground,
                                                      pixels_inside_wrap=pixelsInsideWrap,
                                                      pixels_above_lines=10,
@@ -1423,7 +1482,7 @@ class TextView(Gtk.TextView):
                                                      font="Courier Prime " + str(self.fontSize),
                                                      editable=False)
 
-        self.sceneHeadingTag = self.buffer.create_tag("sceneHeading",
+        self.sceneHeadingTag = self.get_buffer().create_tag("sceneHeading",
                                                      background_rgba=descriptionBackground, #Gdk.RGBA(0.0, 0.0, 1.0, 0.1), #descriptionBackground,
                                                      pixels_inside_wrap=pixelsInsideWrap,
                                                      pixels_above_lines=10,
@@ -1435,7 +1494,7 @@ class TextView(Gtk.TextView):
 
         ## Find Tags
 
-        self.descriptionFindTag = self.buffer.create_tag("descriptionFind",
+        self.descriptionFindTag = self.get_buffer().create_tag("descriptionFind",
                                                      background_rgba=findColor,
                                                      pixels_inside_wrap=pixelsInsideWrap,
                                                      pixels_above_lines=10,
@@ -1444,7 +1503,7 @@ class TextView(Gtk.TextView):
                                                      right_margin=self.descriptionRightMargin,
                                                      font="Courier Prime " + str(self.fontSize))
 
-        self.characterFindTag = self.buffer.create_tag("characterFind",
+        self.characterFindTag = self.get_buffer().create_tag("characterFind",
                                                    background_rgba=findColor,
                                                    left_margin=self.characterLeftMargin,
                                                    right_margin=self.characterRightMargin,
@@ -1454,7 +1513,7 @@ class TextView(Gtk.TextView):
                                                    pixels_below_lines=0,
                                                    font="Courier Prime " + str(self.fontSize))
 
-        self.dialogFindTag = self.buffer.create_tag("dialogFind",
+        self.dialogFindTag = self.get_buffer().create_tag("dialogFind",
                                                 background_rgba=findColor,
                                                 left_margin=self.dialogLeftMargin,
                                                 right_margin=self.dialogRightMargin,
@@ -1463,7 +1522,7 @@ class TextView(Gtk.TextView):
                                                 pixels_below_lines=10,
                                                 font="Courier Prime " + str(self.fontSize))
 
-        self.parentheticFindTag = self.buffer.create_tag("parentheticFind",
+        self.parentheticFindTag = self.get_buffer().create_tag("parentheticFind",
                                                      background_rgba=findColor,
                                                      pixels_inside_wrap=pixelsInsideWrap,
                                                      pixels_above_lines=0,
@@ -1473,7 +1532,7 @@ class TextView(Gtk.TextView):
                                                      font="Courier Prime " + str(self.fontSize))
 
 
-        self.sceneHeadingFindTag = self.buffer.create_tag("sceneHeadingFind",
+        self.sceneHeadingFindTag = self.get_buffer().create_tag("sceneHeadingFind",
                                                      background_rgba=Gdk.RGBA(0.0, 0.0, 1.0, 0.1), #descriptionBackground,
                                                      pixels_inside_wrap=pixelsInsideWrap,
                                                      pixels_above_lines=10,
@@ -1485,7 +1544,7 @@ class TextView(Gtk.TextView):
 
         # Mispelled Tags
 
-        self.descriptionMispelledTag = self.buffer.create_tag("descriptionMispelled",
+        self.descriptionMispelledTag = self.get_buffer().create_tag("descriptionMispelled",
                                                      background_rgba=descriptionBackground,
                                                      pixels_inside_wrap=pixelsInsideWrap,
                                                      pixels_above_lines=10,
@@ -1495,7 +1554,7 @@ class TextView(Gtk.TextView):
                                                      font="Courier Prime " + str(self.fontSize),
                                                      underline=Pango.Underline.ERROR)
 
-        self.characterMispelledTag = self.buffer.create_tag("characterMispelled",
+        self.characterMispelledTag = self.get_buffer().create_tag("characterMispelled",
                                                    background_rgba=characterBackground,
                                                    left_margin=self.characterLeftMargin,
                                                    right_margin=self.characterRightMargin,
@@ -1506,7 +1565,7 @@ class TextView(Gtk.TextView):
                                                    font="Courier Prime " + str(self.fontSize),
                                                      underline=Pango.Underline.ERROR)
 
-        self.dialogMispelledTag = self.buffer.create_tag("dialogMispelled",
+        self.dialogMispelledTag = self.get_buffer().create_tag("dialogMispelled",
                                                 background_rgba=dialogBackground,
                                                 left_margin=self.dialogLeftMargin,
                                                 right_margin=self.dialogRightMargin,
@@ -1516,7 +1575,7 @@ class TextView(Gtk.TextView):
                                                 font="Courier Prime " + str(self.fontSize),
                                                      underline=Pango.Underline.ERROR)
 
-        self.parentheticMispelledTag = self.buffer.create_tag("parentheticMispelled",
+        self.parentheticMispelledTag = self.get_buffer().create_tag("parentheticMispelled",
                                                      background_rgba=descriptionBackground,
                                                      pixels_inside_wrap=pixelsInsideWrap,
                                                      pixels_above_lines=0,
@@ -1526,7 +1585,7 @@ class TextView(Gtk.TextView):
                                                      font="Courier Prime " + str(self.fontSize),
                                                      underline=Pango.Underline.ERROR)
 
-        self.sceneHeadingMispelledTag = self.buffer.create_tag("sceneHeadingMispelled",
+        self.sceneHeadingMispelledTag = self.get_buffer().create_tag("sceneHeadingMispelled",
                                                      background_rgba=descriptionBackground, #Gdk.RGBA(0.0, 0.0, 1.0, 0.1), #descriptionBackground,
                                                      pixels_inside_wrap=pixelsInsideWrap,
                                                      pixels_above_lines=10,
@@ -1539,7 +1598,7 @@ class TextView(Gtk.TextView):
 
         ## Scroll Tags
 
-        self.descriptionScrollTag = self.buffer.create_tag("descriptionScroll",
+        self.descriptionScrollTag = self.get_buffer().create_tag("descriptionScroll",
                                                      background_rgba=scrollColor,
                                                      pixels_inside_wrap=pixelsInsideWrap,
                                                      pixels_above_lines=10,
@@ -1548,7 +1607,7 @@ class TextView(Gtk.TextView):
                                                      right_margin=self.descriptionRightMargin,
                                                      font="Courier Prime " + str(self.fontSize))
 
-        self.characterScrollTag = self.buffer.create_tag("characterScroll",
+        self.characterScrollTag = self.get_buffer().create_tag("characterScroll",
                                                    background_rgba=scrollColor,
                                                    left_margin=self.characterLeftMargin,
                                                    right_margin=self.characterRightMargin,
@@ -1558,7 +1617,7 @@ class TextView(Gtk.TextView):
                                                    pixels_below_lines=0,
                                                    font="Courier Prime " + str(self.fontSize))
 
-        self.dialogScrollTag = self.buffer.create_tag("dialogScroll",
+        self.dialogScrollTag = self.get_buffer().create_tag("dialogScroll",
                                                 background_rgba=scrollColor,
                                                 left_margin=self.dialogLeftMargin,
                                                 right_margin=self.dialogRightMargin,
@@ -1567,7 +1626,7 @@ class TextView(Gtk.TextView):
                                                 pixels_below_lines=10,
                                                 font="Courier Prime " + str(self.fontSize))
 
-        self.parentheticScrollTag = self.buffer.create_tag("parentheticScroll",
+        self.parentheticScrollTag = self.get_buffer().create_tag("parentheticScroll",
                                                      background_rgba=scrollColor,
                                                      pixels_inside_wrap=pixelsInsideWrap,
                                                      pixels_above_lines=0,
@@ -1577,7 +1636,7 @@ class TextView(Gtk.TextView):
                                                      font="Courier Prime " + str(self.fontSize))
 
 
-        self.sceneHeadingScrollTag = self.buffer.create_tag("sceneHeadingScroll",
+        self.sceneHeadingScrollTag = self.get_buffer().create_tag("sceneHeadingScroll",
                                                      background_rgba=scrollColor, #descriptionBackground,
                                                      pixels_inside_wrap=pixelsInsideWrap,
                                                      pixels_above_lines=10,
@@ -1617,8 +1676,8 @@ class TextView(Gtk.TextView):
         if bufferIndex == len(self.control.scriptView.lines) - 1:
             onLastLine = True
 
-        startIter = self.buffer.get_iter_at_line(bufferIndex)
-        endIter = self.buffer.get_iter_at_line(bufferIndex +1)
+        startIter = self.get_buffer().get_iter_at_line(bufferIndex)
+        endIter = self.get_buffer().get_iter_at_line(bufferIndex +1)
 
         if endIter.get_char() == ZERO_WIDTH_SPACE:
             endIter.forward_char()
@@ -1626,12 +1685,12 @@ class TextView(Gtk.TextView):
         if onLastLine:
             endIter.forward_to_line_end()
 
-        text = self.buffer.get_text(startIter, endIter, True)
+        text = self.get_buffer().get_text(startIter, endIter, True)
 
-        self.buffer.remove_all_tags(startIter, endIter)
+        self.get_buffer().remove_all_tags(startIter, endIter)
 
-        startIter = self.buffer.get_iter_at_line(bufferIndex)
-        endIter = self.buffer.get_iter_at_line(bufferIndex +1)
+        startIter = self.get_buffer().get_iter_at_line(bufferIndex)
+        endIter = self.get_buffer().get_iter_at_line(bufferIndex +1)
 
         if endIter.get_char() == ZERO_WIDTH_SPACE:
             endIter.forward_char()
@@ -1649,24 +1708,15 @@ class TextView(Gtk.TextView):
                     tag = "sceneHeading"
                     updateLine.tag = 'sceneHeading'
 
-        self.buffer.apply_tag_by_name(tag, startIter, endIter)
+        self.get_buffer().apply_tag_by_name(tag, startIter, endIter)
 
         return updateLine.tag
-
-    # def formatLine(self, index, tag):
-    #     startIter = self.buffer.get_iter_at_line(index)
-    #     endIter = self.buffer.get_iter_at_line(index)
-    #     endIter.forward_to_line_end()
-    #     endIter.forward_char()
-    #
-    #     text = self.buffer.get_text(startIter, endIter, True)
-    #
-    #     self.buffer.remove_all_tags(startIter, endIter)
-    #     self.buffer.apply_tag_by_name(tag, startIter, endIter)
 
 
     # Clipboard
     def pasteClipboard(self, widget=None):
+
+        self.forceWordEvent()
 
         insertIter = self.insertIter()
         lineIndex = insertIter.get_line()
@@ -1692,10 +1742,12 @@ class TextView(Gtk.TextView):
         if cutEvent:
             self.updateLineTag()
 
-        lineIndex = self.control.scriptView.lines.index(self.control.currentLine())
+        cl = self.control.currentLine()
+        cp = self.control.currentPage()
+        pageLineIndex = cp.lines.index(cl)
         pasteEvent = _event.Insertion(self.control.currentScene(),
             self.control.currentPage(),
-            lineIndex,
+            pageLineIndex,
             self.control.currentStory().index.offset,
             self.copiedText,
             tags)
@@ -1709,7 +1761,7 @@ class TextView(Gtk.TextView):
 
     def setSelectionClipboard(self):
 
-        bounds = self.buffer.get_selection_bounds()
+        bounds = self.get_buffer().get_selection_bounds()
 
         self.selectedClipboard = []
 
@@ -1722,33 +1774,32 @@ class TextView(Gtk.TextView):
             if self.endIter().get_offset() == endIter.get_offset():
                 endIter.backward_char()
 
-            if startIter.get_offset() > endIter.get_offset():
-                import os
-                os.exit("iters switche around in setSelectionClipboar")
-                holder = endIter
-                endIter = startIter
-                startIter = holder
+            startMark = self.iterMark(startIter)
+            endMark = self.iterMark(endIter)
 
-            self.selectionIterStart = startIter
-            self.selectionIterEnd = endIter
+            self.selectionIterStart = self.markIter(startMark)
+            self.selectionIterEnd = self.markIter(endMark)
 
-            startLine = startIter.get_line()
-            endLine = endIter.get_line()
+            self.get_buffer().place_cursor(self.selectionIterStart)
+            self.get_buffer().select_range(self.selectionIterStart, self.selectionIterEnd)
+
+            startLine = self.selectionIterStart.get_line()
+            endLine = self.selectionIterEnd.get_line()
 
             for i in range(startLine, endLine + 1):
                 tag = self.control.scriptView.lines[i].tag
                 self.selectedClipboard.append(_story.Line(tag=tag))
 
             if len(self.selectedClipboard) == 1:
-                self.selectedClipboard[0].text = self.buffer.get_text(startIter, endIter, True)
+                self.selectedClipboard[0].text = self.get_buffer().get_text(startIter, endIter, True)
 
 
             elif len(self.selectedClipboard) == 2:
                 end = self.lineEndIter(startIter.get_line())
-                self.selectedClipboard[0].text = self.buffer.get_text(startIter, end, True)
+                self.selectedClipboard[0].text = self.get_buffer().get_text(startIter, end, True)
 
                 start = self.lineIter(endIter.get_line())
-                self.selectedClipboard[1].text = self.buffer.get_text(start, endIter, True)
+                self.selectedClipboard[1].text = self.get_buffer().get_text(start, endIter, True)
 
             else:
                 lastLine = self.selectedClipboard.pop(-1)
@@ -1756,20 +1807,20 @@ class TextView(Gtk.TextView):
                 lineIndex = startIter.get_line()
 
                 end = self.lineEndIter(startIter.get_line())
-                self.selectedClipboard[0].text = self.buffer.get_text(startIter, end, True)
+                self.selectedClipboard[0].text = self.get_buffer().get_text(startIter, end, True)
 
                 lineIndex += 1
 
                 for i in range(len(self.selectedClipboard) -1):
                     start = self.lineIter(lineIndex)
                     end = self.lineEndIter(lineIndex)
-                    self.selectedClipboard[i+1].text = self.buffer.get_text(start, end, True)
+                    self.selectedClipboard[i+1].text = self.get_buffer().get_text(start, end, True)
                     lineIndex += 1
 
                 self.selectedClipboard.append(lastLine)
 
                 start = self.lineIter(lineIndex)
-                self.selectedClipboard[-1].text = self.buffer.get_text(start, endIter, True)
+                self.selectedClipboard[-1].text = self.get_buffer().get_text(start, endIter, True)
 
             self.control.selectionClipboard.lines = list(self.selectedClipboard)
 
@@ -1785,16 +1836,25 @@ class TextView(Gtk.TextView):
             self.cutClipboard = list(self.selectedClipboard)
 
             # cutEvent = _event.CutEvent(self.control)
-            text = self.buffer.get_text(self.selectionIterStart, self.selectionIterEnd, True)
+            text = self.get_buffer().get_text(self.selectionIterStart, self.selectionIterEnd, True)
             tags = [line.tag for line in self.control.copyClipboard.lines]
 
             startLineIndex = self.control.scriptView.textView.selectionIterStart.get_line()
             line = self.control.scriptView.lines[startLineIndex]
             offset = self.control.scriptView.textView.selectionIterStart.get_line_offset()
 
-            event = _event.Deletion(self.control.currentScene(), self.control.currentPage(), line, offset, text, tags)
+            cl = self.control.currentLine()
+            cp = self.control.currentPage()
+            pageLineIndex = cp.lines.index(cl)
+            tags = [cl.tag]
+            event = _event.Deletion(self.control.currentScene(),
+                self.control.currentPage(),
+                pageLineIndex,
+                self.control.currentStory().index.offset,
+                text,
+                tags)
+
             updateLine = event.modelUpdate(self.control)
-            # updateLine = event.cutModelUpdate(self.control)
             self.control.eventManager.addEvent(event)
 
             # cutEvent.chained = True
@@ -1804,7 +1864,7 @@ class TextView(Gtk.TextView):
             if self.selectionIterEnd.get_offset() == endOffset:
                 self.selectionIterEnd.backward_char()
 
-            self.buffer.delete(self.selectionIterStart, self.selectionIterEnd)
+            self.get_buffer().delete(self.selectionIterStart, self.selectionIterEnd)
             # self.control.eventManager.addEvent(cutEvent)
 
             self.control.scriptView.updateCurrentStoryIndex()
@@ -1828,7 +1888,7 @@ class TextView(Gtk.TextView):
             lineIter = self.lineIter(line)
             lineEndIter = self.lineIter(line)
             lineEndIter.forward_to_line_end()
-            lineText = self.buffer.get_text(lineIter, lineEndIter, False)
+            lineText = self.get_buffer().get_text(lineIter, lineEndIter, False)
             offset = len(lineText) - len(dragLines[0].text)
 
         cs = self.control.scriptView.currentStory()
@@ -1837,7 +1897,7 @@ class TextView(Gtk.TextView):
 
         # pasteIter = self.iterAtLoation(line, offset)
         #
-        # self.buffer.place_cursor(pasteIter)
+        # self.get_buffer().place_cursor(pasteIter)
 
         # self.control.scriptView.updateCurrentStoryIndex()
 
@@ -1851,19 +1911,18 @@ class TextView(Gtk.TextView):
             word = ''.join(self.word)
             if len(word):
                 self.control.scriptView.updateCurrentStoryIndex()
+
                 cl = self.control.currentLine()
-                tags = [cl.tag]
-                # event = _event.Insertion(self.control.currentScene(), self.control.currentPage(), self.control.currentLine(),self.control.currentStory().index.offset - len(word), word, tags)
                 cp = self.control.currentPage()
-                lineIndex = self.control.scriptView.lines.index(cl)
+                pageLineIndex = cp.lines.index(cl)
+                tags = [cl.tag]
                 event = _event.Insertion(self.control.currentScene(),
                     cp,
-                    lineIndex,
+                    pageLineIndex,
                     self.control.currentStory().index.offset - len(word),
                     word,
                     tags)
 
-                # event.forceWordModelUpdate(self.control, word)
                 event.modelUpdate(self.control)
                 self.control.eventManager.addEvent(event)
                 self.word = []
@@ -1875,16 +1934,14 @@ class TextView(Gtk.TextView):
         if character == ' ':
             word = ''.join(self.word)
             self.control.scriptView.updateCurrentStoryIndex()
-            # tags = [self.control.currentLine().tag]
-            # event = _event.Insertion(self.control.currentScene(), self.control.currentPage(), self.control.currentLine(),self.control.currentStory().index.offset - len(word), word, tags)
 
             cl = self.control.currentLine()
-            tags = [cl.tag]
             cp = self.control.currentPage()
-            lineIndex = self.control.scriptView.lines.index(cl)
+            pageLineIndex = cp.lines.index(cl)
+            tags = [cl.tag]
             event = _event.Insertion(self.control.currentScene(),
                 cp,
-                lineIndex,
+                pageLineIndex,
                 self.control.currentStory().index.offset - len(word),
                 word,
                 tags)
@@ -2012,7 +2069,7 @@ class TextView(Gtk.TextView):
             if self.selectionIterEnd.get_offset() == endOffset:
                 self.selectionIterEnd.backward_char()
 
-            word = self.buffer.get_text(self.selectionIterStart, self.selectionIterEnd, False)
+            word = self.get_buffer().get_text(self.selectionIterStart, self.selectionIterEnd, False)
 
             if len(word.split(" ")) > 1:
                 return ''
@@ -2032,7 +2089,7 @@ class TextView(Gtk.TextView):
             if self.selectionIterEnd.get_offset() == endOffset:
                 self.selectionIterEnd.backward_char()
 
-            word = self.buffer.get_text(self.selectionIterStart, self.selectionIterEnd, False)
+            word = self.get_buffer().get_text(self.selectionIterStart, self.selectionIterEnd, False)
 
             if len(word.split(" ")) > 1:
                 return ''
@@ -2072,7 +2129,7 @@ class TextView(Gtk.TextView):
         return self.get_buffer().create_mark(name, self.insertIter(), True )
 
     def lineIter(self, index):
-        return self.buffer.get_iter_at_line(index)
+        return self.get_buffer().get_iter_at_line(index)
 
     def lineEndIter(self, line):
         lineIter = self.lineIter(line)
@@ -2099,6 +2156,27 @@ class TextView(Gtk.TextView):
         lineIter.forward_chars(offset)
         return lineIter
 
+    def lineText(self, index):
+        lineIter = self.lineIter(index)
+        lineEndIter = self.lineEndIter(index)
+        return self.get_buffer().get_text(lineIter, lineEndIter, False)
+
+    def lineTags(self, index):
+        tags = []
+        moveIter = self.lineIter(index)
+        lineEndIter = self.lineEndIter(index)
+        offset = 0
+        endOffset = lineEndIter.get_line_offset()
+        while offset < endOffset + 1:
+            currentTags = moveIter.get_tags()
+            tagNames = [name.props.name for name in currentTags]
+            for tn in tagNames:
+                if tn not in tags:
+                    tags.append(tn)
+            offset += 1
+            moveIter.forward_char()
+        return tags
+
 
     # Handlers
     def connections(self, ):
@@ -2120,29 +2198,29 @@ class TextView(Gtk.TextView):
 
         self.connect_after("select-all", self.selectAll)
 
-        self.buffer.connect("mark-set", self.markSet)
+        self.get_buffer().connect("mark-set", self.markSet)
 
         self.connect("populate-popup", self.populatePopup)
 
     def removeCrossPageSelection(self):
-        bounds = self.buffer.get_selection_bounds()
+        bounds = self.get_buffer().get_selection_bounds()
         if len(bounds):
             startLine = self.control.scriptView.lines[bounds[0].get_line()]
             endLine = self.control.scriptView.lines[bounds[1].get_line()]
             if startLine.__class__.__name__=='Line':
                 startPage = startLine.heading.page
             else:
-                self.buffer.select_range(bounds[0], bounds[0])
+                self.get_buffer().select_range(bounds[0], bounds[0])
                 return 1
 
             if endLine.__class__.__name__=="Line":
                 endPage = endLine.heading.page
             else:
-                self.buffer.select_range(bounds[0], bounds[0])
+                self.get_buffer().select_range(bounds[0], bounds[0])
                 return 1
 
             if startPage != endPage:
-                self.buffer.select_range(bounds[0], bounds[0])
+                self.get_buffer().select_range(bounds[0], bounds[0])
                 return 1
         return 0
 
@@ -2151,7 +2229,7 @@ class TextView(Gtk.TextView):
 
     def selectAll(self, widget, event):
         self.selectAllCurrentPage()
-        self.buffer.select_range(self.endIter(), self.endIter())
+        self.get_buffer().select_range(self.endIter(), self.endIter())
 
     def populatePopup(self, textView, popup):
 
@@ -2220,21 +2298,26 @@ class TextView(Gtk.TextView):
 
             self.control.copyClipboard.lines = list(self.selectedClipboard)
 
-            text = self.buffer.get_text(self.selectionIterStart, self.selectionIterEnd, True)
+            text = self.get_buffer().get_text(self.selectionIterStart, self.selectionIterEnd, True)
             tags = [line.tag for line in self.control.copyClipboard.lines]
 
             startLineIndex = self.control.scriptView.textView.selectionIterStart.get_line()
             line =self.control.scriptView.lines[startLineIndex]
             offset =self.control.scriptView.textView.selectionIterStart.get_line_offset()
 
-            event = _event.Deletion(self.control.currentScene(), self.control.currentPage(), line, offset, text, tags)
-            # updateLine = event.cutModelUpdate(self.control)
+            cl = self.control.currentLine()
+            cp = self.control.currentPage()
+            pageLineIndex = cp.lines.index(cl)
+            event = _event.Deletion(self.control.currentScene(),
+                self.control.currentPage(),
+                pageLineIndex,
+                self.control.currentStory().index.offset,
+                text,
+                tags)
 
-            updateLine = event.modelUpdate(self.control)
-            # updateLine = self.control.scriptView.lines.index(updateLine)
+            event.modelUpdate(self.control)
+            event.viewUpdate(self.control)
             self.control.eventManager.addEvent(event)
-
-            # self.cutPress = True
 
             Gtk.TextView.do_cut_clipboard(self)
 
@@ -2617,7 +2700,7 @@ class ScriptView(Gtk.Box):
         endIter = self.textView.insertIter()
         endIter.forward_char()
 
-        self.textView.buffer.apply_tag_by_name('heading', startIter, endIter)
+        self.textView.get_buffer().apply_tag_by_name('heading', startIter, endIter)
 
         self.textBuffer.place_cursor(self.textView.insertIter())
 
@@ -2629,12 +2712,12 @@ class ScriptView(Gtk.Box):
         line = pg.lines[0]
         text = ''.join(line.text)
 
-        self.textView.buffer.insert(self.textView.insertIter(), text, len(text))
+        self.textView.get_buffer().insert(self.textView.insertIter(), text, len(text))
 
         for i in range(lineCount-1):
             line = pg.lines[i +1]
             text = '\n' + ''.join(line.text)
-            self.textView.buffer.insert(self.textView.insertIter(), text, len(text))
+            self.textView.get_buffer().insert(self.textView.insertIter(), text, len(text))
 
     def applyTags(self):
 
@@ -2643,36 +2726,36 @@ class ScriptView(Gtk.Box):
 
             if line.__class__.__name__ == "Line":
 
-                startIter = self.textView.buffer.get_iter_at_line(i)
-                endIter = self.textView.buffer.get_iter_at_line(i)
+                startIter = self.textView.get_buffer().get_iter_at_line(i)
+                endIter = self.textView.get_buffer().get_iter_at_line(i)
                 endIter.forward_to_line_end()
                 endIter.forward_char()
 
-                self.textView.buffer.remove_all_tags(startIter, endIter)
+                self.textView.get_buffer().remove_all_tags(startIter, endIter)
 
-                startIter = self.textView.buffer.get_iter_at_line(i)
-                endIter = self.textView.buffer.get_iter_at_line(i)
+                startIter = self.textView.get_buffer().get_iter_at_line(i)
+                endIter = self.textView.get_buffer().get_iter_at_line(i)
                 endIter.forward_to_line_end()
                 endIter.forward_char()
 
-                self.textView.buffer.apply_tag_by_name(line.tag, startIter, endIter)
+                self.textView.get_buffer().apply_tag_by_name(line.tag, startIter, endIter)
             elif line.__class__.__name__ == "Heading":
 
-                startIter = self.textView.buffer.get_iter_at_line(i)
+                startIter = self.textView.get_buffer().get_iter_at_line(i)
 
-                endIter = self.textView.buffer.get_iter_at_line(i)
+                endIter = self.textView.get_buffer().get_iter_at_line(i)
                 endIter.forward_to_line_end()
                 endIter.forward_char()
 
-                self.textView.buffer.remove_all_tags(startIter, endIter)
+                self.textView.get_buffer().remove_all_tags(startIter, endIter)
 
-                startIter = self.textView.buffer.get_iter_at_line(i)
+                startIter = self.textView.get_buffer().get_iter_at_line(i)
 
-                endIter = self.textView.buffer.get_iter_at_line(i)
+                endIter = self.textView.get_buffer().get_iter_at_line(i)
                 endIter.forward_to_line_end()
                 endIter.forward_char()
 
-                self.textView.buffer.apply_tag_by_name('heading', startIter, endIter)
+                self.textView.get_buffer().apply_tag_by_name('heading', startIter, endIter)
 
         return line.tag
 
