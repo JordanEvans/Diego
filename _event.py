@@ -321,7 +321,10 @@ class Backspace(Event):
 
     def viewUpdate(self, control):
 
-        eventLine = self.page.lines[self.line]
+        scene = control.currentSequence().scenes[self.scene]
+        page = scene.pages[self.page]
+
+        eventLine = page.lines[self.line]
         bufferIndex = control.scriptView.lines.index(eventLine)
 
         startIter = control.scriptView.textView.iterAtLocation(bufferIndex, self.offset)
@@ -336,7 +339,10 @@ class Backspace(Event):
 
     def modelUpdate(self, control, isBackspaceKey=False, isDeleteKey=False):
 
-        eventLine = self.page.lines[self.line]
+        scene = control.currentSequence().scenes[self.scene]
+        page = scene.pages[self.page]
+
+        eventLine = page.lines[self.line]
         bufferIndex = control.scriptView.lines.index(eventLine)
 
         if self.offset == 0:
@@ -345,7 +351,7 @@ class Backspace(Event):
             previousLine = self.page.lines[self.line - 1]
             previousLine.text += self.carryText
 
-            self.page.lines.remove(eventLine)
+            page.lines.remove(eventLine)
 
             control.scriptView.lines.remove(eventLine)
 
@@ -360,9 +366,12 @@ class Backspace(Event):
         control.category = 'scene'
         control.indexView.stack.set_visible_child_name("scene")
 
+        scene = control.currentSequence().scenes[self.scene]
+        page = scene.pages[self.page]
+
         if self.offset == 0:
             # view
-            previousLine = self.page.lines[self.line - 1]
+            previousLine = page.lines[self.line - 1]
             bufferIndex = control.scriptView.lines.index(previousLine)
             insertIter = control.scriptView.textView.iterAtLocation(bufferIndex, self.offset)
             insertIter.forward_to_line_end()
@@ -381,7 +390,7 @@ class Backspace(Event):
             # model
             newLine = _story.Line(self.carryText, tag=self.tags[1])
             newLine.heading = previousLine.heading
-            self.page.lines.insert(bufferIndex, newLine)
+            page.lines.insert(bufferIndex, newLine)
 
             # remove carry text from previous line
             previousLine.text = previousLine.text[:-len(self.carryText)]
@@ -395,7 +404,7 @@ class Backspace(Event):
             control.scriptView.textView.get_buffer().place_cursor(moveIter)
 
         else:
-            eventLine = self.page.lines[self.line]
+            eventLine = page.lines[self.line]
             bufferIndex = control.scriptView.lines.index(eventLine)
             insertIter = control.scriptView.textView.iterAtLocation(bufferIndex, self.offset)
             insertIter.backward_char()
@@ -426,7 +435,7 @@ class Backspace(Event):
 
     def data(self, currentStory):
 
-        scene = control.currentSequence().scenes[self.scene]
+        scene = currentStory.sequences[0].scenes[self.scene]
         page = scene.pages[self.page]
 
         data = {}
