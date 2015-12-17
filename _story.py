@@ -210,13 +210,16 @@ class Scene(object):
         for record in self.events:
             events.append(record.data(currentStory))
 
-        if self.eventIndex >= HISTORY_RECORD_LIMIT:
+        events.pop(0) # remove start event
+
+        if self.eventIndex > HISTORY_RECORD_LIMIT:
             data['eventIndex'] = self.eventIndex - (len(self.events) - HISTORY_RECORD_LIMIT)
+
 
         while len(events) > HISTORY_RECORD_LIMIT:
             events.pop(0)
 
-        events.pop(0) # remove start event
+
 
         data['events'] = events
 
