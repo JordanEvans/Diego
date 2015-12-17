@@ -869,8 +869,10 @@ class TextView(Gtk.TextView):
         cl = self.control.currentLine()
         cp = self.control.currentPage()
         pageLineIndex = cp.lines.index(cl)
-        tags = [cl.tag]
-        event = _event.Deletion(self.control.currentScene(),
+
+        tags = [cl.before(self.control).tag, cl.tag]
+
+        event = _event.Backspace(self.control.currentScene(),
             self.control.currentPage(),
             pageLineIndex,
             self.control.currentStory().index.offset,
@@ -878,9 +880,10 @@ class TextView(Gtk.TextView):
             tags)
 
         self.control.eventManager.addEvent(event)
-        event.modelUpdate(self.control, isBackspaceKey=True)
+        event.viewUpdate(self.control)
+        event.modelUpdate(self.control)
 
-        self.get_buffer().delete(backIter, insertIter)
+        # self.get_buffer().delete(backIter, insertIter)
 
         self.control.currentStory().saved = False
 

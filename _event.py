@@ -24,7 +24,7 @@ class Insertion(Event):
         self.tags = tags
 
         self.carryText = None
-        self.newLines = []
+        # self.newLines = []
 
     def undo(self, control):
         control.category = 'scene'
@@ -126,7 +126,7 @@ class Insertion(Event):
                 # ScriptView need a reference to each line as well.
                 control.scriptView.lines.insert(scriptLineIndex + index, newLine)
 
-                self.newLines.append(newLine)
+                # self.newLines.append(newLine)
                 index += 1
 
             # Last line will get the carry text.
@@ -150,6 +150,9 @@ class Deletion(Event):
         self.isDeleteKey = False
 
     def viewUpdate(self, control):
+
+        if self.isBackspaceKey:
+            pass
 
         eventLine = self.page.lines[self.line]
         bufferIndex = control.scriptView.lines.index(eventLine)
@@ -302,6 +305,117 @@ class Deletion(Event):
     def data(self):
         return None
 
+class Backspace(Event):
+    def __init__(self, scene, page, line, offset, text, tags):
+        Event.__init__(self)
+        self.scene = scene
+        self.page = page
+        self.line = line
+        self.offset = offset
+        self.text = text
+        self.tags = tags # First tag is previous line, next is where backspace occured.
+
+        self.carryText = ''
+
+    def viewUpdate(self, control):
+
+        eventLine = self.page.lines[self.line]
+        bufferIndex = control.scriptView.lines.index(eventLine)
+
+        startIter = control.scriptView.textView.iterAtLocation(bufferIndex, self.offset)
+        startIter.backward_char()
+        startIterOffset = startIter.get_line_offset()
+
+        endIter = control.scriptView.textView.iterAtLocation(bufferIndex, self.offset)
+
+        if startIter.get_char() == '\n':
+            self.deletesLine = True
+
+        control.scriptView.textView.get_buffer().delete(startIter, endIter)
+
+        control.scriptView.textView.updateLineTag(bufferIndex, self.tags[0])
+
+        # afterDeleteIter = control.scriptView.textView.iterAtLocation(bufferIndex, startIterOffset)
+        # control.scriptView.textView.get_buffer().place_cursor(afterDeleteIter)
+
+    def modelUpdate(self, control, isBackspaceKey=False, isDeleteKey=False):
+
+        eventLine = self.page.lines[self.line]
+        bufferIndex = control.scriptView.lines.index(eventLine)
+
+        if self.offset == 0:
+            line = control.scriptView.currentLine()
+            self.carryText = line.text
+
+            previousLine = control.scriptView.previousLine()
+            previousLine.text += self.carryText
+
+            control.currentPage().lines.remove(line)
+
+            control.scriptView.lines.remove(line)
+
+        else:
+            line = control.scriptView.currentLine()
+            index = control.currentStory().index.offset
+            line.text = line.text[:index-1] + line.text[index:]
+        return
+
+    def undo(self, control):
+
+        if self.offset == 0:
+            # view
+            previousLine = self.page.lines[self.line - 1]
+            bufferIndex = control.scriptView.lines.index(previousLine)
+            insertIter = control.scriptView.textView.iterAtLocation(bufferIndex + 1, self.offset)
+            insertIter.backward_chars(len(self.carryText) + 1)
+
+            control.scriptView.textView.iterInfo(insertIter)
+            control.scriptView.textView.get_buffer().insert(insertIter, self.text, len(self.text))
+
+            # model
+            newLine = _story.Line(self.carryText, tag=self.tags[1])
+            newLine.heading = previousLine.heading
+            self.page.lines.insert(bufferIndex, newLine)
+
+            # remove carry text from previous line
+            previousLine.text = previousLine.text[:-len(self.carryText)]
+
+            # ScriptView need a reference to each line as well.
+            control.scriptView.lines.insert(bufferIndex, newLine)
+
+            control.scriptView.textView.updateLineTag(bufferIndex)
+
+            moveIter = control.scriptView.textView.iterAtLocation(bufferIndex + 1, self.offset)
+            control.scriptView.textView.get_buffer().place_cursor(moveIter)
+
+        else:
+            # add character
+            pass
+
+
+
+        # control.category = 'scene'
+        # control.indexView.stack.set_visible_child_name("scene")
+        #
+        # redo = Insertion(self.scene, self.page, self.line, self.offset, self.text, self.tags)
+        #
+        # redo.modelUpdate(control)
+        #
+        # redo.viewUpdate(control)
+        # eventLine = self.page.lines[self.line]
+        # bufferIndex = control.scriptView.lines.index(eventLine)
+        # afterDeleteIter = control.scriptView.textView.iterAtLocation(bufferIndex, self.offset)
+        # control.scriptView.textView.get_buffer().place_cursor(afterDeleteIter)
+        #
+        control.scriptView.textView.grab_focus()
+
+    def redo(self, control):
+
+        self.viewUpdate(control)
+        self.modelUpdate(control)
+
+    def data(self):
+        return None
 
 class Format(Event):
     def __init__(self, scene, page, line, oldTag, newTag):
@@ -354,8 +468,6 @@ class EventManager(object):
 
     def __init__(self, control):
         self.control = control
-        # self.cue = [StartHistoryEvent()]
-        # self.position = 0
 
     def initSceneHistory(self, scene, events=[]):
         scene.events = [StartHistoryEvent()]
@@ -364,35 +476,20 @@ class EventManager(object):
         scene.eventIndex = len(scene.events) -1
 
     def addEvent(self, event):
-
-        cs = self.control.currentScene()
+        currentScene = self.control.currentScene()
 
         # If went back in history and adding, slice off history ahead.
-        if len(cs.events) > cs.eventIndex:
-            cs.events = cs.events[:cs.eventIndex +1]
+        if len(currentScene.events) > currentScene.eventIndex:
+            currentScene.events = currentScene.events[:currentScene.eventIndex +1]
 
-        cs.events.insert(cs.eventIndex +1, event)
-        cs.eventIndex +=1
+        currentScene.events.insert(currentScene.eventIndex +1, event)
+        currentScene.eventIndex +=1
 
     def undo(self):
-
-        cs = self.control.currentScene()
-
-        if cs.eventIndex > 0:
-            cs.events[cs.eventIndex].undo(self.control)
-            cs.eventIndex -=1
+        self.control.currentScene().undo(self.control)
 
     def redo(self):
-
-        cs = self.control.currentScene()
-
-        if cs.eventIndex < len(cs.events) -1:
-            cs.eventIndex +=1
-            cs.events[cs.eventIndex].redo(self.control)
-
-    def reset(self):
-        self.cue = [StartHistoryEvent()]
-        self.position = 0
+        self.control.currentScene().redo(self.control)
 
 
 class View(object):

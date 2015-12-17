@@ -183,7 +183,7 @@ class Scene(object):
         self.info = info
 
         self.events = events
-        self.eventIndex = 0
+        self.eventIndex = -1
 
         if len(pages) == 0:
             self.pages = [Page()]
@@ -230,6 +230,15 @@ class Scene(object):
         for page in self.pages:
             page.correspond(control, verbose=verbose)
 
+    def undo(self, control):
+        if self.eventIndex > 0:
+            self.events[self.eventIndex].undo(control)
+            self.eventIndex -=1
+
+    def redo(self, control):
+        if self.eventIndex < len(self.events) -1:
+            self.eventIndex +=1
+            self.events[self.eventIndex].redo(control)
 
 class Page(object):
 
