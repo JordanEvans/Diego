@@ -152,14 +152,17 @@ class Sequence(object):
         else:
             for scene in scenes:
                 pages = scene['pages']
-                s = Scene(pages=pages, info=scene['info'])
+                if 'events' in scene.keys():
+                    s = Scene(pages=pages, info=scene['info'], events=scene['events'])
+                else:
+                    s = Scene(pages=pages, info=scene['info'])
                 s.title = scene['title']
                 self.scenes.append(s)
 
-    def data(self):
+    def data(self, currentStory):
         scenes = []
         for scene in self.scenes:
-            scenes.append(scene.data())
+            scenes.append(scene.data(currentStory))
         data = {}
         data["title"] = self.title
         data["synopsis"] = self.synopsis
@@ -191,7 +194,7 @@ class Scene(object):
             for page in pages:
                 self.pages.append(Page(lines=page['lines'], info=page['info']))
 
-    def data(self):
+    def data(self, currentStory):
         pages = []
         for page in self.pages:
             pages.append(page.data())
@@ -201,10 +204,14 @@ class Scene(object):
         data["notes"] = self.notes
         data["pages"] = pages
         data['info'] = self.info
+        data['eventIndex'] = self.eventIndex
         events = []
 
         for record in self.events[:HISTORY_RECORD_LIMIT]:
-            events.append(record.data())
+            events.append(record.data(currentStory))
+
+        events.pop(0) # remove start event
+        data['events'] = events
 
         return data
 
@@ -239,6 +246,7 @@ class Scene(object):
         if self.eventIndex < len(self.events) -1:
             self.eventIndex +=1
             self.events[self.eventIndex].redo(control)
+
 
 class Page(object):
 
@@ -285,6 +293,10 @@ class Page(object):
     def correspond(self, control, verbose=False):
         index = 0
         lastLine = control.scriptView.lines[-1]
+
+        printLines = []
+        col1 = 0
+        col2 = 0
         for line in self.lines:
             modelInfo = [line.text, line.tag]
             bufferInfo = None
@@ -312,7 +324,12 @@ class Page(object):
             if bufferInfo:
 
                 if verbose:
-                    print index, check, modelInfo, bufferInfo
+                    x = index, check, modelInfo, bufferInfo
+                    if len(str(modelInfo)) > col1:
+                        col1 = len(str(modelInfo))
+                    if len(str(bufferInfo)) > col2:
+                        col2 = len(str(bufferInfo))
+                    printLines.append(x)
 
                 if (not check[0] or not check[1]) and not verbose:
                     t1 = ""
@@ -328,6 +345,14 @@ class Page(object):
                     print verboseText
 
             index += 1
+
+        if verbose:
+            for l in printLines:
+                space = (col1 - len(str(l[2])) + 1) * " "
+                col1Text = str(l[2]) + space
+                col2Text = str(l[3])
+                s = str(l[0]) + " " + str(l[1]) + " " + col1Text + col2Text
+                print s
 
 
 class Story(object):
@@ -473,27 +498,75 @@ class Story(object):
             self.updateLocations()
             self.updateTimes()
 
+        self.loadSceneHistories(data['sequences'][0])
+
+
+    def loadSceneHistories(self, sequence):
+
+        for dataScene in sequence['scenes']:
+            if 'events' in dataScene.keys():
+                for event in dataScene['events']:
+
+                    scene = self.sequences[0].scenes[event['scene']]
+                    page = scene.pages[event['page']]
+                    line = event['line']
+                    offset = event['offset']
+                    text = event['text']
+                    tags = event['tags']
+
+                    if 'carryText' in event.keys():
+                        carryText = event['carryText']
+
+                    if event['name'] == 'Insertion':
+                        evt = _event.Insertion(scene, page, line, offset, text, tags)
+                    elif event['name'] == 'Deletion':
+                        evt = _event.Deletion(scene, page, line, offset, text, tags)
+                    elif event['name'] == "Backspace":
+                        evt = _event.Backspace(scene, page, line, offset, text, tags)
+                        evt.carryText = carryText
+                    # elif event['name'] == "StartHistoryEvent":
+                    #     evt = _event.StartHistoryEvent()
+
+                    scene.events.append(evt)
+                    scene.eventIndex = dataScene['eventIndex'] #len(scene.events) - 1
+
+    def uniquePath(self):
+        count = 1
+
+        if not os.path.exists(self.control.saveDir + self.control.currentStory().title):
+            return self.control.saveDir + self.control.currentStory().title
+
+        while os.path.exists(self.control.saveDir + self.control.currentStory().title + "-" + str(count)):
+            count += 1
+        return self.control.saveDir + self.control.currentStory().title + "-" + str(count)
+
     def save(self,):
         if self.path == None:
-            _dialog.saveFile(self.control)
-        else:
-            self._save(self.path)
+            self.path = self.uniquePath()
+        #     _dialog.saveFile(self.control)
+        # else:
+        self._save(self.path)
 
     def _save(self, path):
         self.control.saveDir = os.path.split(path)[0] + '/'
         self.path = path
         self.control.scriptView.textView.forceWordEvent()
-        data = self.data()
+        data = self.data(self)
         with open(path, 'w') as fp:
             json.dump(data, fp)
         self.control.app.updateWindowTitle()
-        title = os.path.split(self.control.currentStory().path)[-1]
-        self.control.currentStory().title = title
+
+        if path == None:
+            title = self.title
+        else:
+            title = os.path.split(self.path)[-1]
+
+        self.title = title
         self.control.storyItemBox.updateStoryLabelAtIndex(self.control.index)
         self.saved = True
 
         rtf = _rtf.RTF(self.control)
-        rtf.exportScript(path + ".rtf", self.control.currentStory().isScreenplay)
+        rtf.exportScript(path + ".rtf", self.isScreenplay)
         rtfPath = path + ".rtf"
 
         cwd = os.getcwd()
@@ -510,7 +583,7 @@ class Story(object):
     def default(self):
         self.control.historyEnabled = True
         self.sequences = [Sequence()]
-        self.control.eventManager.initSceneHistory(self, scene, events=[])
+        self.control.eventManager.initSceneHistory(self.sequences[0].scenes[0], events=[])
 
     def hanselGretalImport(self):
         import json
@@ -550,11 +623,11 @@ class Story(object):
         self.eventManager = None
         self.saved = True
 
-    def data(self):
+    def data(self, currentStory):
         data={}
         sequences=[]
         for sequence in self.sequences:
-            sequences.append(sequence.data())
+            sequences.append(sequence.data(currentStory))
         data['sequences']=sequences
         data['index']=self.index.data()
         data["title"] = os.path.split(self.path)[-1]
@@ -671,7 +744,7 @@ class Story(object):
     def correspond(self, control, verbose=False):
         if verbose:
             print
-            print "Model"
+            print "Buffer Line Number - [strings match, tags match] - Model Contents - Buffer Contents"
         index = 0
         for sq in self.sequences:
             for sc in sq.scenes:

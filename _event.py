@@ -1,4 +1,6 @@
 
+from gi.repository import Gtk, Gdk
+
 import _story
 
 class Event(object):
@@ -6,11 +8,29 @@ class Event(object):
         print self.__class__.__name__, "Event"
         self.chained = chained
 
+        self.scene = None
+        self.page = None
+        self.line = None
+        self.offset = None
+        self.text = None
+        self.tags = None
+
     def redo(self):
-        print "redo ", self.__class__.__name__
+        pass
 
     def undo(self):
-        print "undo ", self.__class__.__name__
+        pass
+
+    def data(self, currentStory):
+        data = {}
+        data["name"] = self.__class__.__name__
+        data["scene"] = currentStory.sequences[0].scenes.index(self.scene)
+        data["page"] = self.scene.pages.index(self.page)
+        data["line"] = self.line
+        data["offset"] = self.offset
+        data['text'] = self.text
+        data['tags'] = self.tags
+        return data
 
 
 class Insertion(Event):
@@ -22,9 +42,6 @@ class Insertion(Event):
         self.offset = offset
         self.text = text
         self.tags = tags
-
-        self.carryText = None
-        # self.newLines = []
 
     def undo(self, control):
         control.category = 'scene'
@@ -41,10 +58,8 @@ class Insertion(Event):
         control.category = 'scene'
         control.indexView.stack.set_visible_child_name("scene")
 
-        redo = Insertion(self.scene, self.page, self.line, self.offset, self.text, self.tags)
-
-        redo.modelUpdate(control)
-        redo.viewUpdate(control)
+        self.modelUpdate(control)
+        self.viewUpdate(control)
 
         control.scriptView.textView.grab_focus()
 
@@ -100,7 +115,7 @@ class Insertion(Event):
             lineTags = list(self.tags)
 
             # Inserting extra lines, carry text will be set.
-            self.carryText = firstLine.text[self.offset:]
+            carryText = firstLine.text[self.offset:]
 
             # The line of insertion already exists, so it will not need to be made.
             firstLineAppendText = lines.pop(0)
@@ -130,10 +145,7 @@ class Insertion(Event):
                 index += 1
 
             # Last line will get the carry text.
-            newLine.text += self.carryText
-
-    def data(self):
-        return None
+            newLine.text += carryText
 
 
 class Deletion(Event):
@@ -146,13 +158,9 @@ class Deletion(Event):
         self.text = text
         self.tags = tags
 
-        self.isBackspaceKey = False
         self.isDeleteKey = False
 
     def viewUpdate(self, control):
-
-        if self.isBackspaceKey:
-            pass
 
         eventLine = self.page.lines[self.line]
         bufferIndex = control.scriptView.lines.index(eventLine)
@@ -169,7 +177,7 @@ class Deletion(Event):
         afterDeleteIter = control.scriptView.textView.iterAtLocation(bufferIndex, self.offset)
         control.scriptView.textView.get_buffer().place_cursor(afterDeleteIter)
 
-    def modelUpdate(self, control, isBackspaceKey=False, isDeleteKey=False):
+    def modelUpdate(self, control, isDeleteKey=False):
 
         eventLine = self.page.lines[self.line]
         bufferIndex = control.scriptView.lines.index(eventLine)
@@ -177,25 +185,6 @@ class Deletion(Event):
         firstLine = eventLine
         if isDeleteKey:
             self.isDeleteKey = isDeleteKey
-
-        if isBackspaceKey:
-            self.isBackspaceKey = isBackspaceKey
-            if self.offset == 0:
-                line = control.scriptView.currentLine()
-                self.carryText = line.text
-
-                previousLine = control.scriptView.previousLine()
-                previousLine.text += self.carryText
-
-                control.currentPage().lines.remove(line)
-
-                control.scriptView.lines.remove(line)
-
-            else:
-                line = control.scriptView.currentLine()
-                index = control.currentStory().index.offset
-                line.text = line.text[:index-1] + line.text[index:]
-            return
 
         lines = self.text.split("\n")
 
@@ -280,10 +269,9 @@ class Deletion(Event):
         control.indexView.stack.set_visible_child_name("scene")
 
         redo = Insertion(self.scene, self.page, self.line, self.offset, self.text, self.tags)
-
         redo.modelUpdate(control)
-
         redo.viewUpdate(control)
+
         eventLine = self.page.lines[self.line]
         bufferIndex = control.scriptView.lines.index(eventLine)
         afterDeleteIter = control.scriptView.textView.iterAtLocation(bufferIndex, self.offset)
@@ -295,15 +283,11 @@ class Deletion(Event):
         control.category = 'scene'
         control.indexView.stack.set_visible_child_name("scene")
 
-        redo = Deletion(self.scene, self.page, self.line, self.offset, self.text, self.tags)
-
-        redo.viewUpdate(control)
-        redo.modelUpdate(control)
+        self.viewUpdate(control)
+        self.modelUpdate(control)
 
         control.scriptView.textView.grab_focus()
 
-    def data(self):
-        return None
 
 class Backspace(Event):
     def __init__(self, scene, page, line, offset, text, tags):
@@ -328,15 +312,9 @@ class Backspace(Event):
 
         endIter = control.scriptView.textView.iterAtLocation(bufferIndex, self.offset)
 
-        if startIter.get_char() == '\n':
-            self.deletesLine = True
-
         control.scriptView.textView.get_buffer().delete(startIter, endIter)
 
         control.scriptView.textView.updateLineTag(bufferIndex, self.tags[0])
-
-        # afterDeleteIter = control.scriptView.textView.iterAtLocation(bufferIndex, startIterOffset)
-        # control.scriptView.textView.get_buffer().place_cursor(afterDeleteIter)
 
     def modelUpdate(self, control, isBackspaceKey=False, isDeleteKey=False):
 
@@ -344,32 +322,42 @@ class Backspace(Event):
         bufferIndex = control.scriptView.lines.index(eventLine)
 
         if self.offset == 0:
-            line = control.scriptView.currentLine()
-            self.carryText = line.text
+            self.carryText = eventLine.text
 
-            previousLine = control.scriptView.previousLine()
+            previousLine = self.page.lines[self.line - 1]
             previousLine.text += self.carryText
 
-            control.currentPage().lines.remove(line)
+            self.page.lines.remove(eventLine)
 
-            control.scriptView.lines.remove(line)
+            control.scriptView.lines.remove(eventLine)
 
         else:
-            line = control.scriptView.currentLine()
             index = control.currentStory().index.offset
-            line.text = line.text[:index-1] + line.text[index:]
+            eventLine.text = eventLine.text[:index-1] + eventLine.text[index:]
+
         return
 
     def undo(self, control):
+
+        control.category = 'scene'
+        control.indexView.stack.set_visible_child_name("scene")
 
         if self.offset == 0:
             # view
             previousLine = self.page.lines[self.line - 1]
             bufferIndex = control.scriptView.lines.index(previousLine)
-            insertIter = control.scriptView.textView.iterAtLocation(bufferIndex + 1, self.offset)
-            insertIter.backward_chars(len(self.carryText) + 1)
+            insertIter = control.scriptView.textView.iterAtLocation(bufferIndex, self.offset)
+            insertIter.forward_to_line_end()
 
-            control.scriptView.textView.iterInfo(insertIter)
+            zeroSpaceCharacterAdjustment = 0
+            if insertIter.get_offset() == control.scriptView.textView.endIter().get_offset():
+                zeroSpaceCharacterAdjustment = 1
+
+            insertIter.backward_chars(len(self.carryText) + zeroSpaceCharacterAdjustment)
+
+            # control.scriptView.textView.get_buffer().insert(insertIter, 'xxx', len('xxx'))
+
+            # control.scriptView.textView.iterInfo(insertIter)
             control.scriptView.textView.get_buffer().insert(insertIter, self.text, len(self.text))
 
             # model
@@ -381,7 +369,7 @@ class Backspace(Event):
             previousLine.text = previousLine.text[:-len(self.carryText)]
 
             # ScriptView need a reference to each line as well.
-            control.scriptView.lines.insert(bufferIndex, newLine)
+            control.scriptView.lines.insert(bufferIndex + 1, newLine)
 
             control.scriptView.textView.updateLineTag(bufferIndex)
 
@@ -389,33 +377,47 @@ class Backspace(Event):
             control.scriptView.textView.get_buffer().place_cursor(moveIter)
 
         else:
-            # add character
-            pass
+            eventLine = self.page.lines[self.line]
+            bufferIndex = control.scriptView.lines.index(eventLine)
+            insertIter = control.scriptView.textView.iterAtLocation(bufferIndex, self.offset)
+            insertIter.backward_char()
 
+            # view
+            control.scriptView.textView.get_buffer().insert(insertIter, self.text, len(self.text))
 
+            # model
 
-        # control.category = 'scene'
-        # control.indexView.stack.set_visible_child_name("scene")
-        #
-        # redo = Insertion(self.scene, self.page, self.line, self.offset, self.text, self.tags)
-        #
-        # redo.modelUpdate(control)
-        #
-        # redo.viewUpdate(control)
-        # eventLine = self.page.lines[self.line]
-        # bufferIndex = control.scriptView.lines.index(eventLine)
-        # afterDeleteIter = control.scriptView.textView.iterAtLocation(bufferIndex, self.offset)
-        # control.scriptView.textView.get_buffer().place_cursor(afterDeleteIter)
-        #
+            eventLine.text = eventLine.text[:self.offset] + self.text + eventLine.text[self.offset:]
+
+            control.scriptView.textView.updateLineTag(bufferIndex)
+
+            moveIter = control.scriptView.textView.iterAtLocation(bufferIndex, self.offset)
+            control.scriptView.textView.get_buffer().place_cursor(moveIter)
+
         control.scriptView.textView.grab_focus()
 
     def redo(self, control):
 
+        control.category = 'scene'
+        control.indexView.stack.set_visible_child_name("scene")
+
         self.viewUpdate(control)
         self.modelUpdate(control)
 
-    def data(self):
-        return None
+        control.scriptView.textView.grab_focus()
+
+    def data(self, currentStory):
+        data = {}
+        data["name"] = self.__class__.__name__
+        data["scene"] = currentStory.sequences[0].scenes.index(self.scene)
+        data["page"] = self.scene.pages.index(self.page)
+        data["line"] = self.line
+        data["offset"] = self.offset
+        data['text'] = self.text
+        data['tags'] = self.tags
+        data['carryText'] = self.carryText
+        return data
+
 
 class Format(Event):
     def __init__(self, scene, page, line, oldTag, newTag):
@@ -438,9 +440,16 @@ class StartHistoryEvent(Event):
     def redo(self, control):
         pass
 
-    def data(self):
-        return None
-
+    def data(self, currentStory):
+        data = {}
+        data["name"] = str(self.__class__.__name__)
+        data["scene"] = None
+        data["page"] = None
+        data["line"] = None
+        data["offset"] = None
+        data['text'] = None
+        data['tags'] = None
+        return data
 
 # class NewPageEvent(Event):
 #
@@ -481,6 +490,7 @@ class EventManager(object):
         # If went back in history and adding, slice off history ahead.
         if len(currentScene.events) > currentScene.eventIndex:
             currentScene.events = currentScene.events[:currentScene.eventIndex +1]
+            self.control.updateColor()
 
         currentScene.events.insert(currentScene.eventIndex +1, event)
         currentScene.eventIndex +=1
@@ -488,9 +498,38 @@ class EventManager(object):
     def undo(self):
         self.control.currentScene().undo(self.control)
 
+        self.control.updateColor()
+
     def redo(self):
         self.control.currentScene().redo(self.control)
 
+        self.control.updateColor()
+
+
+    # def updateColor(self):
+    #     val = 0.94
+    #     selectColor = Gdk.RGBA(0.75, 0.75, 0.85, 1.0)
+    #     forground = Gdk.RGBA(0.0, 0.0, 0.0, 1.0)
+    #     if self.control.currentScene().eventIndex < len(self.control.currentScene().events) - 1:
+    #         color = Gdk.RGBA(val, val, val, 1.0)
+    #         self.control.scriptView.textView.modify_bg(Gtk.StateType.NORMAL, color.to_color())
+    #         self.control.scriptView.textView.modify_bg(Gtk.StateType.SELECTED, selectColor.to_color())
+    #         self.control.scriptView.textView.modify_fg(Gtk.StateType.SELECTED, forground.to_color())
+    #     else:
+    #         color = Gdk.RGBA(1.0, 1.0, 1.0, 1.0)
+    #         self.control.scriptView.textView.modify_bg(Gtk.StateType.NORMAL, color.to_color())
+    #         self.control.scriptView.textView.modify_bg(Gtk.StateType.SELECTED, selectColor.to_color())
+    #         self.control.scriptView.textView.modify_fg(Gtk.StateType.SELECTED, forground.to_color())
+    #
+    #     self.control.scriptView.textView.descriptionTag.props.background_rgba = color
+    #     self.control.scriptView.textView.characterTag.props.background_rgba = color
+    #     self.control.scriptView.textView.dialogTag.props.background_rgba = color
+    #     self.control.scriptView.textView.parentheticTag.props.background_rgba = color
+    #     self.control.scriptView.textView.sceneHeadingTag.props.background_rgba = color
+    #
+    #     for he in self.control.scriptView.headingEntries:
+    #         he.modify_bg(Gtk.StateType.NORMAL, color.to_color())
+    #
 
 class View(object):
     pass

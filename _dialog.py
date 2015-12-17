@@ -94,7 +94,8 @@ def saveFile(control):
 
     response = dialog.run()
     if response == Gtk.ResponseType.OK:
-        control.currentStory()._save(dialog.get_filename())
+        fileName = dialog.get_filename()
+        control.currentStory()._save(fileName)
     elif response == Gtk.ResponseType.CANCEL:
         pass
 

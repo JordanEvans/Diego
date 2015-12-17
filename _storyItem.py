@@ -60,6 +60,8 @@ class View(_item.Item):
     def labelKeyRelease(self, widget, event):
         if event.keyval == 65293:
             self.endEditMode()
+        else:
+            self.control.currentStory().title = self.label.get_text()
 
     def endEditMode(self):
         title = self.label.get_text()

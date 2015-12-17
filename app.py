@@ -113,7 +113,13 @@ class App(object):
             sys.exit()
 
     def shutdownUnsavedFileCheck(self):
+
+        for story in self.control.stories:
+            story.save()
+
         return
+
+
         self.saveUnsavedStories = False
         unsavedStories = False
         for story in self.control.stories:

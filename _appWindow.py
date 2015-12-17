@@ -30,11 +30,20 @@ class Window(Gtk.Window):
         self.resize(1000,600)
 
     def keyPress(self, widget, event):
-        
+
+        print event.keyval
+
+        if event.state & Gdk.ModifierType.SHIFT_MASK:
+            if event.state & Gdk.ModifierType.CONTROL_MASK:
+                if event.keyval==83: # save as
+                    _dialog.saveFile(self.control)
+                    return 1
+
         if event.state & Gdk.ModifierType.CONTROL_MASK:
 
             if ( event.keyval == 49):
                 self.newPage()
+
 
             elif(event.keyval==114): # Find And Replace
                 dialog = _dialog.FindAndReplaceDialog(self.control, self)

@@ -326,7 +326,7 @@ class TextView(Gtk.TextView):
 
         if event.state & Gdk.ModifierType.SHIFT_MASK:
             if event.state & Gdk.ModifierType.CONTROL_MASK:
-                if event.keyval==90: # undo
+                if event.keyval==90: # redo
                     self.forceWordEvent()
                     self.control.eventManager.redo()
                     return 1
@@ -401,6 +401,11 @@ class TextView(Gtk.TextView):
             return
 
         if event.keyval == 65470: # F1 press
+            self.printTags()
+            return 1
+
+        if event.keyval == 65471: # F2 press
+            self.control.currentStory().correspond(self.control, verbose=1)
             return 1
 
         if self.insertingOnFirstIter(event):
@@ -1830,7 +1835,7 @@ class TextView(Gtk.TextView):
     def chainDeleteSelectedTextEvent(self):
 
         if len(self.control.scriptView.textView.selectedClipboard):
-            return self.control.scriptView.textView.deleteSelectedText()
+            return self.deleteSelectedText()
 
     def deleteSelectedText(self):
         if len(self.selectedClipboard):
@@ -1840,7 +1845,7 @@ class TextView(Gtk.TextView):
 
             # cutEvent = _event.CutEvent(self.control)
             text = self.get_buffer().get_text(self.selectionIterStart, self.selectionIterEnd, True)
-            tags = [line.tag for line in self.control.copyClipboard.lines]
+            tags = [line.tag for line in self.cutClipboard]
 
             startLineIndex = self.control.scriptView.textView.selectionIterStart.get_line()
             line = self.control.scriptView.lines[startLineIndex]
@@ -1849,7 +1854,6 @@ class TextView(Gtk.TextView):
             cl = self.control.currentLine()
             cp = self.control.currentPage()
             pageLineIndex = cp.lines.index(cl)
-            tags = [cl.tag]
             event = _event.Deletion(self.control.currentScene(),
                 self.control.currentPage(),
                 pageLineIndex,
@@ -2333,6 +2337,7 @@ class TextView(Gtk.TextView):
             self.control.scriptView.updateCurrentStoryIndex()
 
     def do_copy_clipboard(self):
+        Gtk.TextView.do_copy_clipboard(self)
         self.setSelectionClipboard()
         if len(self.selectedClipboard):
             self.selectionTags = [line.tag for line in self.selectedClipboard]
@@ -2340,7 +2345,7 @@ class TextView(Gtk.TextView):
             self.selectionTags = []
 
         self.control.copyClipboard.lines = list(self.selectedClipboard)
-        Gtk.TextView.do_copy_clipboard(self)
+
 
     def do_drag_drop(self, context, x, y, time):
         self.control.notImplemented()
@@ -2386,6 +2391,7 @@ class ScriptView(Gtk.Box):
         self.off = True
 
         self.lines = []
+        self.headingEntries = []
 
         self.paned = Gtk.Paned(orientation=Gtk.Orientation.VERTICAL)
         self.paned.connect('map-event', self.acceptPosition)
@@ -2449,6 +2455,7 @@ class ScriptView(Gtk.Box):
     def loadStory(self):
 
         self.lines = []
+        self.headingEntries = []
 
         st = self.control.currentStory()
         pages = []
@@ -2510,6 +2517,8 @@ class ScriptView(Gtk.Box):
         self.control.searchView.reset()
         self.control.searchView.find = None
 
+        self.control.updateColor()
+
         return lastTag
 
     def addZeroWidthSpace(self, lastTag):
@@ -2532,6 +2541,7 @@ class ScriptView(Gtk.Box):
 
     def loadScene(self):
         self.lines = []
+        self.headingEntries = []
 
         pages = []
         headings = []
@@ -2595,10 +2605,13 @@ class ScriptView(Gtk.Box):
         self.control.searchView.reset()
         self.control.searchView.find = None
 
+        self.control.updateColor()
+
         return lastTag
 
     def loadPage(self):
         self.lines = []
+        self.headingEntries = []
 
         pages = []
         headings = []
@@ -2653,6 +2666,8 @@ class ScriptView(Gtk.Box):
         self.control.searchView.reset()
         self.control.searchView.find = None
 
+        self.control.updateColor()
+
         return lastTag
 
     def infoTextViewKeyPress(self, widget, event):
@@ -2693,6 +2708,8 @@ class ScriptView(Gtk.Box):
         anchor = self.textBuffer.create_child_anchor(self.textView.insertIter())
         entry = Gtk.Label()
         entry.set_markup("""<span font_family='monospace' font='9.0' foreground='#bbbbbb' >""" + text + """</span>""")
+
+        self.headingEntries.append(entry)
 
         self.textView.add_child_at_anchor(entry, anchor)
 
