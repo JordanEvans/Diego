@@ -620,8 +620,10 @@ class TextView(Gtk.TextView):
                 pageLineIndex = cp.lines.index(cl)
 
                 lineIndex = self.control.scriptView.lines.index(cl)
-                newLineEvent = _event.Insertion(self.control.currentScene(),
-                    cp,
+                sceneIndex = self.control.currentSequence().scenes.index(self.control.currentScene())
+                pageIndex = self.control.currentScene().pages.index(self.control.currentPage())
+                newLineEvent = _event.Insertion(sceneIndex,
+                    pageIndex,
                     pageLineIndex,
                     self.control.currentStory().index.offset,
                     '\n',
@@ -641,9 +643,11 @@ class TextView(Gtk.TextView):
                 cl = self.control.currentLine()
                 cp = self.control.currentPage()
                 pageLineIndex = cp.lines.index(cl)
+                sceneIndex = self.control.currentSequence().scenes.index(self.control.currentScene())
+                pageIndex = self.control.currentScene().pages.index(self.control.currentPage())
                 lineIndex = self.control.scriptView.lines.index(cl)
-                event = _event.Insertion(self.control.currentScene(),
-                    cp,
+                event = _event.Insertion(sceneIndex,
+                    pageIndex,
                     pageLineIndex,
                     self.control.currentStory().index.offset,
                     '\n',
@@ -659,9 +663,11 @@ class TextView(Gtk.TextView):
             tags = [currentLineTag, newLineTag]
             cl = self.control.currentLine()
             cp = self.control.currentPage()
+            sceneIndex = self.control.currentSequence().scenes.index(self.control.currentScene())
+            pageIndex = self.control.currentScene().pages.index(self.control.currentPage())
             pageLineIndex = cp.lines.index(cl)
-            newLineEvent = _event.Insertion(self.control.currentScene(),
-                cp,
+            newLineEvent = _event.Insertion(sceneIndex,
+                pageIndex,
                 pageLineIndex,
                 self.control.currentStory().index.offset,
                 '\n',
@@ -760,8 +766,10 @@ class TextView(Gtk.TextView):
             cp = self.control.currentPage()
             pageLineIndex = cp.lines.index(cl)
             tags = [cl.tag]
-            event = _event.Deletion(self.control.currentScene(),
-                self.control.currentPage(),
+            sceneIndex = self.control.currentSequence().scenes.index(self.control.currentScene())
+            pageIndex = self.control.currentScene().pages.index(self.control.currentPage())
+            event = _event.Deletion(sceneIndex,
+                pageIndex,
                 pageLineIndex,
                 self.control.currentStory().index.offset,
                 currentChar,
@@ -877,8 +885,10 @@ class TextView(Gtk.TextView):
 
         tags = [cl.before(self.control).tag, cl.tag]
 
-        event = _event.Backspace(self.control.currentScene(),
-            self.control.currentPage(),
+        sceneIndex = self.control.currentSequence().scenes.index(self.control.currentScene())
+        pageIndex = self.control.currentScene().pages.index(self.control.currentPage())
+        event = _event.Backspace(sceneIndex,
+            pageIndex,
             pageLineIndex,
             self.control.currentStory().index.offset,
             backIter.get_char(),
@@ -1011,8 +1021,10 @@ class TextView(Gtk.TextView):
                         cp = self.control.currentPage()
                         pageLineIndex = cp.lines.index(currentLine)
                         tags = [currentLine.tag]
-                        event = _event.Deletion(self.control.currentScene(),
-                            self.control.currentPage(),
+                        sceneIndex = self.control.currentSequence().scenes.index(self.control.currentScene())
+                        pageIndex = self.control.currentScene().pages.index(self.control.currentPage())
+                        event = _event.Deletion(sceneIndex,
+                            pageIndex,
                             pageLineIndex,
                             deleteOffset,
                             self.sceneHeadingIter.name(),
@@ -1028,26 +1040,6 @@ class TextView(Gtk.TextView):
                         # Here means we atleast autocompleted once and continue to do so.
                         if self.sceneHeadingIter.initChar == character:
 
-                            # startIter = self.insertIter()
-                            # deleteOffset = startIter.get_line_offset() - len(self.sceneHeadingIter.name())
-                            # currentLine = self.control.currentLine()
-                            #
-                            # cp = self.control.currentPage()
-                            # pageLineIndex = cp.lines.index(currentLine)
-                            # tags = [currentLine.tag]
-                            # event = _event.Deletion(self.control.currentScene(),
-                            #     self.control.currentPage(),
-                            #     pageLineIndex,
-                            #     deleteOffset,
-                            #     self.sceneHeadingIter.name(),
-                            #     tags)
-                            # event.viewUpdate(self.control)
-                            # event.modelUpdate(self.control)
-                            # self.control.eventManager.addEvent(event)
-                            #
-                            # # The index must be updated where the deletion began.
-                            # self.control.currentStory().index.offset = deleteOffset
-
                             # Bring the next name forward and complete it.
                             self.sceneHeadingIter.increment()
                             self.completeWordOnLine(self.sceneHeadingIter.name(), 0, True)
@@ -1056,34 +1048,6 @@ class TextView(Gtk.TextView):
 
                         # Here we have been completing, but changed the start letter of the character name.
                         else:
-
-                            # # Delete the last completed name in the buffer.
-                            # startIter = self.insertIter()
-                            # endIter = self.insertIter()
-                            # deleteOffset = startIter.get_line_offset()
-                            # startIter.backward_chars(len(self.sceneHeadingIter.name()))
-                            # self.get_buffer().delete(startIter,endIter)
-
-                            # # Delete the last completed name in the model.
-                            # offset = self.control.currentStory().index.offset
-                            # text = self.control.currentLine().text
-                            # x = text[:offset - len(self.sceneHeadingIter.name())]
-                            # y = text[offset:]
-                            # currentLine = self.control.currentLine()
-                            # currentLine.text = text[:offset - len(self.sceneHeadingIter.name())] + text[offset:]
-
-                            # cp = self.control.currentPage()
-                            # pageLineIndex = cp.lines.index(currentLine)
-                            # tags = [currentLine.tag]
-                            # event = _event.Deletion(self.control.currentScene(),
-                            #     self.control.currentPage(),
-                            #     pageLineIndex,
-                            #     deleteOffset,
-                            #     self.sceneHeadingIter.name(),
-                            #     tags)
-
-                            # # The index must be updated where the deletion began.
-                            # self.control.currentStory().index.offset -= (len(self.sceneHeadingIter.name()) - 1)
 
                             # Reset the NameIter and complete
                             self.sceneHeadingIter = NameIter(prefixes, character)
@@ -1219,9 +1183,11 @@ class TextView(Gtk.TextView):
         if isFirstCompletion:
             completionOffsetAdjustment = 1
         cp = self.control.currentPage()
+        sceneIndex = self.control.currentSequence().scenes.index(self.control.currentScene())
+        pageIndex = self.control.currentScene().pages.index(self.control.currentPage())
         pageLineIndex = cp.lines.index(cl)
-        pasteEvent = _event.Insertion(self.control.currentScene(),
-            self.control.currentPage(),
+        pasteEvent = _event.Insertion(sceneIndex,
+            pageIndex,
             pageLineIndex,
             self.control.currentStory().index.offset - completionOffsetAdjustment,
             name,
@@ -1753,8 +1719,10 @@ class TextView(Gtk.TextView):
         cl = self.control.currentLine()
         cp = self.control.currentPage()
         pageLineIndex = cp.lines.index(cl)
-        pasteEvent = _event.Insertion(self.control.currentScene(),
-            self.control.currentPage(),
+        sceneIndex = self.control.currentSequence().scenes.index(self.control.currentScene())
+        pageIndex = self.control.currentScene().pages.index(self.control.currentPage())
+        pasteEvent = _event.Insertion(sceneIndex,
+            pageIndex,
             pageLineIndex,
             self.control.currentStory().index.offset,
             self.copiedText,
@@ -1854,8 +1822,10 @@ class TextView(Gtk.TextView):
             cl = self.control.currentLine()
             cp = self.control.currentPage()
             pageLineIndex = cp.lines.index(cl)
-            event = _event.Deletion(self.control.currentScene(),
-                self.control.currentPage(),
+            sceneIndex = self.control.currentSequence().scenes.index(self.control.currentScene())
+            pageIndex = self.control.currentScene().pages.index(self.control.currentPage())
+            event = _event.Deletion(sceneIndex,
+                pageIndex,
                 pageLineIndex,
                 self.control.currentStory().index.offset,
                 text,
@@ -1923,8 +1893,10 @@ class TextView(Gtk.TextView):
                 cp = self.control.currentPage()
                 pageLineIndex = cp.lines.index(cl)
                 tags = [cl.tag]
-                event = _event.Insertion(self.control.currentScene(),
-                    cp,
+                sceneIndex = self.control.currentSequence().scenes.index(self.control.currentScene())
+                pageIndex = self.control.currentScene().pages.index(self.control.currentPage())
+                event = _event.Insertion(sceneIndex,
+                    pageIndex,
                     pageLineIndex,
                     self.control.currentStory().index.offset - len(word),
                     word,
@@ -1946,8 +1918,10 @@ class TextView(Gtk.TextView):
             cp = self.control.currentPage()
             pageLineIndex = cp.lines.index(cl)
             tags = [cl.tag]
-            event = _event.Insertion(self.control.currentScene(),
-                cp,
+            sceneIndex = self.control.currentSequence().scenes.index(self.control.currentScene())
+            pageIndex = self.control.currentScene().pages.index(self.control.currentPage())
+            event = _event.Insertion(sceneIndex,
+                pageIndex,
                 pageLineIndex,
                 self.control.currentStory().index.offset - len(word),
                 word,
@@ -2315,8 +2289,10 @@ class TextView(Gtk.TextView):
             cl = self.control.currentLine()
             cp = self.control.currentPage()
             pageLineIndex = cp.lines.index(cl)
-            event = _event.Deletion(self.control.currentScene(),
-                self.control.currentPage(),
+            sceneIndex = self.control.currentSequence().scenes.index(self.control.currentScene())
+            pageIndex = self.control.currentScene().pages.index(self.control.currentPage())
+            event = _event.Deletion(sceneIndex,
+                pageIndex,
                 pageLineIndex,
                 self.control.currentStory().index.offset,
                 text,

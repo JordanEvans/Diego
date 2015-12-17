@@ -24,8 +24,8 @@ class Event(object):
     def data(self, currentStory):
         data = {}
         data["name"] = self.__class__.__name__
-        data["scene"] = currentStory.sequences[0].scenes.index(self.scene)
-        data["page"] = self.scene.pages.index(self.page)
+        data["scene"] = self.scene
+        data["page"] = self.page
         data["line"] = self.line
         data["offset"] = self.offset
         data['text'] = self.text
@@ -47,6 +47,9 @@ class Insertion(Event):
         control.category = 'scene'
         control.indexView.stack.set_visible_child_name("scene")
 
+        scene = control.currentSequence().scenes[self.scene]
+        page = scene.pages[self.page]
+
         undo = Deletion(self.scene, self.page, self.line, self.offset, self.text, self.tags)
         undo.viewUpdate(control)
         undo.modelUpdate(control)
@@ -65,7 +68,10 @@ class Insertion(Event):
 
     def viewUpdate(self, control, pushedOffHeading=False):
 
-        eventLine = self.page.lines[self.line]
+        scene = control.currentSequence().scenes[self.scene]
+        page = scene.pages[self.page]
+
+        eventLine = page.lines[self.line]
         bufferIndex = control.scriptView.lines.index(eventLine)
 
         insertIter = control.scriptView.textView.iterAtLocation(bufferIndex, self.offset)
@@ -90,9 +96,12 @@ class Insertion(Event):
 
     def modelUpdate(self, control, pushedOffHeading=False):
 
+        scene = control.currentSequence().scenes[self.scene]
+        page = scene.pages[self.page]
+
         lines = self.text.split("\n")
 
-        eventLine = self.page.lines[self.line]
+        eventLine = page.lines[self.line]
 
         firstLine = eventLine
 
@@ -128,7 +137,7 @@ class Insertion(Event):
             firstLine.text = firstLine.text + firstLineAppendText
 
             # Create and insert all new lines.
-            insertIndex = self.page.lines.index(firstLine) + 1
+            insertIndex = page.lines.index(firstLine) + 1
             scriptLineIndex = control.scriptView.lines.index(firstLine) + 1
             index = 0
             firstLine.tag = firstLineTag
@@ -136,7 +145,7 @@ class Insertion(Event):
             for line in lines:
                 newLine = _story.Line(lines[index], tag=lineTags[index])
                 newLine.heading = firstLine.heading
-                self.page.lines.insert(insertIndex + index, newLine)
+                page.lines.insert(insertIndex + index, newLine)
 
                 # ScriptView need a reference to each line as well.
                 control.scriptView.lines.insert(scriptLineIndex + index, newLine)
@@ -162,7 +171,10 @@ class Deletion(Event):
 
     def viewUpdate(self, control):
 
-        eventLine = self.page.lines[self.line]
+        scene = control.currentSequence().scenes[self.scene]
+        page = scene.pages[self.page]
+
+        eventLine = page.lines[self.line]
         bufferIndex = control.scriptView.lines.index(eventLine)
 
         startIter = control.scriptView.textView.iterAtLocation(bufferIndex, self.offset)
@@ -179,7 +191,10 @@ class Deletion(Event):
 
     def modelUpdate(self, control, isDeleteKey=False):
 
-        eventLine = self.page.lines[self.line]
+        scene = control.currentSequence().scenes[self.scene]
+        page = scene.pages[self.page]
+
+        eventLine = page.lines[self.line]
         bufferIndex = control.scriptView.lines.index(eventLine)
 
         firstLine = eventLine
@@ -223,7 +238,7 @@ class Deletion(Event):
             lastLineCarryText = lastLineText
 
             # Remove the second line
-            self.page.lines.remove(line2)
+            page.lines.remove(line2)
             control.scriptView.lines.remove(line2)
 
             # Line one will get the both texts appended.
@@ -251,12 +266,12 @@ class Deletion(Event):
             # Gather lines to remove.
             removeLines = []
             for i in range(len(lines)-1):
-                line = self.page.lines[self.line + i + 1]
+                line = page.lines[self.line + i + 1]
                 removeLines.append(line)
 
             # Remove the middle lines and last line
             for line in removeLines:
-                self.page.lines.remove(line)
+                page.lines.remove(line)
                 control.scriptView.lines.remove(line)
 
             # Set the first line text.
@@ -268,11 +283,14 @@ class Deletion(Event):
         control.category = 'scene'
         control.indexView.stack.set_visible_child_name("scene")
 
+        scene = control.currentSequence().scenes[self.scene]
+        page = scene.pages[self.page]
+
         redo = Insertion(self.scene, self.page, self.line, self.offset, self.text, self.tags)
         redo.modelUpdate(control)
         redo.viewUpdate(control)
 
-        eventLine = self.page.lines[self.line]
+        eventLine = page.lines[self.line]
         bufferIndex = control.scriptView.lines.index(eventLine)
         afterDeleteIter = control.scriptView.textView.iterAtLocation(bufferIndex, self.offset)
         control.scriptView.textView.get_buffer().place_cursor(afterDeleteIter)
@@ -407,10 +425,14 @@ class Backspace(Event):
         control.scriptView.textView.grab_focus()
 
     def data(self, currentStory):
+
+        scene = control.currentSequence().scenes[self.scene]
+        page = scene.pages[self.page]
+
         data = {}
         data["name"] = self.__class__.__name__
-        data["scene"] = currentStory.sequences[0].scenes.index(self.scene)
-        data["page"] = self.scene.pages.index(self.page)
+        data["scene"] = self.scene
+        data["page"] = self.page
         data["line"] = self.line
         data["offset"] = self.offset
         data['text'] = self.text

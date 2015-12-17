@@ -11,7 +11,7 @@ from _event import EventManager
 
 DEFAULT_TIMES = ["DAY", "NIGHT", "DUSK", "DAWN"]
 
-HISTORY_RECORD_LIMIT = 100
+HISTORY_RECORD_LIMIT = 3
 
 class StoryIndex(object):
 
@@ -207,10 +207,17 @@ class Scene(object):
         data['eventIndex'] = self.eventIndex
         events = []
 
-        for record in self.events[:HISTORY_RECORD_LIMIT]:
+        for record in self.events:
             events.append(record.data(currentStory))
 
+        if self.eventIndex > HISTORY_RECORD_LIMIT:
+            data['eventIndex'] = self.eventIndex - (len(self.events) - HISTORY_RECORD_LIMIT)
+
+        while len(events) > HISTORY_RECORD_LIMIT:
+            events.pop(0)
+
         events.pop(0) # remove start event
+
         data['events'] = events
 
         return data
@@ -500,22 +507,18 @@ class Story(object):
 
         self.loadSceneHistories(data['sequences'][0])
 
-
     def loadSceneHistories(self, sequence):
 
         for dataScene in sequence['scenes']:
             if 'events' in dataScene.keys():
                 for event in dataScene['events']:
 
-                    scene = self.sequences[0].scenes[event['scene']]
-                    page = scene.pages[event['page']]
+                    scene = event['scene']
+                    page = event['page']
                     line = event['line']
                     offset = event['offset']
                     text = event['text']
                     tags = event['tags']
-
-                    if 'carryText' in event.keys():
-                        carryText = event['carryText']
 
                     if event['name'] == 'Insertion':
                         evt = _event.Insertion(scene, page, line, offset, text, tags)
@@ -523,12 +526,10 @@ class Story(object):
                         evt = _event.Deletion(scene, page, line, offset, text, tags)
                     elif event['name'] == "Backspace":
                         evt = _event.Backspace(scene, page, line, offset, text, tags)
-                        evt.carryText = carryText
-                    # elif event['name'] == "StartHistoryEvent":
-                    #     evt = _event.StartHistoryEvent()
+                        evt.carryText = event['carryText']
 
-                    scene.events.append(evt)
-                    scene.eventIndex = dataScene['eventIndex'] #len(scene.events) - 1
+                    self.sequences[0].scenes[event['scene']].events.append(evt)
+                    self.sequences[0].scenes[event['scene']].eventIndex = dataScene['eventIndex']
 
     def uniquePath(self):
         count = 1
@@ -577,8 +578,6 @@ class Story(object):
         self.updateCompletionNames()
         self.updateLocations()
         self.updateTimes()
-
-        # self.control.scriptView.textView.updateNameMenu()
 
     def default(self):
         self.control.historyEnabled = True
