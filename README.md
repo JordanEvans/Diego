@@ -8,7 +8,7 @@ Diego has traded feature bloat for simplicity. Only features that are necessary 
 
 Each Story, Scene and Page has an Outlining Text area that allows the writer to outline their story by creating abstracts. This Outlining Text area works as a convenient place to store premises for new story ideas that may later turn into a full script.
 
-Diego does not need to be saved, it saves each document on shutdown of the app. History is infinite, but can be cleared via right click. A white background means you are treading new ground. A gray background means you have undone in this area. Green means you have saved this in the last session and have not undone in that area. When Diego saves, three documents are created: the Diego document, an RTF for extra tweaking, and a PDF.
+Diego does not need to be saved, it saves each document on shutdown of the app. History is infinite, but can be cleared via right click. A white background means you are treading new ground. A gray background means you have undone in this area. Blue means you have saved this in the last session and have not undone in that area. When Diego saves, three documents are created: the Diego document, an RTF for extra tweaking, and a PDF.
 
 <b>Graphic Novel Mode</b>
 
