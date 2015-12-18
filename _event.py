@@ -521,6 +521,8 @@ class EventManager(object):
         # If went back in history and adding, slice off history ahead.
         if len(currentScene.events) > currentScene.eventIndex:
             currentScene.events = currentScene.events[:currentScene.eventIndex +1]
+            if self.control.currentScene().eventIndex < self.control.currentScene().sessionEventIndex:
+                self.control.currentScene().sessionEventIndex = self.control.currentScene().eventIndex
             self.control.updateColor()
 
         currentScene.events.insert(currentScene.eventIndex +1, event)
@@ -535,7 +537,6 @@ class EventManager(object):
         self.control.currentScene().redo(self.control)
 
         self.control.updateColor()
-
 
     # def updateColor(self):
     #     val = 0.94

@@ -41,7 +41,7 @@ class Control(object):
         self.historyEnabled = False
         self.printCount = 0
         self.category = 'sequence'
-        self.saveDir = os.path.expanduser(('~'))
+        self.saveDir = os.path.realpath(os.curdir) + '/Stories/'
         self.verticalPanePosition = 150
         self.startingUpApp = True
         self.sequenceVisible = False
@@ -313,7 +313,11 @@ class Control(object):
         selectColor = Gdk.RGBA(0.75, 0.75, 0.85, 1.0)
         forground = Gdk.RGBA(0.0, 0.0, 0.0, 1.0)
         if self.currentScene().eventIndex < len(self.currentScene().events) - 1:
-            color = Gdk.RGBA(val, val, val, 1.0)
+            if self.currentScene().eventIndex < self.currentScene().sessionEventIndex:
+                rg = 0.95
+                color = Gdk.RGBA(1.0, rg, rg, 1.0)
+            else:
+                color = Gdk.RGBA(val, val, val, 1.0)
             self.scriptView.textView.modify_bg(Gtk.StateType.NORMAL, color.to_color())
             self.scriptView.textView.modify_bg(Gtk.StateType.SELECTED, selectColor.to_color())
             self.scriptView.textView.modify_fg(Gtk.StateType.SELECTED, forground.to_color())

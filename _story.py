@@ -11,7 +11,7 @@ from _event import EventManager
 
 DEFAULT_TIMES = ["DAY", "NIGHT", "DUSK", "DAWN"]
 
-HISTORY_RECORD_LIMIT = 3
+HISTORY_RECORD_LIMIT = None
 
 class StoryIndex(object):
 
@@ -187,12 +187,18 @@ class Scene(object):
 
         self.events = events
         self.eventIndex = -1
+        self.sessionEventIndex = None
 
         if len(pages) == 0:
             self.pages = [Page()]
         else:
             for page in pages:
                 self.pages.append(Page(lines=page['lines'], info=page['info']))
+
+    def clearHistory(self):
+        self.events = self.events[:1]
+        self.eventIndex = 0
+        self.sessionEventIndex = 0
 
     def data(self, currentStory):
         pages = []
@@ -204,26 +210,37 @@ class Scene(object):
         data["notes"] = self.notes
         data["pages"] = pages
         data['info'] = self.info
-        data['eventIndex'] = self.eventIndex
+        eventIndex = self.eventIndex
         events = []
 
         for record in self.events:
             events.append(record.data(currentStory))
 
-        events.pop(0) # remove start event
+        if HISTORY_RECORD_LIMIT is not None:
+            self.historyLimitAdjument(eventIndex, events)
 
-        if self.eventIndex > HISTORY_RECORD_LIMIT:
-            data['eventIndex'] = self.eventIndex - (len(self.events) - HISTORY_RECORD_LIMIT)
+        events.pop(0)
 
-
-        while len(events) > HISTORY_RECORD_LIMIT:
-            events.pop(0)
-
-
+        data['eventIndex'] = eventIndex
 
         data['events'] = events
 
         return data
+
+    def historyLimitAdjument(self, eventIndex, events):
+        # this is not fully implemeneted.
+
+        atEvent = events[eventIndex]
+
+        while len(events) > HISTORY_RECORD_LIMIT + 1:
+            events.pop(0)
+
+        if atEvent in events:
+            eventIndex = events.index(atEvent)
+        else:
+            eventIndex = len(events) -1
+
+        return eventIndex
 
     def findAndReplace(self, find, replace):
         for page in self.pages:
@@ -510,30 +527,6 @@ class Story(object):
 
         self.loadSceneHistories(data['sequences'][0])
 
-    def loadSceneHistories(self, sequence):
-
-        for dataScene in sequence['scenes']:
-            if 'events' in dataScene.keys():
-                for event in dataScene['events']:
-
-                    scene = event['scene']
-                    page = event['page']
-                    line = event['line']
-                    offset = event['offset']
-                    text = event['text']
-                    tags = event['tags']
-
-                    if event['name'] == 'Insertion':
-                        evt = _event.Insertion(scene, page, line, offset, text, tags)
-                    elif event['name'] == 'Deletion':
-                        evt = _event.Deletion(scene, page, line, offset, text, tags)
-                    elif event['name'] == "Backspace":
-                        evt = _event.Backspace(scene, page, line, offset, text, tags)
-                        evt.carryText = event['carryText']
-
-                    self.sequences[0].scenes[event['scene']].events.append(evt)
-                    self.sequences[0].scenes[event['scene']].eventIndex = dataScene['eventIndex']
-
     def uniquePath(self):
         count = 1
 
@@ -545,11 +538,23 @@ class Story(object):
         return self.control.saveDir + self.control.currentStory().title + "-" + str(count)
 
     def save(self,):
+
         if self.path == None:
             self.path = self.uniquePath()
-        #     _dialog.saveFile(self.control)
-        # else:
-        self._save(self.path)
+
+        try:
+            os.path.split(self.path)
+
+        except:
+            _dialog.saveFile(self.control)
+            return
+
+        else:
+            self.control.saveDir = os.path.split(self.path)[0] + '/'
+            self._save(self.path)
+            return
+
+        # _dialog.saveFile(self.control)
 
     def _save(self, path):
         self.control.saveDir = os.path.split(path)[0] + '/'
@@ -754,6 +759,31 @@ class Story(object):
                     print "SCENE", index, sc.title
                 sc.correspond(control, verbose=verbose)
                 index += 1
+
+    def loadSceneHistories(self, sequence):
+
+        for dataScene in sequence['scenes']:
+            if 'events' in dataScene.keys():
+                for event in dataScene['events']:
+
+                    scene = event['scene']
+                    page = event['page']
+                    line = event['line']
+                    offset = event['offset']
+                    text = event['text']
+                    tags = event['tags']
+
+                    if event['name'] == 'Insertion':
+                        evt = _event.Insertion(scene, page, line, offset, text, tags)
+                    elif event['name'] == 'Deletion':
+                        evt = _event.Deletion(scene, page, line, offset, text, tags)
+                    elif event['name'] == "Backspace":
+                        evt = _event.Backspace(scene, page, line, offset, text, tags)
+                        evt.carryText = event['carryText']
+
+                    self.sequences[0].scenes[event['scene']].events.append(evt)
+                    self.sequences[0].scenes[event['scene']].eventIndex = dataScene['eventIndex']
+                    self.sequences[0].scenes[event['scene']].sessionEventIndex = dataScene['eventIndex']
 
 
 class MispelledWord(object):

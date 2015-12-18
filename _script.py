@@ -2232,6 +2232,11 @@ class TextView(Gtk.TextView):
             removeWord.show()
             removeWord.connect('activate', self.removeWord, removeSelectedWord)
 
+        clearHistory = Gtk.MenuItem("Clear History")
+        popup.append(clearHistory)
+        clearHistory.show()
+        clearHistory.connect('activate', self.clearHistory)
+
         authorContact = Gtk.MenuItem("Set Author/Contact")
         popup.append(authorContact)
         authorContact.show()
@@ -2241,6 +2246,10 @@ class TextView(Gtk.TextView):
         popup.append(help)
         help.show()
         help.connect('activate', self.help)
+
+    def clearHistory(self, arg):
+        for scene in self.control.currentSequence().scenes:
+            scene.clearHistory()
 
     def leaveNotify(self, widget, event):
         self.forceWordEvent()
@@ -2321,7 +2330,6 @@ class TextView(Gtk.TextView):
             self.selectionTags = []
 
         self.control.copyClipboard.lines = list(self.selectedClipboard)
-
 
     def do_drag_drop(self, context, x, y, time):
         self.control.notImplemented()

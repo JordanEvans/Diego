@@ -31,8 +31,6 @@ class Window(Gtk.Window):
 
     def keyPress(self, widget, event):
 
-        print event.keyval
-
         if event.state & Gdk.ModifierType.SHIFT_MASK:
             if event.state & Gdk.ModifierType.CONTROL_MASK:
                 if event.keyval==83: # save as
