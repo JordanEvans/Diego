@@ -348,7 +348,7 @@ class Backspace(Event):
         if self.offset == 0:
             self.carryText = eventLine.text
 
-            previousLine = self.page.lines[self.line - 1]
+            previousLine = page.lines[self.line - 1]
             previousLine.text += self.carryText
 
             page.lines.remove(eventLine)
