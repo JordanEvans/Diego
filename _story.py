@@ -402,7 +402,7 @@ class Story(object):
         self.index = StoryIndex()
 
         self.saved = True
-        self.horizontalPanePosition = 150
+
 
         self.names = []
         self.intExt = ['INT', 'EXT']
@@ -474,6 +474,7 @@ class Story(object):
         pass
 
     def load(self):
+        print "load", self.path
         if self.path != None and os.path.exists(self.path):
             self._load()
             return
@@ -516,8 +517,6 @@ class Story(object):
             for sc in sq.scenes:
                 self.control.eventManager.initSceneHistory(sc, events)
 
-        self.horizontalPanePosition = data['horizontalPanePosition']
-
         self.updateCompletionNames()
 
         if 'isScreenplay' in data.keys():
@@ -530,12 +529,18 @@ class Story(object):
     def uniquePath(self):
         count = 1
 
-        if not os.path.exists(self.control.saveDir + self.control.currentStory().title):
-            return self.control.saveDir + self.control.currentStory().title
+        title = self.control.currentStory().title
 
-        while os.path.exists(self.control.saveDir + self.control.currentStory().title + "-" + str(count)):
+        split = title.split("-")
+        if split[0] == "Untitled":
+            title = "Untitled"
+
+        if not os.path.exists(self.control.saveDir + title):
+            return self.control.saveDir + title
+
+        while os.path.exists(self.control.saveDir + title + "-" + str(count)):
             count += 1
-        return self.control.saveDir + self.control.currentStory().title + "-" + str(count)
+        return self.control.saveDir + title + "-" + str(count)
 
     def save(self,):
 
@@ -586,6 +591,12 @@ class Story(object):
         self.updateCompletionNames()
         self.updateLocations()
         self.updateTimes()
+
+        self.updateSceneSessionPoints()
+
+    def updateSceneSessionPoints(self):
+        for sc in self.currentSequence().scenes:
+            sc.sessionEventIndex = sc.eventIndex
 
     def default(self):
         self.control.historyEnabled = True
@@ -641,7 +652,7 @@ class Story(object):
         data["synopsis"] = self.synopsis
         data["notes"] = self.notes
         data['info'] = self.info
-        data['horizontalPanePosition'] = self.control.scriptView.paned.get_position()
+        data['scriptViewPanedPosition'] = self.control.scriptView.paned.get_position()
         data['isScreenplay'] = self.isScreenplay
         return data
 
@@ -780,6 +791,14 @@ class Story(object):
                     elif event['name'] == "Backspace":
                         evt = _event.Backspace(scene, page, line, offset, text, tags)
                         evt.carryText = event['carryText']
+
+                    elif event['name'] == "FormatLines":
+                        evt = _event.FormatLines(scene, page, line, offset, text, tags)
+
+                    if 'beforeTags' in event.keys():
+                        evt.beforeTags = event['beforeTags']
+                    if 'pushedOffHeading' in event.keys():
+                        evt.pushedOffHeading = event['pushedOffHeading']
 
                     self.sequences[0].scenes[event['scene']].events.append(evt)
                     self.sequences[0].scenes[event['scene']].eventIndex = dataScene['eventIndex']

@@ -5,7 +5,7 @@ import _story
 
 class Event(object):
     def __init__(self, chained=False):
-        print self.__class__.__name__, "Event"
+        # print self.__class__.__name__, "Event"
         self.chained = chained
 
         self.scene = None
@@ -14,6 +14,9 @@ class Event(object):
         self.offset = None
         self.text = None
         self.tags = None
+
+        self.beforeTags = []
+        self.pushedOffHeading = False
 
     def redo(self):
         pass
@@ -30,6 +33,9 @@ class Event(object):
         data["offset"] = self.offset
         data['text'] = self.text
         data['tags'] = self.tags
+
+        data['beforeTags'] = self.beforeTags
+        data['pushedOffHeading'] = self.pushedOffHeading
         return data
 
 
@@ -43,49 +49,25 @@ class Insertion(Event):
         self.text = text
         self.tags = tags
 
-    def undo(self, control):
-        control.category = 'scene'
-        control.indexView.stack.set_visible_child_name("scene")
+        self.pushedOffHeading = False
+
+    def viewUpdate(self, control):
 
         scene = control.currentSequence().scenes[self.scene]
         page = scene.pages[self.page]
-
-        undo = Deletion(self.scene, self.page, self.line, self.offset, self.text, self.tags)
-        undo.viewUpdate(control)
-        undo.modelUpdate(control)
-
-        control.scriptView.textView.grab_focus()
-
-    def redo(self, control):
-
-        control.category = 'scene'
-        control.indexView.stack.set_visible_child_name("scene")
-
-        self.modelUpdate(control)
-        self.viewUpdate(control)
-
-        control.scriptView.textView.grab_focus()
-
-    def viewUpdate(self, control, pushedOffHeading=False):
-
-        scene = control.currentSequence().scenes[self.scene]
-        page = scene.pages[self.page]
-
         eventLine = page.lines[self.line]
         bufferIndex = control.scriptView.lines.index(eventLine)
 
         insertIter = control.scriptView.textView.iterAtLocation(bufferIndex, self.offset)
         control.scriptView.textView.get_buffer().insert(insertIter, self.text, len(self.text))
 
-        firstLine = eventLine
+        tags = list(self.tags)
 
-        index = control.scriptView.lines.index(firstLine)
-        for tag in self.tags:
-            control.scriptView.lines[index].tag = tag
-            control.scriptView.textView.updateLineTag(index)
-            index += 1
+        for i in range(len(tags)):
+            control.scriptView.lines[bufferIndex + i].tag = tags[i]
+            control.scriptView.textView.updateLineTag(bufferIndex + i)
 
-        if pushedOffHeading:
+        if self.pushedOffHeading:
             insertIter = control.scriptView.textView.insertIter()
             insertIter.backward_char()
             control.scriptView.textView.get_buffer().place_cursor(insertIter)
@@ -103,58 +85,71 @@ class Insertion(Event):
 
         eventLine = page.lines[self.line]
 
-        firstLine = eventLine
+        tags = list(self.tags)
 
         # Only inserting text, no new lines.
         if len(lines) == 1:
             word = lines[0]
             cs = control.currentStory()
             insertOffset = cs.index.offset
-            first = firstLine.text[:self.offset]
-            last = firstLine.text[self.offset:]
+            first = eventLine.text[:self.offset]
+            last = eventLine.text[self.offset:]
             text = first + word + last
-            firstLine.text = text
-            firstLine.tag = self.tags[0]
+            eventLine.text = text
+            eventLine.tag = tags[0]
 
         else:
-            if pushedOffHeading:
-                self.tags[1] = self.tags[0]
-                self.tags[0] = 'description'
-
-            lineTags = list(self.tags)
 
             # Inserting extra lines, carry text will be set.
-            carryText = firstLine.text[self.offset:]
+            carryText = eventLine.text[self.offset:]
 
             # The line of insertion already exists, so it will not need to be made.
-            firstLineAppendText = lines.pop(0)
-            firstLineTag = lineTags.pop(0)
+            eventLineAppendText = lines.pop(0)
+            eventLineTag = tags.pop(0)
 
             # The carry text needs to be removed from the current line.
-            firstLine.text = firstLine.text[:self.offset]
+            eventLine.text = eventLine.text[:self.offset]
 
             # Append inserted text at the end of the first line.
-            firstLine.text = firstLine.text + firstLineAppendText
+            eventLine.text = eventLine.text + eventLineAppendText
 
             # Create and insert all new lines.
-            insertIndex = page.lines.index(firstLine) + 1
-            scriptLineIndex = control.scriptView.lines.index(firstLine) + 1
-            index = 0
-            firstLine.tag = firstLineTag
+            insertIndex = page.lines.index(eventLine) + 1
+            scriptLineIndex = control.scriptView.lines.index(eventLine) + 1
 
-            for line in lines:
-                newLine = _story.Line(lines[index], tag=lineTags[index])
-                newLine.heading = firstLine.heading
-                page.lines.insert(insertIndex + index, newLine)
+            for i in range(len(lines)):
+                newLine = _story.Line(lines[i], tag=tags[i])
+                newLine.heading = eventLine.heading
+                page.lines.insert(insertIndex + i, newLine)
 
                 # ScriptView need a reference to each line as well.
-                control.scriptView.lines.insert(scriptLineIndex + index, newLine)
-
-                # self.newLines.append(newLine)
-                index += 1
+                control.scriptView.lines.insert(scriptLineIndex + i, newLine)
 
             # Last line will get the carry text.
             newLine.text += carryText
+
+    def undo(self, control):
+        control.category = 'scene'
+        control.indexView.stack.set_visible_child_name("scene")
+
+        scene = control.currentSequence().scenes[self.scene]
+        page = scene.pages[self.page]
+
+        undo = Deletion(self.scene, self.page, self.line, self.offset, self.text, self.beforeTags)
+        undo.modelUpdate(control)
+        undo.viewUpdate(control)
+
+        control.scriptView.textView.grab_focus()
+
+    def redo(self, control):
+
+        control.category = 'scene'
+        control.indexView.stack.set_visible_child_name("scene")
+
+        self.modelUpdate(control)
+        self.viewUpdate(control)
+
+        control.scriptView.textView.grab_focus()
 
 
 class Deletion(Event):
@@ -184,7 +179,12 @@ class Deletion(Event):
 
         control.scriptView.textView.get_buffer().delete(startIter, endIter)
 
-        control.scriptView.textView.updateLineTag(bufferIndex, self.tags[0])
+        tags = list(self.tags)
+
+        tags = tags[:1]
+
+        for i in range(len(tags)):
+            control.scriptView.textView.updateLineTag(bufferIndex + i, tags[i])
 
         afterDeleteIter = control.scriptView.textView.iterAtLocation(bufferIndex, self.offset)
         control.scriptView.textView.get_buffer().place_cursor(afterDeleteIter)
@@ -210,31 +210,22 @@ class Deletion(Event):
             return firstLine
 
         elif len(lines) == 2:
-            # if not isDeleteKey:
-            #     startLineIndex = control.scriptView.textView.selectionIterStart.get_line()
-            #     firstLine = control.scriptView.lines[startLineIndex]
-            #     self.offset = control.scriptView.textView.selectionIterStart.get_line_offset()
 
             # Get the text on the first line beginning at the start of the selection.
             firstLineText = firstLine.text[:self.offset]
             firstLine.text = firstLineText
-            # firstLineCarryText = firstLineText
 
-            # endOffset = control.scriptView.textView.selectionIterEnd.get_line_offset()
             endOffset = len(lines[1])
 
             if not isDeleteKey:
                 firstLineIndex = control.scriptView.lines.index(firstLine)
                 line2 =  control.scriptView.lines[firstLineIndex + len(lines) - 1]
 
-                # line2 = control.scriptView.lines[startSelectionLine +1]
-                # line2 = control.scriptView.lines[endLineIndex]
             else:
                 line2 = firstLine.after(control)
 
             # Get the text on the second line beginning up to the end of the selection.
             lastLineText = line2.text[endOffset:]
-            # line2.text = lastLineText
             lastLineCarryText = lastLineText
 
             # Remove the second line
@@ -244,24 +235,17 @@ class Deletion(Event):
             # Line one will get the both texts appended.
             firstLine.text = firstLineText + lastLineText
 
-            # If the first line's text is all deleted, the tag on the second line will be used, unless it has no text.
-            # The other two cases will keep line one's tag by default.
-            # if len(firstLineCarryText) == 0 and len(lastLineCarryText) > 0:
-            #     firstLine.tag = line2.tag
-
         else:
 
             # Get the text on the first line beginning at the start of the selection.
             firstLineText = firstLine.text[:self.offset]
             firstLine.text = firstLineText
-            # self.firstLineCarryText = firstLineText
 
             lastLine = control.scriptView.lines[bufferIndex + len(lines) - 1]
             endOffset = len(lines[-1])
 
             # Get the text on the second line beginning up to the end of the selection.
             lastLineText = lastLine.text[endOffset:]
-            # lastLine.text = lastLineText
 
             # Gather lines to remove.
             removeLines = []
@@ -277,6 +261,16 @@ class Deletion(Event):
             # Set the first line text.
             firstLine.text = firstLineText + lastLineText
 
+        tags = list(self.tags)
+
+        tags = tags[:1]
+
+        for i in range(len(tags)):
+            control.scriptView.textView.updateLineTag(bufferIndex + i, tags[i])
+
+        for i in range(len(tags)):
+            control.scriptView.lines[bufferIndex + i].tag = tags[i]
+
         return firstLine
 
     def undo(self, control):
@@ -286,9 +280,9 @@ class Deletion(Event):
         scene = control.currentSequence().scenes[self.scene]
         page = scene.pages[self.page]
 
-        redo = Insertion(self.scene, self.page, self.line, self.offset, self.text, self.tags)
-        redo.modelUpdate(control)
-        redo.viewUpdate(control)
+        undo = Insertion(self.scene, self.page, self.line, self.offset, self.text, self.beforeTags)
+        undo.modelUpdate(control)
+        undo.viewUpdate(control)
 
         eventLine = page.lines[self.line]
         bufferIndex = control.scriptView.lines.index(eventLine)
@@ -335,13 +329,13 @@ class Backspace(Event):
 
         control.scriptView.textView.get_buffer().delete(startIter, endIter)
 
-        control.scriptView.textView.updateLineTag(bufferIndex, self.tags[0])
+        if self.offset != 0:
+            control.scriptView.textView.updateLineTag(bufferIndex, self.tags[0])
 
     def modelUpdate(self, control, isBackspaceKey=False, isDeleteKey=False):
 
         scene = control.currentSequence().scenes[self.scene]
         page = scene.pages[self.page]
-
         eventLine = page.lines[self.line]
         bufferIndex = control.scriptView.lines.index(eventLine)
 
@@ -450,14 +444,69 @@ class Backspace(Event):
         return data
 
 
-class Format(Event):
-    def __init__(self, scene, page, line, oldTag, newTag):
+class FormatLines(Event):
+    def __init__(self, scene, page, line, offset, text, tags):
         Event.__init__(self)
         self.scene = scene
         self.page = page
         self.line = line
-        self.oldTag = oldTag
-        self.newTag = newTag
+        self.offset = offset
+        self.text = text
+        self.tags = tags
+
+        self.beforeTags = []
+
+    def viewUpdate(self, control):
+        scene = control.currentSequence().scenes[self.scene]
+        page = scene.pages[self.page]
+        eventLine = page.lines[self.line]
+        bufferIndex = control.scriptView.lines.index(eventLine)
+
+        for i in range(len(self.tags)):
+            control.scriptView.textView.updateLineTag(bufferIndex + i, self.tags[i])
+
+    def modelUpdate(self, control):
+        scene = control.currentSequence().scenes[self.scene]
+        page = scene.pages[self.page]
+        eventLine = page.lines[self.line]
+
+        for i in range(len(self.tags)):
+            eventLine.tag = self.tags[i]
+            eventLine = eventLine.after(control)
+
+    def undo(self, control):
+
+        scene = control.currentSequence().scenes[self.scene]
+        page = scene.pages[self.page]
+        eventLine = page.lines[self.line]
+        bufferIndex = control.scriptView.lines.index(eventLine)
+
+        for i in range(len(self.beforeTags)):
+            eventLine.tag = self.beforeTags[i]
+            eventLine = eventLine.after(control)
+
+        for i in range(len(self.beforeTags)):
+            control.scriptView.textView.updateLineTag(bufferIndex + i, self.beforeTags[i])
+
+        afterEventIter = control.scriptView.textView.iterAtLocation(bufferIndex, self.offset)
+        control.scriptView.textView.get_buffer().place_cursor(afterEventIter)
+
+        control.scriptView.textView.resetGlobalMargin(self.beforeTags[0])
+
+    def redo(self, control):
+
+        self.modelUpdate(control)
+        self.viewUpdate(control)
+
+        scene = control.currentSequence().scenes[self.scene]
+        page = scene.pages[self.page]
+        eventLine = page.lines[self.line]
+        bufferIndex = control.scriptView.lines.index(eventLine)
+
+        afterEventIter = control.scriptView.textView.iterAtLocation(bufferIndex, self.offset)
+        control.scriptView.textView.get_buffer().place_cursor(afterEventIter)
+
+        control.scriptView.textView.resetGlobalMargin(self.tags[0]) # this may cause a problem, only a multiple line format, whatever does multiline should set tag on cursor line after format.
 
 
 class StartHistoryEvent(Event):
@@ -516,6 +565,8 @@ class EventManager(object):
         scene.eventIndex = len(scene.events) -1
 
     def addEvent(self, event):
+
+        self.control.searchView.reset()
         currentScene = self.control.currentScene()
 
         # If went back in history and adding, slice off history ahead.
@@ -523,45 +574,28 @@ class EventManager(object):
             currentScene.events = currentScene.events[:currentScene.eventIndex +1]
             if self.control.currentScene().eventIndex < self.control.currentScene().sessionEventIndex:
                 self.control.currentScene().sessionEventIndex = self.control.currentScene().eventIndex
-            self.control.updateColor()
+            self.control.updateHistoryColor()
 
         currentScene.events.insert(currentScene.eventIndex +1, event)
         currentScene.eventIndex +=1
 
     def undo(self):
+        self.control.searchView.reset()
         self.control.currentScene().undo(self.control)
-
-        self.control.updateColor()
+        self.control.updateHistoryColor()
+        self.scroll()
 
     def redo(self):
+        self.control.searchView.reset()
         self.control.currentScene().redo(self.control)
+        self.control.updateHistoryColor()
+        self.scroll()
 
-        self.control.updateColor()
+    def scroll(self):
+        lineIndex = self.control.scriptView.textView.insertIter().get_line()
+        scrollIter = self.control.scriptView.textView.get_buffer().get_iter_at_line(lineIndex)
+        self.control.scriptView.textView.scroll_to_iter(scrollIter, 0, 0, 0, True)
 
-    # def updateColor(self):
-    #     val = 0.94
-    #     selectColor = Gdk.RGBA(0.75, 0.75, 0.85, 1.0)
-    #     forground = Gdk.RGBA(0.0, 0.0, 0.0, 1.0)
-    #     if self.control.currentScene().eventIndex < len(self.control.currentScene().events) - 1:
-    #         color = Gdk.RGBA(val, val, val, 1.0)
-    #         self.control.scriptView.textView.modify_bg(Gtk.StateType.NORMAL, color.to_color())
-    #         self.control.scriptView.textView.modify_bg(Gtk.StateType.SELECTED, selectColor.to_color())
-    #         self.control.scriptView.textView.modify_fg(Gtk.StateType.SELECTED, forground.to_color())
-    #     else:
-    #         color = Gdk.RGBA(1.0, 1.0, 1.0, 1.0)
-    #         self.control.scriptView.textView.modify_bg(Gtk.StateType.NORMAL, color.to_color())
-    #         self.control.scriptView.textView.modify_bg(Gtk.StateType.SELECTED, selectColor.to_color())
-    #         self.control.scriptView.textView.modify_fg(Gtk.StateType.SELECTED, forground.to_color())
-    #
-    #     self.control.scriptView.textView.descriptionTag.props.background_rgba = color
-    #     self.control.scriptView.textView.characterTag.props.background_rgba = color
-    #     self.control.scriptView.textView.dialogTag.props.background_rgba = color
-    #     self.control.scriptView.textView.parentheticTag.props.background_rgba = color
-    #     self.control.scriptView.textView.sceneHeadingTag.props.background_rgba = color
-    #
-    #     for he in self.control.scriptView.headingEntries:
-    #         he.modify_bg(Gtk.StateType.NORMAL, color.to_color())
-    #
 
 class View(object):
     pass

@@ -84,6 +84,9 @@ class Control(object):
 
         self.clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
 
+        self.scriptViewPanedPosition = 150
+        self.settingPanedWithEsc = False
+
     def mispelledTimer(self):
         GObject.timeout_add(1000, self.removeMispelledTags)
 
@@ -180,7 +183,7 @@ class Control(object):
         self.startingUpApp = False
 
         self.appBox.paned.set_position(self.verticalPanePosition)
-        self.scriptView.paned.set_position(self.currentStory().horizontalPanePosition)
+        # self.scriptView.paned.set_position(self.state.scriptViewPanedPosition)
 
         self.historyEnabled = True
 
@@ -308,14 +311,14 @@ class Control(object):
     def screenplayMode(self):
         return self.screenplayModeSwitch.get_active()
 
-    def updateColor(self):
+    def updateHistoryColor(self):
         val = 0.94
         selectColor = Gdk.RGBA(0.75, 0.75, 0.85, 1.0)
         forground = Gdk.RGBA(0.0, 0.0, 0.0, 1.0)
         if self.currentScene().eventIndex < len(self.currentScene().events) - 1:
             if self.currentScene().eventIndex < self.currentScene().sessionEventIndex:
-                rg = 0.75
-                color = Gdk.RGBA(rg, rg, 1.0, 1.0)
+                color = Gdk.RGBA(0.90, 0.95, 1.0, 1.0)
+
             else:
                 color = Gdk.RGBA(val, val, val, 1.0)
             self.scriptView.textView.modify_bg(Gtk.StateType.NORMAL, color.to_color())

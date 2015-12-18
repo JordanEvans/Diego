@@ -84,6 +84,7 @@ class View(Gtk.Box):
         self.finds = []
         self.scrollFindOffSet = 0
         self.lastScrollFind = None
+        self.lastKeyPress = None
 
     def reset(self):
         self.lastScrollFind = None
@@ -102,6 +103,10 @@ class View(Gtk.Box):
                 self.applyFindTags()
 
             self.scrollToNextFindTag()
+        else:
+            self.find = None
+
+        self.lastKeyPress = event.keyval
 
     def removeFindTags(self):
         for line in self.control.scriptView.lines:

@@ -31,6 +31,8 @@ class State(object):
         data['storyIndex'] = self.control.index
         data['author'] = self.author
         data['contact'] = self.contact
+        data['scriptViewPanedPosition'] = self.control.scriptView.paned.get_position()
+
 
         try:
             with open(self.path, 'w') as fp:
@@ -83,6 +85,7 @@ class State(object):
 
                         self.author = data['author']
                         self.contact = data['contact']
+                        self.scriptViewPanedPosition = data['scriptViewPanedPosition']
 
                     except:
                         exceptionText = "State Data Error : State file did not load open. The state file data may be corrupted."

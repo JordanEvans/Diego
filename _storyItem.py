@@ -69,22 +69,25 @@ class View(_item.Item):
         if len(title) == 0:
             title = self.startEditTitle
 
-        self.control.currentStory().path = None
+        cs = self.control.currentStory()
+        if title != self.startEditTitle:
+            path = cs.path
+            if path is None:
+                cs.path = self.control.saveDir + title
+            else:
+                split = os.path.split(path)
+                cs.path = split[0] + "/" + title
 
-        # storyPath = self.control.currentStory().path
-        #
-        # if storyPath == None:
         self.saving = True
-        self.control.currentStory().save()
+        cs.save()
         self.saving = False
-        title = self.control.currentStory().title
 
         self.vbox.remove(self.label)
         self.label = Gtk.Label()
         self.label.set_text(title)
         self.vbox.pack_start(self.label, 0, 0, 0)
         self.show_all()
-        self.control.currentStory().title = title
+        cs.title = title
         self.control.storyItemBox.reset()
         self.control.storyItemBox.load()
         self.control.storyItemBox.show_all()

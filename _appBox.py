@@ -1,6 +1,15 @@
 from gi.repository import Gtk
 
 
+class Paned(Gtk.Paned):
+
+    def __init__(self):
+        Gtk.Paned.__init__(self, )
+
+        self.connect('focus-out-event', self.test)
+
+    def test(self):
+        print self.get_position()
 
 class AppBox(Gtk.Box):
 
@@ -38,7 +47,7 @@ class AppBox(Gtk.Box):
         self.control.appHeaderBar.pack_end(self.control.screenplayModeSwitch)
 
         # Add Paned, which includes IndexView on left and ScriptView on right.
-        self.paned = Gtk.Paned()
+        self.paned = Paned()
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
         hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         vbox.pack_start(hbox, 1, 1, 0)

@@ -61,7 +61,7 @@ class App(object):
         except:
             print "spellcheck not active"
 
-        pass
+        self.control.scriptView.paned.set_position(self.control.state.scriptViewPanedPosition)
 
     def loadTrie(self):
         import marisa_trie
