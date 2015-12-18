@@ -314,8 +314,8 @@ class Control(object):
         forground = Gdk.RGBA(0.0, 0.0, 0.0, 1.0)
         if self.currentScene().eventIndex < len(self.currentScene().events) - 1:
             if self.currentScene().eventIndex < self.currentScene().sessionEventIndex:
-                rg = 0.95
-                color = Gdk.RGBA(1.0, rg, rg, 1.0)
+                rg = 0.85
+                color = Gdk.RGBA(rg, 1.0, rg, 1.0)
             else:
                 color = Gdk.RGBA(val, val, val, 1.0)
             self.scriptView.textView.modify_bg(Gtk.StateType.NORMAL, color.to_color())
