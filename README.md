@@ -8,7 +8,7 @@ Diego has traded feature bloat for simplicity. Only features that are necessary 
 
 Each Story, Scene and Page has an Outlining Text area that allows the writer to outline their story by creating abstracts. This Outlining Text area works as a convenient place to store premises for new story ideas that may later turn into a full script.
 
-When Diego saves, three documents are created: the Diego document, an RTF for extra tweaking, and a PDF.
+Diego does not need to be saved, it saves each document on shutdown of the app. History is infinite, but can be cleared via right click. A white background means you are treading new ground. A gray background means you have undone in this area. Green means you have saved this in the last session and have not undone in that area. When Diego saves, three documents are created: the Diego document, an RTF for extra tweaking, and a PDF.
 
 <b>Graphic Novel Mode</b>
 
@@ -93,6 +93,10 @@ Go to the Story, Scene or Page you want to write the abstract and type it in the
 
 Control + s.  Also creates an rtf and pdf (if you have libreoffice installed).
 
+<b>Save Story</b>
+
+Control + Shift + s.  Also, just rename by double clicking the Story Title in Story View (but you will be working with the newly named document from that point on.)
+
 <b>Open Story</b>
 
 Control + o
@@ -126,5 +130,11 @@ Press Atl + i, this information will be inserted into rtf and pdfs.
 <b>Move A Scene/Page</b>
 
 Select the Scene or Page to be moved in the Scene/Page View.  Hold down Control key and press up or down arrow key.
+
+<i>Not implemented yet.</i>
+
+<b>Set Backup Disk</b>
+
+Select Set Backup Disk from Right Click Menu. Follow prompt.
 
 <i>Not implemented yet.</i>
