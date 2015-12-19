@@ -709,6 +709,7 @@ class Story(object):
 
         self.names.sort()
 
+
     def updateLocations(self):
         self.locations = []
         sh = _script.SceneHeading()

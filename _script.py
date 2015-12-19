@@ -612,8 +612,7 @@ class TextView(Gtk.TextView):
                 newLineEvent.viewUpdate(self.control)
 
             else:
-
-                tags = [newLineTag, currentLineTag]
+                tags = [currentLineTag, newLineTag ]
 
                 cl = self.control.currentLine()
                 cp = self.control.currentPage()
@@ -627,13 +626,10 @@ class TextView(Gtk.TextView):
                     self.control.currentStory().index.offset,
                     '\n',
                     tags)
-
                 event.beforeTags = [currentLineTag]
-
                 event.modelUpdate(self.control)
-                self.control.eventManager.addEvent(event)
-
                 event.viewUpdate(self.control)
+                self.control.eventManager.addEvent(event)
 
         else:
 
@@ -1102,6 +1098,8 @@ class TextView(Gtk.TextView):
                     # Here we begin the first completion.
                     if self.nameIter == None and not insideWord:
 
+                        print "start Iter"
+
                         self.nameIter = NameIter(prefixes, character)
 
                         # get rid of first upper case that is in self.word
@@ -1158,6 +1156,8 @@ class TextView(Gtk.TextView):
                         # Here means we atleast autocompleted once and continue to do so.
                         if self.nameIter.initChar == character:
 
+                            print "iter iter"
+
                             # Bring the next name forward and complete it.
                             self.nameIter.increment()
                             self.completeWordOnLine(self.nameIter.name(), 0, isSceneHeading=False)
@@ -1166,6 +1166,8 @@ class TextView(Gtk.TextView):
 
                         # Here we have been completing, but changed the start letter of the character name.
                         else:
+
+                            print "change iter"
 
                             # Reset the NameIter and complete
                             self.nameIter = NameIter(prefixes, character)
@@ -1211,12 +1213,12 @@ class TextView(Gtk.TextView):
 
         index = self.control.scriptView.lines.index(cl)
 
-        if len(name):
-            tag = self.tagIter.tag()
-            if isSceneHeading:
-                tag = "sceneHeading"
-            self.control.scriptView.lines[index].tag = tag
-            self.control.scriptView.textView.updateLineTag(index)
+        # if len(name):
+        #     tag = self.tagIter.tag()
+        #     if isSceneHeading:
+        #         tag = "sceneHeading"
+        #     self.control.scriptView.lines[index].tag = tag
+        #     self.control.scriptView.textView.updateLineTag(index)
 
         self.control.currentStory().index.offset = self.control.currentStory().index.offset - completionOffsetAdjustment + len(name)
 
@@ -1656,6 +1658,7 @@ class TextView(Gtk.TextView):
             endIter.forward_to_line_end()
 
         text = self.get_buffer().get_text(startIter, endIter, True)
+        # self.control.p(text)
 
         self.get_buffer().remove_all_tags(startIter, endIter)
 

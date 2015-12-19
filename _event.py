@@ -64,6 +64,7 @@ class Insertion(Event):
         tags = list(self.tags)
 
         for i in range(len(tags)):
+            line = control.scriptView.lines[bufferIndex + i]
             control.scriptView.lines[bufferIndex + i].tag = tags[i]
             control.scriptView.textView.updateLineTag(bufferIndex + i)
 
