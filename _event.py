@@ -1,7 +1,12 @@
 
+import os, json
+
 from gi.repository import Gtk, Gdk
 
 import _story
+
+HISTORY_ITEM_LIMIT_PER_FILE = 3
+
 
 class Event(object):
     def __init__(self, chained=False):
@@ -428,9 +433,9 @@ class Backspace(Event):
 
         control.scriptView.textView.grab_focus()
 
-    def data(self, currentStory):
+    def data(self, control):
 
-        scene = currentStory.sequences[0].scenes[self.scene]
+        scene = control.currentStory().sequences[0].scenes[self.scene]
         page = scene.pages[self.page]
 
         data = {}
@@ -510,7 +515,7 @@ class FormatLines(Event):
         control.scriptView.textView.resetGlobalMargin(self.tags[0]) # this may cause a problem, only a multiple line format, whatever does multiline should set tag on cursor line after format.
 
 
-class StartHistoryEvent(Event):
+class Start(Event):
 
     def __init__(self, ):
         Event.__init__(self)
@@ -532,26 +537,66 @@ class StartHistoryEvent(Event):
         data['tags'] = None
         return data
 
-# class NewPageEvent(Event):
-#
-#     def __init__(self, data, index):
-#         Event.__init__(self)
-#         self.data = data
-#         self.index = _story.StoryIndex(index.__dict__)
-#
-#     def undo(self, control):
-#         control.currentScene().pages.remove(self.data)
-#         control.reset(False)
-#         index = _story.StoryIndex(self.index)
-#         index.page -=1
-#         control.currentStory().index = index
-#         control.load(False)
-#
-#     def redo(self, control):
-#         control.currentScene().pages.insert(self.index.page, self.data)
-#         control.reset(False)
-#         control.currentStory().index = _story.StoryIndex(self.index.__dict__)
-#         control.load(False)
+
+class Page(Event):
+
+    def __init__(self, scene, page):
+        Event.__init__(self)
+        self.scene = scene # this is the index of the new page
+        self.page = page
+
+    def undo(self, control):
+
+        control.currentScene().pages.pop(self.page)
+        cs = control.currentStory()
+        if self.page == 0:
+            cs.index.page = 0
+        else:
+            cs.index.page = self.page - 1
+
+        cs.index.line = 0
+        cs.index.offset = 0
+
+        row = control.pageItemBox.rowAtIndex(self.page)
+        control.pageItemBox.listbox.remove(row)
+        control.pageItemBox.updateNumberated()
+
+        control.category = 'scene'
+        control.indexView.stack.set_visible_child_name("scene")
+
+        control.scriptView.resetAndLoad()
+        control.scriptView.show_all()
+
+        control.scriptView.textView.grab_focus()
+
+
+    def redo(self, control):
+
+        page = _story.Page()
+        scene = control.currentSequence().scenes[self.scene]
+
+        control.currentStory().index.page = self.page
+
+        control.currentStory().index.line = 0
+        control.currentStory().index.offset = 0
+        scene.pages.insert(self.page, page)
+
+
+        control.reset(data=False)
+        control.scriptView.updateTitles()
+        control.load(data=False)
+
+        row = control.pageItemBox.rowAtIndex(self.page)
+        control.pageItemBox.listbox.remove(row)
+        control.pageItemBox.updateNumberated()
+
+        control.category = 'scene'
+        control.indexView.stack.set_visible_child_name("scene")
+
+        control.scriptView.resetAndLoad()
+        control.scriptView.show_all()
+
+        control.scriptView.textView.grab_focus()
 
 
 class EventManager(object):
@@ -559,36 +604,113 @@ class EventManager(object):
     def __init__(self, control):
         self.control = control
 
-    def initSceneHistory(self, scene, events=[]):
-        scene.events = [StartHistoryEvent()]
-        if len(events):
-            scene.events = event
-        scene.eventIndex = len(scene.events) -1
-
     def addEvent(self, event):
 
-        self.control.searchView.reset()
         currentScene = self.control.currentScene()
+        currentScene.eventCount += 1
 
-        # If went back in history and adding, slice off history ahead.
-        if len(currentScene.events) > currentScene.eventIndex:
-            currentScene.events = currentScene.events[:currentScene.eventIndex +1]
-            if self.control.currentScene().eventIndex < self.control.currentScene().sessionEventIndex:
-                self.control.currentScene().sessionEventIndex = self.control.currentScene().eventIndex
-            self.control.updateHistoryColor()
+        currentScene.saveIndex += 1
 
-        currentScene.events.insert(currentScene.eventIndex +1, event)
-        currentScene.eventIndex +=1
+        # If an undone occured, then remove all events ahead of current event.
+        if currentScene.hasUndone:
+            currentScene.undoIndex = 0
+            # currentScene.eventCount -= 1
+            # currentScene.eventCount -= currentScene.undoIndex
+            # currentScene.eventCount += 1
+
+            if currentScene.saveIndex < 0:
+                currentScene.saveIndex = 0
+
+            currentScene.archiveManager.removeEventsAfterIndex(currentScene.eventIndex + 1)
+            currentScene.archiveManager.removePathsAfterIndex(currentScene.archiveManager.pathIndex)
+            currentScene.hasUndone = False
+            currentScene.archiveManager.save()
+
+        if self.control.scriptView.textView.undoing:
+
+            if len(currentScene.archiveManager.events) == HISTORY_ITEM_LIMIT_PER_FILE:
+
+                if currentScene.archiveManager.currentPathExists():
+                    currentScene.archiveManager.save()
+
+                    currentScene.archiveManager.events = {}
+                    currentScene.eventIndex = 0
+                    currentScene.archiveManager.events[currentScene.eventIndex] = event
+                    currentScene.archiveManager.pathIndex += 1
+                    currentScene.archiveManager.appendExistingPath()
+                    currentScene.archiveManager.save()
+
+                else:
+                    currentScene.archiveManager.pathIndex += 1
+                    currentScene.archiveManager.appendExistingPath()
+                    currentScene.archiveManager.save()
+
+                    currentScene.archiveManager.events = {}
+                    currentScene.eventIndex = 0
+                    currentScene.archiveManager.events[currentScene.eventIndex] = event
+                    currentScene.archiveManager.pathIndex += 1
+                    currentScene.archiveManager.appendExistingPath()
+                    currentScene.archiveManager.save()
+
+            else:
+
+                if currentScene.archiveManager.currentPathExists():
+                    currentScene.eventIndex += 1
+                    currentScene.archiveManager.events[currentScene.eventIndex] = event
+                    currentScene.archiveManager.save()
+
+                else:
+                    currentScene.eventIndex += 1
+                    currentScene.archiveManager.events[currentScene.eventIndex] = event
+                    currentScene.archiveManager.pathIndex += 1
+                    currentScene.archiveManager.appendExistingPath()
+                    currentScene.archiveManager.save()
+
+        else:
+
+            if len(currentScene.archiveManager.events) == HISTORY_ITEM_LIMIT_PER_FILE:
+
+                if currentScene.archiveManager.currentPathExists():
+                    currentScene.archiveManager.save()
+
+                    currentScene.archiveManager.events = {}
+                    currentScene.eventIndex = 0
+                    currentScene.archiveManager.events[currentScene.eventIndex] = event
+                    currentScene.archiveManager.pathIndex += 1
+                    currentScene.archiveManager.appendExistingPath()
+                    currentScene.archiveManager.save()
+
+                else:
+                    currentScene.archiveManager.pathIndex += 1
+                    currentScene.archiveManager.appendExistingPath()
+                    currentScene.archiveManager.save()
+
+                    currentScene.archiveManager.events = {}
+                    currentScene.eventIndex = 0
+                    currentScene.archiveManager.events[currentScene.eventIndex] = event
+                    currentScene.archiveManager.pathIndex += 1
+                    currentScene.archiveManager.appendExistingPath()
+                    currentScene.archiveManager.save()
+
+            else:
+                currentScene.eventIndex += 1
+                currentScene.archiveManager.events[currentScene.eventIndex] = event
+
+        self.control.searchView.reset()
+        self.control.updateHistoryColor()
+        self.control.currentStory().saved = False
 
     def undo(self):
+        currentScene = self.control.currentScene()
+        currentScene.undo(self.control)
         self.control.searchView.reset()
-        self.control.currentScene().undo(self.control)
         self.control.updateHistoryColor()
         self.scroll()
 
     def redo(self):
+        currentScene = self.control.currentScene()
+        currentScene.redo(self.control)
         self.control.searchView.reset()
-        self.control.currentScene().redo(self.control)
         self.control.updateHistoryColor()
         self.scroll()
 

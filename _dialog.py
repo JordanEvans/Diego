@@ -185,11 +185,12 @@ def deleteSceneConfirmation(control, row, index):
     response = dialog.run()
     if response == Gtk.ResponseType.OK:
         control.sceneItemBox.listbox.remove(row)
+
+        control.currentSequence().scenes[index].archiveManager.clear()
+        control.currentSequence().scenes.pop(index)
+
         if index == len(control.currentSequence().scenes) - 1:
-            control.currentSequence().scenes.pop(index)
             control.currentStory().index.scene = index - 1
-        else:
-            control.currentSequence().scenes.pop(index)
 
         control.sceneItemBox.updateNumberated()
 

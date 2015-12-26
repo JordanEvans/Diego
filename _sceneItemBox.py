@@ -118,7 +118,7 @@ class IndexListBox(Gtk.ListBox):
         self.control.category = 'scene'
         self.control.scriptView.resetAndLoad()
 
-        # currentStory.updateCompletionNames()
+        # currentStory.updateStoryNames()
         #
         # self.control.category = 'scene'
 
@@ -231,7 +231,7 @@ class SceneItemBox(ScrolledListBox):
 
     def loadSceneAtIndex(self, index=None):
 
-        currentStory = self.control.currentStory()
+        # currentStory = self.control.currentStory()
 
         if index == None:
             cs = self.control.currentScene()
@@ -245,7 +245,7 @@ class SceneItemBox(ScrolledListBox):
             self.control.sceneItemBox.listbox.select_row(row)
             row.grab_focus()
 
-        currentStory.updateCompletionNames()
+        # currentStory.updateStoryNames()
 
     def editCurrentTitle(self):
         if self.editing == False:

@@ -15,7 +15,7 @@ class IndexView(Gtk.Box):
         self.stack.set_transition_type(Gtk.StackTransitionType.SLIDE_LEFT_RIGHT)
         self.stack.set_transition_duration(250)
 
-        self.stack.add_titled(self.control.storyItemBox, "stories", "Stories")
+        self.stack.add_titled(self.control.storyItemBox, "story", "Stories")
 
         if self.control.sequenceVisible:
             self.stack.add_titled(self.control.sequenceItemBox, "sequence", "Sequence")

@@ -73,7 +73,7 @@ class CategoryItemBox(Gtk.Box):
 
         self.listbox.add(row)
 
-        self.control.eventManager.newPageEvent(_event.Event())
+        self.control.eventManager.newPageEvent(_event.NewPage())
 
     def state(self):
         # return dictionary

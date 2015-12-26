@@ -1,4 +1,4 @@
-import os, re
+import os, re, time
 
 import json
 
@@ -6,12 +6,12 @@ import _event
 import _dialog
 import _rtf
 import _script
+import _archive
 
 from _event import EventManager
 
 DEFAULT_TIMES = ["DAY", "NIGHT", "DUSK", "DAWN"]
-
-HISTORY_RECORD_LIMIT = None
+RESTRICTED_CHARACTER_NAMES = ["POV", "LATER", "MONTAGE", "FLASHBACK"]
 
 class StoryIndex(object):
 
@@ -137,10 +137,58 @@ class Line(object):
                 control.scriptView.textView.get_buffer().remove_all_tags(startIter, endIter)
                 control.scriptView.textView.get_buffer().apply_tag_by_name(self.tag + "Mispelled", startIter, endIter)
 
+    def updateStoryNames(self, control):
+        names = []
+
+        if self.tag == 'character':
+            if self.text not in names:
+                names.append(self.text)
+        else:
+            if self.tag == 'description':
+
+                if not self.text.isupper(): # the whole line may not be upper
+
+                    upper = ""
+
+                    words = re.findall(r"[\w']+|[ .,!?;\-=:'\"@#$^&*(){}]", self.text)
+
+                    for w in words:
+
+                        # Current Word is upper.
+                        if w.isupper():
+
+                            # When upper is started already, add the word.
+                            if len(upper):
+                                if w != " ":
+                                    upper += w
+
+                            # This start the upper.
+                            else:
+                                upper = w
+
+                        else:
+                            # Upper is started, and will try to add another upper, add space if a space found.
+                            if len(upper) and w == ' ':
+                                upper += " "
+
+                            # If upper was started and upper not in names.
+                            else:
+                                n = upper.rstrip()
+                                if len(n):
+                                    if n not in names:
+                                        names.append(n)
+                                upper = ""
+
+                    if len(upper) and upper not in names:
+                        names.append(upper.rstrip())
+
+        for n in names:
+            control.currentStory().addName(n)
+
 
 class Sequence(object):
 
-    def __init__(self, title='Sequence', synopsis='', notes='', scenes=[], info=''):
+    def __init__(self, control, story, title='Sequence', synopsis='', notes='', scenes=[], info=''):
         self.title = title
         self.synopsis = synopsis
         self.notes = notes
@@ -148,21 +196,58 @@ class Sequence(object):
         self.info = info
 
         if len(scenes) == 0:
-            self.scenes.append(Scene())
+            self.scenes.append(Scene(control))
         else:
             for scene in scenes:
                 pages = scene['pages']
-                if 'events' in scene.keys():
-                    s = Scene(pages=pages, info=scene['info'], events=scene['events'])
-                else:
-                    s = Scene(pages=pages, info=scene['info'])
+
+                id = None
+                if 'id' in scene.keys():
+                    id = scene['id']
+
+                s = Scene(control, pages=pages, info=scene['info'], id=id)
                 s.title = scene['title']
                 self.scenes.append(s)
+
+                s.undoIndex = scene['undoIndex']
+                if s.undoIndex < 0:
+                    s.undoIndex = 0
+
+                s.eventIndex = scene['eventIndex']
+                s.createArchiveManager(control)
+                s.archiveManager.pathIndex = scene['pathIndex']
+                s.archiveManager.paths = scene['archivePaths']
+                s.timeStamp = scene['timeStamp']
+
+                try:
+                    s.archiveManager.load()
+                except:
+                    print "archive manager could not load"
+                    try:
+                        s.archiveManager.clear()
+                    except:
+                        print "archive manager could not clear"
+
+                try:
+                    timeStampPath = story.historyDir() + "/timestamp-" + str(id) #scene['timeStampPath']
+                    with open(timeStampPath, 'r') as fp:
+                        timeStamp = json.load(fp)
+                except:
+                    s.archiveManager.clear()
+                    print "timestamp could not load"
+
+                try:
+                    if timeStamp['timeStamp'] != scene['timeStamp']:
+                        s.archiveManager.clear()
+
+                except:
+                    s.archiveManager.clear()
+                    print "timestamp could not be verified"
 
     def data(self, currentStory):
         scenes = []
         for scene in self.scenes:
-            scenes.append(scene.data(currentStory))
+            scenes.append(scene.data())
         data = {}
         data["title"] = self.title
         data["synopsis"] = self.synopsis
@@ -178,16 +263,25 @@ class Sequence(object):
 
 class Scene(object):
 
-    def __init__(self, title='Scene', synopsis='', notes='', pages=[], info='', events=[]):
+    def __init__(self, control, title='Scene', synopsis='', notes='', pages=[], info='', events={}, id=None):
+
+        self.id = id
+
         self.title = title
         self.synopsis=synopsis
         self.notes=notes
         self.pages = []
         self.info = info
 
-        self.events = events
         self.eventIndex = -1
-        self.sessionEventIndex = None
+        self.archiveManager = None
+        self.hasUndone = False
+
+        self.undoIndex = 0
+        self.eventCount = 0
+        self.saveIndex = 0
+
+        self.timeStamp = None
 
         if len(pages) == 0:
             self.pages = [Page()]
@@ -195,12 +289,142 @@ class Scene(object):
             for page in pages:
                 self.pages.append(Page(lines=page['lines'], info=page['info']))
 
-    def clearHistory(self):
-        self.events = self.events[:1]
-        self.eventIndex = 0
-        self.sessionEventIndex = 0
+    def currentEvent(self):
+        if self.eventIndex == -1:
+            return None
+        elif self.eventIndex == len(self.archiveManager.events):
+            return None
+        else:
+            return self.archiveManager.events[self.eventIndex]
 
-    def data(self, currentStory):
+    def nextEvent(self):
+        ei = self.eventIndex + 1
+
+        if ei < 0:
+            return None
+        elif ei == len(self.archiveManager.events):
+            return None
+        else:
+            return self.archiveManager.events[ei]
+
+    def canForward(self):
+        if self.eventIndex + 1 < len(self.archiveManager.events):
+            return True
+        return False
+
+    def canBackward(self):
+        if self.eventIndex > 0:
+            return True
+        return False
+
+    def canUndo(self):
+        if self.eventIndex >= 0:
+            return True
+        return False
+
+    def canRedo(self):
+        if self.eventIndex + 1 < len(self.archiveManager.events):
+            return True
+        return False
+
+    def redo(self, control):
+
+        if self.canRedo():
+            nextEvent = self.nextEvent()
+
+            nextEvent.redo(control)
+            self.undoIndex -= 1
+            self.saveIndex += 1
+
+            if self.canForward():
+                self.eventIndex += 1
+
+            elif self.archiveManager.canForward():
+                self.archiveManager.forward(control)
+
+            else:
+                self.eventIndex += 1
+
+        elif self.archiveManager.canForward():
+            self.archiveManager.forward()
+            self.currentEvent().redo(control)
+            self.undoIndex -= 1
+            self.saveIndex += 1
+
+    def undo(self, control):
+
+        if self.canUndo():
+
+            ce = self.currentEvent()
+            if ce is None:
+                return
+
+            if not self.archiveManager.currentPathExists():
+                if self.archiveManager.pathIndex == -1:
+                    self.archiveManager.pathIndex += 1
+                self.archiveManager.appendExistingPath()
+                self.archiveManager.save()
+
+            elif self.eventIndex == 0:
+                self.archiveManager.save()
+
+            ce.undo(control)
+            self.hasUndone = True
+            self.undoIndex += 1
+            self.saveIndex -= 1
+
+            if self.canBackward():
+                self.eventIndex -= 1
+
+            elif self.archiveManager.canBackward():
+                self.archiveManager.backward()
+
+            else:
+                self.eventIndex -= 1
+
+        elif self.archiveManager.canBackward():
+            self.archiveManager.backward()
+            self.undo(control)
+            self.hasUndone = True
+            self.undoIndex += 1
+            self.saveIndex -= 1
+
+    def createArchiveManager(self, control):
+        self.archiveManager = _archive.ArchiveManager(control, self)
+
+    def createId(self, story):
+        if self.id is None:
+            story.scenesCreated += 1
+            self.id = story.scenesCreated
+
+    def archivePath(self, currentStory):
+        path = currentStory.historyDir() + "/" + str(self.id) + "-" + str(self.archiveFileNumber)
+        return path
+
+    def archivePaths(self, control):
+        historyDir = control.currentStory().historyDir()
+        return os.listdir(historyDir)
+
+    def newArchivePath(self, control):
+        currentStory = control.currentStory()
+        count = len(self.archivePaths(control))
+        return currentStory.historyDir() + "/" + str(self.id) + "-" + str(count)
+
+    def nextArchivePath(self, control, number):
+        currentStory = control.currentStory()
+        return currentStory.historyDir() + "/" + str(self.id) + "-" + str(number)
+
+    def previousArchivePath(self, control, number):
+        currentStory = control.currentStory()
+        return currentStory.historyDir() + "/" + str(self.id) + "-" + str(number)
+
+    def clearHistory(self, control):
+        self.eventIndex = -1
+
+        self.archiveManager.reset()
+
+    def data(self):
+
         pages = []
         for page in self.pages:
             pages.append(page.data())
@@ -210,37 +434,17 @@ class Scene(object):
         data["notes"] = self.notes
         data["pages"] = pages
         data['info'] = self.info
-        eventIndex = self.eventIndex
-        events = []
-
-        for record in self.events:
-            events.append(record.data(currentStory))
-
-        if HISTORY_RECORD_LIMIT is not None:
-            self.historyLimitAdjument(eventIndex, events)
-
-        events.pop(0)
-
-        data['eventIndex'] = eventIndex
-
-        data['events'] = events
+        data['id'] = self.id
+        data['eventIndex'] = self.eventIndex
+        data['pathIndex'] = self.archiveManager.pathIndex
+        data['archivePaths'] = self.archiveManager.paths
+        data['undoIndex'] = self.undoIndex
+        data['timeStamp'] = self.timeStamp
 
         return data
 
-    def historyLimitAdjument(self, eventIndex, events):
-        # this is not fully implemeneted.
-
-        atEvent = events[eventIndex]
-
-        while len(events) > HISTORY_RECORD_LIMIT + 1:
-            events.pop(0)
-
-        if atEvent in events:
-            eventIndex = events.index(atEvent)
-        else:
-            eventIndex = len(events) -1
-
-        return eventIndex
+    def createTimeStamp(self):
+        self.timeStamp = time.time()
 
     def findAndReplace(self, find, replace):
         for page in self.pages:
@@ -248,31 +452,33 @@ class Scene(object):
 
     def names(self, control):
         names = []
+        storyNames = list(control.currentStory().names)
         for p in self.pages:
             for l in p.lines:
-                if l.tag == 'character' and l.text not in names:
-                    names.append(l.text)
 
-        snames = control.currentStory().names
+                if l.tag == 'character':
+                    if l.text not in names:
+                        names.append(l.text)
+
+                elif l.tag != 'sceneHeading':
+                    for sn in storyNames:
+                        words = re.findall(r"[\w']+|[ .,!?;\-=:'\"@#$^&*(){}]", l.text)
+                        if sn in words:
+                            names.append(sn)
+
         for n in names:
-            if n in snames:
-                snames.remove(n)
+            if n in storyNames:
+                storyNames.remove(n)
 
-        return names + snames
+        return names + storyNames
+
+    def updateStoryNames(self, control):
+        for page in self.pages:
+            page.updateStoryNames(control)
 
     def correspond(self, control, verbose=False):
         for page in self.pages:
             page.correspond(control, verbose=verbose)
-
-    def undo(self, control):
-        if self.eventIndex > 0:
-            self.events[self.eventIndex].undo(control)
-            self.eventIndex -=1
-
-    def redo(self, control):
-        if self.eventIndex < len(self.events) -1:
-            self.eventIndex +=1
-            self.events[self.eventIndex].redo(control)
 
 
 class Page(object):
@@ -381,13 +587,21 @@ class Page(object):
                 s = str(l[0]) + " " + str(l[1]) + " " + col1Text + col2Text
                 print s
 
+    def updateStoryNames(self, control):
+        for line in self.lines:
+            line.updateStoryNames(control)
+
 
 class Story(object):
 
     def __init__(self, control, path=None, info=''):
+
+        self.id = None
+        self.scenesCreated = 0
+
         self.control = control
         self.path = path
-        self.title = "Untitled"
+        self.title = self.uniqueTitle()
         if path:
             try:
                 self.title = os.path.split(path)[-1]
@@ -403,7 +617,6 @@ class Story(object):
 
         self.saved = True
 
-
         self.names = []
         self.intExt = ['INT', 'EXT']
         self.locations = []
@@ -413,28 +626,37 @@ class Story(object):
 
         self.firstAppearances = []
 
+    def createId(self):
+        if self.id == None:
+            self.id = self.control.uniqueStoryId()
+
+    def historyDir(self):
+        return self.control.historyDir + "/" + self.title + "-" + self.id
+
+    def makeHistoryDir(self):
+
+        if not os.path.exists(self.historyDir()):
+            os.mkdir(self.historyDir())
+
+    def removeHistoryDir(self):
+        if os.path.exists(self.historyDir()):
+            os.removedirs(self.historyDir())
+            os.remove(self.historyDir())
+
     def newSequence(self, prepend=False):
-        sequence = Sequence()
+        sequence = Sequence(self.control)
 
-        if prepend:
-            position = self.control.currentStory().index.sequence
+        self.sequences.insert(0, sequence)
 
-        else:
-            position = self.control.currentStory().index.sequence +1
-
-        self.sequences.insert(position, sequence)
-
-        self.control.currentStory().index.sequence = position
+        self.control.currentStory().index.sequence = 0
         self.control.currentStory().index.scene = 0
         self.control.currentStory().index.page = 0
         self.control.currentStory().index.line = 0
 
-        if self.control.historyEnabled:
-            self.control.eventManager.addEvent(_event.NewSequenceEvent(sequence, self.control.currentStory().index))
-        self.saved = False
-
     def newScene(self, prepend=False):
-        scene = Scene()
+        scene = Scene(self.control)
+        scene.createId(self)
+        scene.archiveManager = _archive.ArchiveManager(self.control, scene)
 
         if prepend:
             position = self.control.currentStory().index.scene
@@ -448,33 +670,32 @@ class Story(object):
         self.control.currentStory().index.page = 0
         self.control.currentStory().index.line = 0
 
-        if self.control.historyEnabled:
-            self.control.eventManager.addEvent(_event.Event())
         self.saved = False
 
     def newPage(self, prepend=False):
         page = Page()
+        cs = self.control.currentScene()
 
         if prepend:
-            position = self.control.currentStory().index.page
+            pageIndex = self.control.currentStory().index.page
 
         else:
-            position = self.control.currentStory().index.page +1
+            pageIndex = self.control.currentStory().index.page +1
 
-        self.control.currentStory().index.page = position
+        self.control.currentStory().index.page = pageIndex
 
         self.control.currentStory().index.line = 0
-        self.control.currentScene().pages.insert(position, page)
+        self.control.currentStory().index.offset = 0
+        cs.pages.insert(pageIndex, page)
 
+        sceneIndex = self.control.currentSequence().scenes.index(cs)
         if self.control.historyEnabled:
-            self.control.eventManager.addEvent(_event.Event())
-        self.saved = False
+            self.control.eventManager.addEvent(_event.Page(sceneIndex, pageIndex))
 
     def deletePage(self, index):
         pass
 
     def load(self):
-        print "load", self.path
         if self.path != None and os.path.exists(self.path):
             self._load()
             return
@@ -497,6 +718,13 @@ class Story(object):
 
         self.control.historyEnabled = False
 
+        self.id = data['id']
+
+        self.makeHistoryDir()
+
+        if 'scenesCreated' in data.keys():
+            self.scenesCreated = data['scenesCreated']
+
         self.title=data['title']
         self.synopsis=data['synopsis']
         self.notes=data['notes']
@@ -504,32 +732,109 @@ class Story(object):
 
         self.index = StoryIndex(data['index'])
 
+        self.sequences = []
         for sequence in data['sequences']:
             title=sequence['title']
             synopsis=sequence['synopsis']
             notes=sequence['notes']
-            self.sequences.append(Sequence(title, synopsis, notes, scenes=sequence['scenes'], info=sequence['info']))
+            self.sequences.append(Sequence(self.control, self, title, synopsis, notes, scenes=sequence['scenes'], info=sequence['info']))
 
         self.control.historyEnabled = True
 
-        events = []
-        for sq in self.sequences:
-            for sc in sq.scenes:
-                self.control.eventManager.initSceneHistory(sc, events)
-
-        self.updateCompletionNames()
+        self.updateStoryNames()
 
         if 'isScreenplay' in data.keys():
             self.isScreenplay = data['isScreenplay']
             self.updateLocations()
             self.updateTimes()
 
-        self.loadSceneHistories(data['sequences'][0])
+        # self.updateSceneIds()
+        self.makeHistoryDir()
+        self.updateEventCount()
+
+        self.crashDetect()
+
+        # self.hanselGretalImport()
+
+    # def createArchiveManagers(self):
+    #     for scene in self.sequences[0].scenes:
+    #         scene.createArchiveManager(self.control)
+
+    def loadId(self):
+
+        try:
+            with open(self.path, 'r') as fp:
+                data = json.load(fp)
+        except:
+            print "data _load: unable to load json file"
+            return
+
+        if 'id' in data.keys():
+            self.id = data['id']
+        else:
+            self.createId()
+
+    # def createArchiveManagers(self):
+    #     for scene in self.sequences[0].scenes:
+    #         scene.createArchiveManager(self.control)
+
+    def updateSceneTimestamps(self):
+
+        historyDir = self.historyDir()
+        for scene in self.sequences[0].scenes:
+            timeStampPath = historyDir + "/" + "timestamp-" + str(scene.id)
+
+            timestamp = scene.timeStamp
+
+            timeStampData = {}
+            timeStampData['timeStamp'] = timestamp
+
+            with open(timeStampPath, 'w') as fp:
+                json.dump(timeStampData, fp)
+            fp.close()
+
+    def crashDetect(self):
+        if os.path.exists(self.historyDir() + "/start"):
+            print "story did not close properly"
+            for scene in self.sequences[0].scenes:
+                scene.archiveManager.clear()
+        f = open(self.historyDir() + "/start", "w")
+        f.close()
+
+    def close(self):
+        if os.path.exists(self.historyDir() + "/start"):
+            os.remove(self.historyDir() + "/start")
+
+    def updateEventCount(self):
+        for sc in self.sequences[0].scenes:
+            if len(sc.archiveManager.events):
+                sc.eventCount = 0
+                # sc.undoIndex = 0
+
+    def uniqueTitle(self):
+        count = 1
+
+        title = "Untitled"
+
+        split = title.split("-")
+        if split[0] == "Untitled":
+            title = "Untitled"
+
+        if not os.path.exists(self.control.saveDir + title):
+            return title
+
+        while os.path.exists(self.control.saveDir + title + "-" + str(count)):
+            count += 1
+
+        return title + "-" + str(count)
 
     def uniquePath(self):
         count = 1
 
-        title = self.control.currentStory().title
+        try:
+            title = self.control.currentStory().title
+        except:
+            title = self.uniqueTitle()
 
         split = title.split("-")
         if split[0] == "Untitled":
@@ -542,7 +847,7 @@ class Story(object):
             count += 1
         return self.control.saveDir + title + "-" + str(count)
 
-    def save(self,):
+    def save(self, pdf=True, rtf=True):
 
         if self.path == None:
             self.path = self.uniquePath()
@@ -556,18 +861,22 @@ class Story(object):
 
         else:
             self.control.saveDir = os.path.split(self.path)[0] + '/'
-            self._save(self.path)
+            self._save(self.path, pdf=pdf, rtf=rtf)
             return
 
         # _dialog.saveFile(self.control)
 
-    def _save(self, path):
+    def _save(self, path, pdf=True, rtf=True):
         self.control.saveDir = os.path.split(path)[0] + '/'
         self.path = path
         self.control.scriptView.textView.forceWordEvent()
+        self.saveArchiveManagerArchives()
+        self.createSceneTimeStamps()
         data = self.data(self)
+
         with open(path, 'w') as fp:
             json.dump(data, fp)
+
         self.control.app.updateWindowTitle()
 
         if path == None:
@@ -579,29 +888,63 @@ class Story(object):
         self.control.storyItemBox.updateStoryLabelAtIndex(self.control.index)
         self.saved = True
 
-        rtf = _rtf.RTF(self.control)
-        rtf.exportScript(path + ".rtf", self.isScreenplay)
-        rtfPath = path + ".rtf"
+        if rtf:
+            rtff = _rtf.RTF(self.control)
+            rtff.exportScript(path + ".rtf", self.isScreenplay)
+            rtfPath = path + ".rtf"
 
-        cwd = os.getcwd()
-        os.chdir(self.control.saveDir)
-        os.system("soffice --headless --convert-to pdf " + "'" + rtfPath + "'")
-        os.chdir(cwd)
+        if pdf:
+            cwd = os.getcwd()
+            os.chdir(self.control.saveDir)
+            os.system("soffice --headless --convert-to pdf " + "'" + rtfPath + "'")
+            os.chdir(cwd)
 
-        self.updateCompletionNames()
+        self.updateStoryNames()
         self.updateLocations()
         self.updateTimes()
 
+        self.updateEventCount()
+
         self.updateSceneSessionPoints()
+
+        self.saveEvent = self.control.currentScene().currentEvent()
+
+        self.updateSceneTimestamps()
+
+    def createSceneTimeStamps(self):
+        for scene in self.sequences[0].scenes:
+            scene.createTimeStamp()
+
+    def saveArchiveManagerArchives(self):
+        for scene in self.sequences[0].scenes:
+            scene.archiveManager.save()
 
     def updateSceneSessionPoints(self):
         for sc in self.currentSequence().scenes:
             sc.sessionEventIndex = sc.eventIndex
+            sc.saveIndex = 0
+            sc.undoIndex = 0
 
     def default(self):
+        self.createId()
         self.control.historyEnabled = True
-        self.sequences = [Sequence()]
-        self.control.eventManager.initSceneHistory(self.sequences[0].scenes[0], events=[])
+        self.sequences = [Sequence(self.control, self)]
+        self.sequences[0].scenes[0].createArchiveManager(self.control)
+        for sc in self.sequences[0].scenes:
+            sc.createId(self)
+        self.defaultSave()
+
+    def defaultSave(self):
+        if self.path == None:
+            self.path = self.uniquePath()
+
+        self.control.saveDir = os.path.split(self.path)[0] + '/'
+
+        self.control.saveDir = os.path.split(self.path)[0] + '/'
+        self.control.scriptView.textView.forceWordEvent()
+        data = self.data(self)
+        with open(self.path, 'w') as fp:
+            json.dump(data, fp)
 
     def hanselGretalImport(self):
         import json
@@ -616,7 +959,9 @@ class Story(object):
         scenes = doc['scenes']
 
         for i in range(len(scenes) - 1):
-            newScene = Scene()
+            newScene = Scene(self.control)
+            newScene.createId(self)
+            newScene.createArchiveManager(self.control)
             seq.scenes.append(newScene)
 
         for i in range(len(scenes)):
@@ -639,7 +984,6 @@ class Story(object):
         self.path = None
         self.sequences = []
         self.eventManager = None
-        self.saved = True
 
     def data(self, currentStory):
         data={}
@@ -654,6 +998,8 @@ class Story(object):
         data['info'] = self.info
         data['scriptViewPanedPosition'] = self.control.scriptView.paned.get_position()
         data['isScreenplay'] = self.isScreenplay
+        data['scenesCreated'] = self.scenesCreated
+        data['id'] = self.id
         return data
 
     def currentIssue(self):
@@ -679,6 +1025,10 @@ class Story(object):
             seq.findAndReplace(find, replace)
 
     def addName(self, name):
+        name = name.upper()
+        if name in RESTRICTED_CHARACTER_NAMES:
+            return
+
         if len(name) and name not in self.names:
             self.names.append(name)
             self.names.sort()
@@ -697,7 +1047,7 @@ class Story(object):
             self.times.append(time)
         self.times.sort()
 
-    def updateCompletionNames(self):
+    def updateStoryNames(self):
         self.names = []
         for sequence in self.sequences:
             for scene in sequence.scenes:
@@ -709,6 +1059,30 @@ class Story(object):
 
         self.names.sort()
 
+        for sequence in self.sequences:
+            for scene in sequence.scenes:
+                scene.updateStoryNames(self.control)
+
+        self.upperCaseFirstOccurenceOfCharactersInDescription()
+
+    def upperCaseFirstOccurenceOfCharactersInDescription(self):
+        applied = []
+        storyNames = list(self.names)
+        for sequence in self.sequences:
+            for scene in sequence.scenes:
+                for page in scene.pages:
+                    for line in page.lines:
+                        if line.tag == 'description':
+                            words = re.findall(r"[\w']+|[ .,!?;\-=:'\"@#$^&*(){}]", line.text)
+                            upwords = [w.upper() for w in words]
+                            for name in storyNames:
+                                if name in upwords and name not in applied:
+                                    for i in range(len(upwords)):
+                                        if name == upwords[i].upper():
+                                            words[i] = upwords[i].upper()
+                                            line.text = "".join(words)
+                                            applied.append(words[i])
+                                            break
 
     def updateLocations(self):
         self.locations = []
@@ -771,39 +1145,6 @@ class Story(object):
                     print "SCENE", index, sc.title
                 sc.correspond(control, verbose=verbose)
                 index += 1
-
-    def loadSceneHistories(self, sequence):
-
-        for dataScene in sequence['scenes']:
-            if 'events' in dataScene.keys():
-                for event in dataScene['events']:
-
-                    scene = event['scene']
-                    page = event['page']
-                    line = event['line']
-                    offset = event['offset']
-                    text = event['text']
-                    tags = event['tags']
-
-                    if event['name'] == 'Insertion':
-                        evt = _event.Insertion(scene, page, line, offset, text, tags)
-                    elif event['name'] == 'Deletion':
-                        evt = _event.Deletion(scene, page, line, offset, text, tags)
-                    elif event['name'] == "Backspace":
-                        evt = _event.Backspace(scene, page, line, offset, text, tags)
-                        evt.carryText = event['carryText']
-
-                    elif event['name'] == "FormatLines":
-                        evt = _event.FormatLines(scene, page, line, offset, text, tags)
-
-                    if 'beforeTags' in event.keys():
-                        evt.beforeTags = event['beforeTags']
-                    if 'pushedOffHeading' in event.keys():
-                        evt.pushedOffHeading = event['pushedOffHeading']
-
-                    self.sequences[0].scenes[event['scene']].events.append(evt)
-                    self.sequences[0].scenes[event['scene']].eventIndex = dataScene['eventIndex']
-                    self.sequences[0].scenes[event['scene']].sessionEventIndex = dataScene['eventIndex']
 
 
 class MispelledWord(object):

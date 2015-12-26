@@ -13,7 +13,8 @@ class Window(Gtk.Window):
     def postInit(self):
         self.layout()
         self.connections()
-        self.config() 
+        # raise Exception()
+        #self.config()
         
     def layout(self):
         self.add(self.control.appBox)
@@ -21,10 +22,6 @@ class Window(Gtk.Window):
     def connections(self, ):
         self.connect("delete-event", self.control.app.shutdown)
         self.connect("key-press-event", self.keyPress)
-        # self.connect("focus-in-event", self.focusIn)
-
-    # def focusIn(self, window, event):
-    #     self.control.sysClipboard.update()
 
     def config(self, ):
         self.resize(1000,600)
@@ -89,20 +86,15 @@ class Window(Gtk.Window):
     def newPage(self):
         self.control.currentStory().newPage()
         self.control.pageItemBox.newPage()
-        # self.control.pageItemBox.show_all()
 
         self.newScene()
         self.newSequence()
 
     def newScene(self):
-        # self.control.currentStory().newPage()
         self.control.sceneItemBox.newScene()
-        # self.control.sceneItemBox.show_all()
 
     def newSequence(self):
-        # self.control.currentStory().newPage()
         self.control.sequenceItemBox.newSequence()
-        # self.control.sequenceItemBox.show_all()
 
     def load(self):
         pass

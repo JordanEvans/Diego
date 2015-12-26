@@ -1,5 +1,5 @@
 
-import os
+import os, random
 
 from gi.repository import Gtk, GObject, Gdk
 
@@ -48,9 +48,12 @@ class Control(object):
         self.testingTags = True
         self.updateNamesGlobally = True
         self.eventManager = _event.EventManager(self)
+        self.windowPosition = (0,0)
 
         self.addWordPath = os.path.expanduser(('~')) + '/.config/diego/addedWords'
         self.removeWordPath = os.path.expanduser(('~')) + '/.config/diego/removeWords'
+
+        self.historyDir = None
 
         self.config = Config(self)
         self.preferences = Preferences(self)
@@ -84,8 +87,10 @@ class Control(object):
 
         self.clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
 
-        self.scriptViewPanedPosition = 150
+        self.scriptViewPanedPosition = 0
         self.settingPanedWithEsc = False
+
+        print self.uniqueStoryId()
 
     def mispelledTimer(self):
         GObject.timeout_add(1000, self.removeMispelledTags)
@@ -147,9 +152,14 @@ class Control(object):
         self.printCount += 1
         print self.printCount, args
 
+        # if self.printCount == 5:
+        #     print
+
         raiseException = 0
         if raiseException == self.printCount:
             raise Exception()
+
+        return self.printCount
 
     def load(self, data=True):
         self.historyEnabled = False
@@ -158,7 +168,10 @@ class Control(object):
             self.config.load()
             self.preferences.load()
 
-            self.state.load()
+            # self.state.load() #move to app init
+
+            for story in self.stories:
+                story.loadId()
 
             for story in self.stories:
                 story.load()
@@ -242,16 +255,33 @@ class Control(object):
         return [story.path for story in self.stories]
 
     def newStory(self):
+
+        for s in self.stories:
+            if not s.saved:
+                s.save(pdf=False, rtf=False)
+
         story = Story(self)
-        story.load()
-        story.saved = False
         self.index +=1
+        story.createId()
+
+        story.makeHistoryDir()
+        story.load()
+
         self.stories.insert(self.index, story)
         self.reset(data=False)
         self.scriptView.updateTitles()
         self.load(data=False)
         self.storyItemBox.listbox.get_row_at_index(self.index).grab_focus()
         self.storyItemBox.listbox.select_row(self.storyItemBox.listbox.get_row_at_index(self.index))
+
+    def uniqueStoryId(self):
+        chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
+        id = [list(chars), list(chars), list(chars), list(chars)]
+        for item in id:
+            random.shuffle(item)
+        id = ["".join(item)[:6] for item in id]
+        id = "-".join(id)
+        return id
 
     def newSequence(self, prepend=False):
         self.currentStory().newSequence(prepend)
@@ -312,18 +342,28 @@ class Control(object):
         return self.screenplayModeSwitch.get_active()
 
     def updateHistoryColor(self):
+
         val = 0.94
         selectColor = Gdk.RGBA(0.75, 0.75, 0.85, 1.0)
         forground = Gdk.RGBA(0.0, 0.0, 0.0, 1.0)
-        if self.currentScene().eventIndex < len(self.currentScene().events) - 1:
-            if self.currentScene().eventIndex < self.currentScene().sessionEventIndex:
-                color = Gdk.RGBA(0.90, 0.95, 1.0, 1.0)
 
+        currentScene = self.currentScene()
+
+        if currentScene.undoIndex > 0:
+
+            # Gone back to the point where save occured or before (if undo is into save area)
+            if currentScene.saveIndex <= 0:
+                color = Gdk.RGBA(0.90, 0.91, 1.0, 1.0)
+
+            # Undoing before the save point.
             else:
                 color = Gdk.RGBA(val, val, val, 1.0)
+
             self.scriptView.textView.modify_bg(Gtk.StateType.NORMAL, color.to_color())
             self.scriptView.textView.modify_bg(Gtk.StateType.SELECTED, selectColor.to_color())
             self.scriptView.textView.modify_fg(Gtk.StateType.SELECTED, forground.to_color())
+
+        # New events.
         else:
             color = Gdk.RGBA(1.0, 1.0, 1.0, 1.0)
             self.scriptView.textView.modify_bg(Gtk.StateType.NORMAL, color.to_color())
@@ -338,4 +378,42 @@ class Control(object):
 
         for he in self.scriptView.headingEntries:
             he.modify_bg(Gtk.StateType.NORMAL, color.to_color())
+
+    def scroll(self, line, offset=0):
+        if len(self.scriptView.lines) -1 < line:
+            return
+        lineIndex = self.scriptView.lines.index(line)
+        lineIter = self.scriptView.textView.get_buffer().get_iter_at_line(lineIndex)
+        lineIter.forward_chars(offset)
+        self.scriptView.textView.iterInfo(lineIter)
+        self.scriptView.textView.scroll_to_iter(lineIter, 0.1, False, 0.0, 0.0)
+        self.scriptView.textView.get_buffer().place_cursor(lineIter)
+        self.scriptView.textView.grab_focus()
+
+    def timedScroll(self, line, offset, time=250):
+        GObject.timeout_add(time, self.scroll, line, offset)
+
+    def selectionOffsets(self):
+
+        bounds = self.scriptView.textView.get_buffer().get_selection_bounds()
+
+        if len(bounds):
+
+            startIter, endIter = bounds
+
+            # Do not allow selection of zero space char at end of buffer.
+            if self.scriptView.textView.endIter().get_offset() == endIter.get_offset():
+                endIter.backward_char()
+
+            return startIter.get_offset(), endIter.get_offset()
+
+        return None, None
+
+    def select(self, startOffset, endOffset):
+        selectionStartIter = self.scriptView.textView.get_buffer().get_iter_at_offset(startOffset)
+        selectionEndIter = self.scriptView.textView.get_buffer().get_iter_at_offset(endOffset)
+        self.scriptView.textView.get_buffer().select_range(selectionStartIter, selectionEndIter)
+
+    def timedSelect(self, startOffset, endOffset, time=250):
+        GObject.timeout_add(time, self.select, startOffset, endOffset)
 

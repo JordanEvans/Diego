@@ -105,7 +105,7 @@ class IndexListBox(Gtk.ListBox):
         # self.control.currentStory().index.page = self.get_children().index(row)
         # self.control.currentStory().index.line = 0
 
-        # currentStory.updateCompletionNames()
+        # currentStory.updateStoryNames()
 
         # self.control.category = 'page'
 
@@ -190,9 +190,6 @@ class PageItemBox(ScrolledListBox):
 
         else:
             self.reset()
-
-        # row = self.rowAtIndex(0)
-        # self.listbox.select_row(row)
 
     def reset(self):
         for row in self.listbox.get_children():

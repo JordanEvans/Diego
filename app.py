@@ -1,7 +1,7 @@
 import sys
 import os, string
 
-from gi.repository import Gtk
+from gi.repository import Gtk, GObject, Gdk
 
 from _control import Control
 
@@ -16,14 +16,19 @@ class App(object):
         self.name = "Diego"
 
         # Control's purpose is to connect everything. Control.__init__ contains app-wide variables
-        # for the pupose of shorten variable indirection during implementation.
+        # for the pupose of short variable indirection during implementation.
         self.control = Control(self)
 
         # Creates Data and Widgets
         # self.control.postInit()
 
+        self.control.state.load()
+
         # Configures and packs Widgets.
         self.window.postInit()
+
+        self.window.resize(self.control.state.width, self.control.state.height)
+
         self.control.appBox.postInit()
         self.control.pageItemBox.postInit()
         self.control.sceneItemBox.postInit()
@@ -40,10 +45,6 @@ class App(object):
         self.control.load()
 
         # Some misc follow up stuff.
-        try:
-            self.window.resize_to_geometry(self.control.state.width, self.control.state.height)
-        except:
-            self.window.resize_to_geometry(600, 400)
 
         self.control.scriptView.textView.resetTags()
         self.control.scriptView.infoTextView.props.left_margin = self.control.scriptView.textView.descriptionLeftMargin
@@ -62,6 +63,31 @@ class App(object):
             print "spellcheck not active"
 
         self.control.scriptView.paned.set_position(self.control.state.scriptViewPanedPosition)
+
+        self.timedFollowUp()
+
+        self.timedFontReset()
+
+    def timedFontReset(self):
+        a = Gdk.Rectangle(self.control.windowPosition[0], self.control.windowPosition[1], self.control.state.width, self.control.state.height)
+        GObject.timeout_add(250, self.control.scriptView.textView.do_size_allocate, a)
+
+    def timedFollowUp(self):
+        GObject.timeout_add(250, self.followUp)
+
+    def followUp(self):
+        self.control.category = self.control.state.lastCategory
+        self.control.indexView.stack.set_visible_child_name(self.control.state.lastCategory)
+
+        story = self.control.stories[self.control.state.lastStoryIndex.story]
+        sequence = story.sequences[self.control.state.lastStoryIndex.sequence]
+        scene = sequence.scenes[self.control.state.lastStoryIndex.scene]
+        page = scene.pages[self.control.state.lastStoryIndex.page]
+        line = page.lines[self.control.state.lastStoryIndex.line]
+        offset = self.control.state.lastStoryIndex.offset
+        self.control.timedScroll(line, offset, 250)
+        if self.control.state.lastSelection[0] is not None:
+            self.control.timedSelect(self.control.state.lastSelection[0], self.control.state.lastSelection[1], 500)
 
     def loadTrie(self):
         import marisa_trie
@@ -114,29 +140,14 @@ class App(object):
 
     def shutdownUnsavedFileCheck(self):
 
-        for story in self.control.stories:
-            story.save()
+        self.control.currentStory().save()
 
-        return
-
-
-        self.saveUnsavedStories = False
-        unsavedStories = False
         for story in self.control.stories:
             if not story.saved:
-                unsavedStories = True
-                break
+                story.save()
+            story.close()
 
-        if unsavedStories:
-            _dialog.unsavedFiles(self.control)
-
-        if self.cancelShutdown:
-            return
-
-        elif unsavedStories and self.saveUnsavedStories:
-            for story in self.control.stories:
-                if not story.saved:
-                    story.save()
+        return
 
     def unsavedFileCheck(self):
         for story in self.control.stories:

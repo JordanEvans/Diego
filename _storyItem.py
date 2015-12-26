@@ -79,6 +79,7 @@ class View(_item.Item):
                 cs.path = split[0] + "/" + title
 
         self.saving = True
+        cs.makeHistoryDir()
         cs.save()
         self.saving = False
 

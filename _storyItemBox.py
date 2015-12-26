@@ -31,10 +31,10 @@ class IndexListBox(Gtk.ListBox):
                 return
         else:
 
-            if (event.keyval == 65535):
+            if (event.keyval == 65535): # Remove A Story from view.
                 self.control.storyItemBox.deleteItem()
 
-            elif event.keyval == 65293:
+            elif event.keyval == 65293: # Create a new story
                 selectedRows = self.get_selected_rows()
                 if len(selectedRows) == 0:
                     return
@@ -127,8 +127,10 @@ class StoryItemBox(ScrolledListBox):
         cs = self.control.currentStory()
         index = self.control.stories.index(cs)
         if len(self.items) > 1:
+            self.control.stories[index].save()
             self.items.pop(index)
-            self.control.stories.pop(index)
+            story = self.control.stories.pop(index)
+            story.close()
             self.reset()
             self.load()
             self.show_all()
@@ -156,6 +158,8 @@ class StoryItemBox(ScrolledListBox):
         if row:
             self.control.storyItemBox.listbox.select_row(row)
             row.grab_focus()
+
+        # self.control.currentStory().updateStoryNames()
 
     def config(self, ):
         pass
