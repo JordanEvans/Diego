@@ -6,9 +6,7 @@ Diego's goals are to be a simple, fast, organized, unobtrusive scriptwriting sof
 
 Diego has traded feature bloat for simplicity. Only features that are necessary to get the job done are added. Diego's design centers around keeping the writers hands on the keyboard. Keyboard shortcuts replace the common interface cluttered with buttons and menus and sub-menus.
 
-Each Story, Scene and Page has an Outlining Text area that allows the writer to outline their story by creating abstracts. This Outlining Text area works as a convenient place to store premises for new story ideas that may later turn into a full script.
-
-Diego does not need to be saved, it saves each document on shutdown of the app. History is infinite, but can be cleared via right click. A white background means you are treading new ground. A gray background means you have undone in this area. Blue means you have saved this in the last session and have not undone in that area. When Diego saves, three documents are created: the Diego document, an RTF for extra tweaking, and a PDF.
+Diego does not need to be saved, it saves each document on shutdown of the app. History is infinite, but can be cleared via right click. A white background means you are treading new ground. A gray background means you have undone in this area. Blue means you have saved this area and have not undone in that area. When Diego saves, three documents are created: the Diego document, an RTF for extra tweaking, and a PDF.
 
 <b>Graphic Novel Mode</b>
 
@@ -80,14 +78,6 @@ Double click the scene title in the scene view. Type in new name.
 <b>Find And Replace</b>
 
 Control + r
-
-<b>Toggle Script View or Abstract View</b>
-
-Hit Escape key while in the respective editor.
-
-<b>Add Abstract to Story, Scenes and Pages</b>
-
-Go to the Story, Scene or Page you want to write the abstract and type it in the Abstract editor above the Script editor.
 
 <b>Save Story</b>
 

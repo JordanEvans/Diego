@@ -36,13 +36,13 @@ class State(object):
         data['fontSize'] = self.control.scriptView.textView.fontSize
         data['windowWidth'] = self.control.app.window.get_allocated_width()
         data['windowHeight'] = self.control.app.window.get_allocated_height()
-        data['infoViewFontSize'] = self.control.scriptView.infoViewFontSize
+        # data['infoViewFontSize'] = self.control.scriptView.infoViewFontSize
         data['saveDir'] = self.control.saveDir
         data['windowPosition'] = self.control.app.window.get_position()
         data['storyIndex'] = self.control.index
         data['author'] = self.author
         data['contact'] = self.contact
-        data['scriptViewPanedPosition'] = self.control.scriptView.paned.get_position()
+        # data['scriptViewPanedPosition'] = self.control.scriptView.paned.get_position()
         data['storyIds'] = self.storyIds
 
         try:
@@ -71,13 +71,13 @@ class State(object):
         data['fontSize'] = 16
         data['windowWidth'] = 1000
         data['windowHeight'] = 600
-        data['infoViewFontSize'] = 14
+        # data['infoViewFontSize'] = 14
         data['saveDir'] = self.control.saveDir
         data['windowPosition'] = (0,0)
         data['storyIndex'] = 0
         data['author'] = ''
         data['contact'] = ''
-        data['scriptViewPanedPosition'] = 0
+        # data['scriptViewPanedPosition'] = 0
 
         data['lastStoryIndex'] = 0
 
@@ -131,14 +131,14 @@ class State(object):
                         self.control.scriptView.textView.fontSize = data['fontSize']
                         self.width = data['windowWidth']
                         self.height = data['windowHeight']
-                        self.control.scriptView.infoViewFontSize = data['infoViewFontSize']
-                        self.control.scriptView.infoTextView.modify_font(Pango.FontDescription("Courier Prime " + str(data['infoViewFontSize'])))
+                        # self.control.scriptView.infoViewFontSize = data['infoViewFontSize']
+                        # self.control.scriptView.infoTextView.modify_font(Pango.FontDescription("Courier Prime " + str(data['infoViewFontSize'])))
                         self.control.saveDir = data['saveDir']
                         self.control.windowPosition = data['windowPosition']
 
                         self.author = data['author']
                         self.contact = data['contact']
-                        self.scriptViewPanedPosition = data['scriptViewPanedPosition']
+                        # self.scriptViewPanedPosition = data['scriptViewPanedPosition']
 
                         if 'lastStoryIndex' in data.keys():
                             self.lastStoryIndex = _story.StoryIndex(data['lastStoryIndex'])

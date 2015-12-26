@@ -996,7 +996,7 @@ class Story(object):
         data["synopsis"] = self.synopsis
         data["notes"] = self.notes
         data['info'] = self.info
-        data['scriptViewPanedPosition'] = self.control.scriptView.paned.get_position()
+        # data['scriptViewPanedPosition'] = self.control.scriptView.paned.get_position()
         data['isScreenplay'] = self.isScreenplay
         data['scenesCreated'] = self.scenesCreated
         data['id'] = self.id

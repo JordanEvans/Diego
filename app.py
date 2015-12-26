@@ -47,8 +47,8 @@ class App(object):
         # Some misc follow up stuff.
 
         self.control.scriptView.textView.resetTags()
-        self.control.scriptView.infoTextView.props.left_margin = self.control.scriptView.textView.descriptionLeftMargin
-        self.control.scriptView.infoTextView.props.right_margin = self.control.scriptView.textView.descriptionRightMargin
+        # self.control.scriptView.infoTextView.props.left_margin = self.control.scriptView.textView.descriptionLeftMargin
+        # self.control.scriptView.infoTextView.props.right_margin = self.control.scriptView.textView.descriptionRightMargin
 
         try:
             self.control.app.window.move(self.control.windowPosition[0], self.control.windowPosition[1])
@@ -62,22 +62,26 @@ class App(object):
         except:
             print "spellcheck not active"
 
-        self.control.scriptView.paned.set_position(self.control.state.scriptViewPanedPosition)
+        # self.control.scriptView.paned.set_position(self.control.state.scriptViewPanedPosition)
 
-        self.timedFollowUp()
+        self.control.category = self.control.state.lastCategory
+        self.control.indexView.stack.set_visible_child_name(self.control.state.lastCategory)
+
+        if self.control.state.lastSelection[0] is not None:
+            self.control.timedSelect(self.control.state.lastSelection[0], self.control.state.lastSelection[1], 100)
 
         self.timedFontReset()
+        self.timedScroll()
 
     def timedFontReset(self):
         a = Gdk.Rectangle(self.control.windowPosition[0], self.control.windowPosition[1], self.control.state.width, self.control.state.height)
-        GObject.timeout_add(250, self.control.scriptView.textView.do_size_allocate, a)
+        GObject.timeout_add(200, self.control.scriptView.textView.do_size_allocate, a)
 
-    def timedFollowUp(self):
-        GObject.timeout_add(250, self.followUp)
 
-    def followUp(self):
-        self.control.category = self.control.state.lastCategory
-        self.control.indexView.stack.set_visible_child_name(self.control.state.lastCategory)
+    def timedScroll(self):
+        GObject.timeout_add(300, self.scroll)
+
+    def scroll(self):
 
         story = self.control.stories[self.control.state.lastStoryIndex.story]
         sequence = story.sequences[self.control.state.lastStoryIndex.sequence]
@@ -85,7 +89,8 @@ class App(object):
         page = scene.pages[self.control.state.lastStoryIndex.page]
         line = page.lines[self.control.state.lastStoryIndex.line]
         offset = self.control.state.lastStoryIndex.offset
-        self.control.timedScroll(line, offset, 250)
+
+    def select(self):
         if self.control.state.lastSelection[0] is not None:
             self.control.timedSelect(self.control.state.lastSelection[0], self.control.state.lastSelection[1], 500)
 

@@ -389,15 +389,15 @@ class TextView(Gtk.TextView):
             return 1
 
         if event.keyval == 65307: # esc
-            self.control.settingPanedWithEsc = True
-            if self.control.scriptView.paned.get_position() <= 10:
-                if self.control.scriptViewPanedPosition <= 10:
-                    self.control.scriptViewPanedPosition = 150
-                self.control.scriptView.paned.set_position(self.control.scriptViewPanedPosition)
-            else:
-                #self.control.scriptViewPanedPosition = self.control.scriptView.paned.get_position()
-                self.control.scriptView.paned.set_position(0)
-            GObject.timeout_add(2000, self.resetSettingPanedWithEsc)
+            # self.control.settingPanedWithEsc = True
+            # if self.control.scriptView.paned.get_position() <= 10:
+            #     if self.control.scriptViewPanedPosition <= 10:
+            #         self.control.scriptViewPanedPosition = 150
+            #     self.control.scriptView.paned.set_position(self.control.scriptViewPanedPosition)
+            # else:
+            #     #self.control.scriptViewPanedPosition = self.control.scriptView.paned.get_position()
+            #     self.control.scriptView.paned.set_position(0)
+            # GObject.timeout_add(2000, self.resetSettingPanedWithEsc)
             return
 
         if event.keyval == 65470: # F1 press
@@ -1379,16 +1379,11 @@ class TextView(Gtk.TextView):
         self.parentheticMispelledTag.props.font = "Courier Prime " + str(self.fontSize)
         self.sceneHeadingMispelledTag.props.font = "Courier Prime " + str(self.fontSize)
 
-        self.control.scriptView.infoTextView.props.left_margin = self.control.scriptView.textView.descriptionLeftMargin
-        self.control.scriptView.infoTextView.props.right_margin = self.control.scriptView.textView.descriptionRightMargin
-
-        self.control.scriptView.scrolledWindow.set_size_request(self.descriptionWidth * TEXT_VIEW_FACTOR, 0)
-
         # Fixing last line tag issue.
         self.modify_font(Pango.FontDescription("Courier Prime " + str(self.fontSize)))
         self.props.left_margin = self.descriptionLeftMargin
 
-        # self.control.scriptView.scrolledWindow2.set_size_request(self.descriptionWidth * TEXT_VIEW_FACTOR, 0)
+        self.control.scriptView.scrolledWindow2.set_size_request(self.descriptionWidth * TEXT_VIEW_FACTOR, 0)
 
         self.settingMargin = False
 
@@ -2300,8 +2295,8 @@ class TextView(Gtk.TextView):
 
     def do_size_allocate(self, allocation):
 
-        if not self.control.settingPanedWithEsc:
-            self.control.scriptViewPanedPosition = self.control.scriptView.paned.get_position()
+        # if not self.control.settingPanedWithEsc:
+        #     self.control.scriptViewPanedPosition = self.control.scriptView.paned.get_position()
 
         if self.settingMargin:
             self.settingMargin = False
@@ -2416,45 +2411,47 @@ class ScriptView(Gtk.Box):
         self.lines = []
         self.headingEntries = []
 
-        self.paned = Gtk.Paned(orientation=Gtk.Orientation.VERTICAL)
-        self.paned.connect('map-event', self.acceptPosition)
-        self.pack_start(self.paned, 1, 1, 0)
+        # self.paned = Gtk.Paned(orientation=Gtk.Orientation.VERTICAL)
+        # self.paned.connect('map-event', self.acceptPosition)
+        # self.pack_start(self.paned, 1, 1, 0)
 
-        self.infoTextView = Gtk.TextView()
-        self.infoViewFontSize = 16
-        self.infoTextView.connect('key-release-event', self.updateInfo)
-        self.infoTextView.connect('key-press-event', self.infoTextViewKeyPress)
+        # self.infoTextView = Gtk.TextView()
+        # self.infoViewFontSize = 16
+        # self.infoTextView.connect('key-release-event', self.updateInfo)
+        # self.infoTextView.connect('key-press-event', self.infoTextViewKeyPress)
 
-        self.scrolledWindow = Gtk.ScrolledWindow()
-        self.scrolledWindow.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        # self.scrolledWindow = Gtk.ScrolledWindow()
+        # self.scrolledWindow.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
 
-        props = self.infoTextView.props
+        # props = self.infoTextView.props
 
-        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-
-        eventBox = Gtk.EventBox()
-        eventBox.modify_bg(Gtk.StateFlags.NORMAL, Gdk.RGBA(1.0, 1.0, 1.0, 0.0).to_color())
-        eventBox.add(vbox)
-        self.paned.add1(eventBox)
+        # vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        #
+        # eventBox = Gtk.EventBox()
+        # eventBox.modify_bg(Gtk.StateFlags.NORMAL, Gdk.RGBA(1.0, 1.0, 1.0, 0.0).to_color())
+        # eventBox.add(vbox)
+        # self.paned.add1(eventBox)
+        # self.pack_start(eventBox, 1, 1, 0)
 
         # children = self.scrolledWindow2.get_children()
-        self.scrolledWindow.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+        # self.scrolledWindow.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
         # self.scrolledWindow.set_size_request(700, 400)
         # self.scrolledWindow.set_halign(Gtk.Align.CENTER)
-        hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        hbox.pack_start(self.scrolledWindow, 1, 1, 0)
-        vbox.pack_start(hbox, 1, 1, 0)
+        # hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        # hbox.pack_start(self.scrolledWindow, 1, 1, 0)
+        # vbox.pack_start(hbox, 1, 1, 0)
 
-        self.scrolledWindow.add(self.infoTextView)
+        # self.scrolledWindow.add(self.infoTextView)
 
-        self.paned.add1(self.scrolledWindow)
+        # self.paned.add1(self.scrolledWindow)
 
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
 
         eventBox = Gtk.EventBox()
         eventBox.modify_bg(Gtk.StateFlags.NORMAL, Gdk.RGBA(1.0, 1.0, 1.0, 0.0).to_color())
         eventBox.add(vbox)
-        self.paned.add2(eventBox)
+        # self.paned.add2(eventBox)
+        self.pack_start(eventBox, 1, 1, 0)
 
         self.scrolledWindow2 = Gtk.ScrolledWindow()
         self.scrolledWindow2.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
@@ -2467,13 +2464,13 @@ class ScriptView(Gtk.Box):
         self.createTextView()
         self.scrolledWindow2.add(self.textView)
 
-        self.infoTextView.props.left_margin = 25
-        self.infoTextView.props.right_margin = 100
-        self.infoTextView.props.wrap_mode = Gtk.WrapMode.WORD
-        self.infoTextView.props.pixels_below_lines = 10
-        self.infoTextView.props.pixels_above_lines = 10
-        self.infoTextView.props.left_margin = self.textView.descriptionLeftMargin
-        self.infoTextView.props.right_margin = self.textView.descriptionRightMargin
+        # self.infoTextView.props.left_margin = 25
+        # self.infoTextView.props.right_margin = 100
+        # self.infoTextView.props.wrap_mode = Gtk.WrapMode.WORD
+        # self.infoTextView.props.pixels_below_lines = 10
+        # self.infoTextView.props.pixels_above_lines = 10
+        # self.infoTextView.props.left_margin = self.textView.descriptionLeftMargin
+        # self.infoTextView.props.right_margin = self.textView.descriptionRightMargin
 
     def loadStory(self):
 
@@ -2532,8 +2529,8 @@ class ScriptView(Gtk.Box):
         lastTag = self.applyTags()
         self.textView.updatePanel()
 
-        self.infoTextView.get_buffer().delete(self.infoTextView.get_buffer().get_start_iter(), self.infoTextView.get_buffer().get_end_iter())
-        self.infoTextView.get_buffer().insert(self.infoTextView.get_buffer().get_start_iter(), st.info)
+        # self.infoTextView.get_buffer().delete(self.infoTextView.get_buffer().get_start_iter(), self.infoTextView.get_buffer().get_end_iter())
+        # self.infoTextView.get_buffer().insert(self.infoTextView.get_buffer().get_start_iter(), st.info)
 
         self.control.currentStory().updateMispelled()
 
@@ -2618,8 +2615,8 @@ class ScriptView(Gtk.Box):
 
         lastTag = self.applyTags()
         self.textView.updatePanel()
-        self.infoTextView.get_buffer().delete(self.infoTextView.get_buffer().get_start_iter(), self.infoTextView.get_buffer().get_end_iter())
-        self.infoTextView.get_buffer().insert(self.infoTextView.get_buffer().get_start_iter(), currentScene.info)
+        # self.infoTextView.get_buffer().delete(self.infoTextView.get_buffer().get_start_iter(), self.infoTextView.get_buffer().get_end_iter())
+        # self.infoTextView.get_buffer().insert(self.infoTextView.get_buffer().get_start_iter(), currentScene.info)
 
         self.control.doMarkSetIndexUpdate = False
         # self.addZeroWidthSpace(lastTag)
@@ -2679,8 +2676,8 @@ class ScriptView(Gtk.Box):
 
         lastTag = self.applyTags()
         self.textView.updatePanel()
-        self.infoTextView.get_buffer().delete(self.infoTextView.get_buffer().get_start_iter(), self.infoTextView.get_buffer().get_end_iter())
-        self.infoTextView.get_buffer().insert(self.infoTextView.get_buffer().get_start_iter(), currentPage.info)
+        # self.infoTextView.get_buffer().delete(self.infoTextView.get_buffer().get_start_iter(), self.infoTextView.get_buffer().get_end_iter())
+        # self.infoTextView.get_buffer().insert(self.infoTextView.get_buffer().get_start_iter(), currentPage.info)
 
         self.control.doMarkSetIndexUpdate = False
         # self.addZeroWidthSpace(lastTag)
@@ -2693,22 +2690,22 @@ class ScriptView(Gtk.Box):
 
         return lastTag
 
-    def infoTextViewKeyPress(self, widget, event):
-
-        if event.state & Gdk.ModifierType.CONTROL_MASK:
-
-            if event.keyval == 45: # minus key
-                if self.control.scriptView.infoViewFontSize > 4:
-                    self.infoViewFontSize -= 1
-                    self.infoTextView.modify_font(Pango.FontDescription("Courier Prime " + str(self.infoViewFontSize)))
-                    self.infoTextView.props.left_margin = self.textView.descriptionLeftMargin
-                    self.infoTextView.props.right_margin = self.textView.descriptionRightMargin
-
-            elif event.keyval==61: # equal key
-                self.infoViewFontSize += 1
-                self.infoTextView.modify_font(Pango.FontDescription("Courier Prime " + str(self.infoViewFontSize)))
-                self.infoTextView.props.left_margin = self.textView.descriptionLeftMargin
-                self.infoTextView.props.right_margin = self.textView.descriptionRightMargin
+    # def infoTextViewKeyPress(self, widget, event):
+    #
+    #     if event.state & Gdk.ModifierType.CONTROL_MASK:
+    #
+    #         if event.keyval == 45: # minus key
+    #             if self.control.scriptView.infoViewFontSize > 4:
+    #                 self.infoViewFontSize -= 1
+    #                 self.infoTextView.modify_font(Pango.FontDescription("Courier Prime " + str(self.infoViewFontSize)))
+    #                 self.infoTextView.props.left_margin = self.textView.descriptionLeftMargin
+    #                 self.infoTextView.props.right_margin = self.textView.descriptionRightMargin
+    #
+    #         elif event.keyval==61: # equal key
+    #             self.infoViewFontSize += 1
+    #             self.infoTextView.modify_font(Pango.FontDescription("Courier Prime " + str(self.infoViewFontSize)))
+    #             self.infoTextView.props.left_margin = self.textView.descriptionLeftMargin
+    #             self.infoTextView.props.right_margin = self.textView.descriptionRightMargin
 
     def acceptPosition(self):
         pass
@@ -2802,36 +2799,36 @@ class ScriptView(Gtk.Box):
 
         return line.tag
 
-    def updateInfo(self, textView, eventKey):
-
-        if eventKey.keyval == 65307: # esc
-            self.control.settingPanedWithEsc = True
-
-            panePosition = self.control.scriptView.paned.get_position()
-
-            if panePosition > self.get_allocated_height() -10:
-
-                self.control.scriptViewPanedPosition = 150
-
-                self.control.scriptView.paned.set_position(self.control.scriptViewPanedPosition)
-            else:
-
-                self.control.scriptView.paned.set_position(self.get_allocated_height())
-
-            GObject.timeout_add(2000, self.textView.resetSettingPanedWithEsc)
-            return 1
-
-
-        text = self.infoTextView.get_buffer().get_text(self.infoTextView.get_buffer().get_start_iter(), self.infoTextView.get_buffer().get_end_iter(), True)
-
-        if self.control.category == 'story':
-            self.currentStory().info = text
-        elif self.control.category == 'sequence':
-            self.currentSequence().info = text
-        elif self.control.category == 'scene':
-            self.currentScene().info = text
-        elif self.control.category == 'page':
-            self.currentPage().info = text
+    # def updateInfo(self, textView, eventKey):
+    #
+    #     if eventKey.keyval == 65307: # esc
+    #         self.control.settingPanedWithEsc = True
+    #
+    #         panePosition = self.control.scriptView.paned.get_position()
+    #
+    #         if panePosition > self.get_allocated_height() -10:
+    #
+    #             self.control.scriptViewPanedPosition = 150
+    #
+    #             self.control.scriptView.paned.set_position(self.control.scriptViewPanedPosition)
+    #         else:
+    #
+    #             self.control.scriptView.paned.set_position(self.get_allocated_height())
+    #
+    #         GObject.timeout_add(2000, self.textView.resetSettingPanedWithEsc)
+    #         return 1
+    #
+    #
+    #     # text = self.infoTextView.get_buffer().get_text(self.infoTextView.get_buffer().get_start_iter(), self.infoTextView.get_buffer().get_end_iter(), True)
+    #
+    #     # if self.control.category == 'story':
+    #     #     self.currentStory().info = text
+    #     # elif self.control.category == 'sequence':
+    #     #     self.currentSequence().info = text
+    #     # elif self.control.category == 'scene':
+    #     #     self.currentScene().info = text
+    #     # elif self.control.category == 'page':
+    #     #     self.currentPage().info = text
 
     def load(self):
         pass
@@ -2854,7 +2851,7 @@ class ScriptView(Gtk.Box):
 
         # self.control.currentStory().updateStoryNames()
 
-        self.paned.set_position(self.control.scriptViewPanedPosition)
+        # self.paned.set_position(self.control.scriptViewPanedPosition)
 
         self.control.category = category
 
