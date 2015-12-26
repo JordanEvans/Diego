@@ -16,10 +16,6 @@ Diego does not need to be saved, it saves each document on shutdown of the app. 
 
 ![Screenplay Mode](http://specscripter.com/screenplayMode.png "Screenplay Mode")
 
-<b>Outlining Mode</b>
-
-![Outlining Mode](http://specscripter.com/outlineMode.png "Outlining Mode")
-
 <b>System Requirements</b>
 
 Linux Operationing System (Windows very soon.)
