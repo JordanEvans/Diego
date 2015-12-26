@@ -480,6 +480,19 @@ class Scene(object):
         for page in self.pages:
             page.correspond(control, verbose=verbose)
 
+    def updateLocations(self, sceneHeading, story):
+        for page in self.pages:
+            if page.lines[0].tag == 'sceneHeading':
+                loc = sceneHeading.location(page.lines[0].text)
+                story.addLocation(loc)
+        story.locations.sort()
+
+    def updateTimes(self, sceneHeading, story):
+        for page in self.pages:
+            if page.lines[0].tag == 'sceneHeading':
+                tm = sceneHeading.time(page.lines[0].text)
+                story.addTime(tm)
+        story.locations.sort()
 
 class Page(object):
 
@@ -756,10 +769,6 @@ class Story(object):
 
         # self.hanselGretalImport()
 
-    # def createArchiveManagers(self):
-    #     for scene in self.sequences[0].scenes:
-    #         scene.createArchiveManager(self.control)
-
     def loadId(self):
 
         try:
@@ -774,11 +783,7 @@ class Story(object):
         else:
             self.createId()
 
-    # def createArchiveManagers(self):
-    #     for scene in self.sequences[0].scenes:
-    #         scene.createArchiveManager(self.control)
-
-    def updateSceneTimestamps(self):
+    def writeTimeStampFiles(self):
 
         historyDir = self.historyDir()
         for scene in self.sequences[0].scenes:
@@ -909,7 +914,7 @@ class Story(object):
 
         self.saveEvent = self.control.currentScene().currentEvent()
 
-        self.updateSceneTimestamps()
+        self.writeTimeStampFiles()
 
     def createSceneTimeStamps(self):
         for scene in self.sequences[0].scenes:
@@ -1089,26 +1094,19 @@ class Story(object):
         sh = _script.SceneHeading()
         for sequence in self.sequences:
             for scene in sequence.scenes:
-                for page in scene.pages:
-                    for line in page.lines:
-                        if line.tag == 'sceneHeading':
-                            loc = sh.location(line.text)
-                            self.addLocation(loc)
-
+                scene.updateLocations(sh, self)
         self.locations.sort()
+        print "locations", self.locations
 
     def updateTimes(self):
         self.times = DEFAULT_TIMES
         sh = _script.SceneHeading()
         for sequence in self.sequences:
             for scene in sequence.scenes:
-                for page in scene.pages:
-                    for line in page.lines:
-                        if line.tag == 'sceneHeading':
-                            tim = sh.time(line.text)
-                            self.addTime(tim)
+                scene.updateTimes(sh, self)
 
-        self.locations.sort()
+        self.times.sort()
+        print "times", self.times
 
     def updateFirstAppearancesAtLine(self, line):
         splitText = re.findall(r"[\w']+|[ .,!?;-]", line.text)

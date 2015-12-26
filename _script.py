@@ -71,7 +71,11 @@ class SceneHeading(object):
         notation = ''
 
         split = text.split('.')
-        intExt = split[0]
+
+        if len(split) > 1 and split[0] == "INT" and split[1] == "/EXT":
+            intExt = "INT./EXT."
+        else:
+            intExt = split[0]
 
         if len(split) > 1:
             split2 = "".join(split[1:]).split('-')
@@ -83,11 +87,21 @@ class SceneHeading(object):
                 location, time = split2[0], split2[1]
                 notation = " - ".join(split2[2:])
 
+        #if intExt == 'INT./EXT.':
+        location.lstrip('/EXT')
+        if len(location) > 3:
+            if location[:4] == '/EXT':
+                location = location[4:]
+
         components = intExt, location, time, notation
         stripped = []
         for component in components:
             stripped.append(component.lstrip().rstrip())
         components = stripped
+
+        # print "x", intExt
+        if intExt not in ["INT", "EXT", "INT./EXT."]:
+            components = ['','','','','']
 
         return components
 
@@ -668,6 +682,8 @@ class TextView(Gtk.TextView):
             newLineEvent.viewUpdate(self.control)
 
         self.newLineEvent = True
+
+
 
         return 1
 
@@ -1956,13 +1972,12 @@ class TextView(Gtk.TextView):
             self.word = []
 
     def updateLocationAndTime(self, line):
-        components = SceneHeading().componentsFromString(line.text)
-        cs = self.control.currentStory()
-        if len(components) > 1:
-            cs.addLocation(components[1])
-        if len(components) > 2:
-            cs.addTime(components[2])
-
+        sh = SceneHeading()
+        cs = self.control.currentScene()
+        cs.updateLocations(sh, self.control.currentStory())
+        cs.updateTimes(sh, self.control.currentStory())
+        print self.control.currentStory().locations
+        print self.control.currentStory().times
 
     # Misc./Debugging
     def printTags(self):
