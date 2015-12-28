@@ -6,7 +6,9 @@ Diego's goals are to be a simple, fast, organized, unobtrusive scriptwriting sof
 
 Diego has traded feature bloat for simplicity. Only features that are necessary to get the job done are added. Diego's design centers around keeping the writers hands on the keyboard. Keyboard shortcuts replace the common interface cluttered with buttons and menus and sub-menus.
 
-Diego does not need to be saved, it saves each document on shutdown of the app. History is infinite, but can be cleared via right click. A white background means you are treading new ground. A gray background means you have undone in this area. Blue means you have saved this area and have not undone in that area. When Diego saves, three documents are created: the Diego document, an RTF for extra tweaking, and a PDF.
+Diego does not need to be saved, it saves each document on shutdown of the app. Each Scene contains it's own history. History is persistent, which means it is saved along with the document.
+
+When Diego saves, three documents are created: the Diego document, an RTF for extra tweaking, and a PDF.
 
 <b>Graphic Novel Mode</b>
 
