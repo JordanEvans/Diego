@@ -20,7 +20,7 @@ When Diego saves, three documents are created: the Diego document, an RTF for ex
 
 <b>System Requirements</b>
 
-Linux Operationing System (Windows very soon.)
+Linux Operationing System
 
 Python 2.7
 
