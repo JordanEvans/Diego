@@ -111,8 +111,6 @@ Toggle the Screenplay Switch to Active. The first line of a scene now will auto-
 
 Press Atl + i, this information will be inserted into rtf and pdfs.
 
-<i>Not implemented yet.</i>
-
 <b>Move A Scene/Page</b>
 
 Select the Scene or Page to be moved in the Scene/Page View.  Hold down Control key and press up or down arrow key.
@@ -124,3 +122,4 @@ Select the Scene or Page to be moved in the Scene/Page View.  Hold down Control 
 Select Set Backup Disk from Right Click Menu. Follow prompt.
 
 <i>Not implemented yet.</i>
+

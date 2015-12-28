@@ -21,6 +21,119 @@ PARENTHETIC_LEFT_FACTOR = 0.45
 
 TEXT_VIEW_FACTOR = 1.41667
 
+class CompletionManager(object):
+
+    def __init__(self, control):
+        self.control = control
+        self.trie = None
+        self.prefix = ''
+        self.iter = None
+        self.punctuation = list(""" \\/~!@#$%^&*()_+=-{}|[]:";'<>?,.`""")
+
+    def cursorPrefix(self):
+
+        insertIter = self.control.scriptView.textView.insertIter()
+
+        prefix = ''
+        moved = insertIter.backward_char()
+        char = insertIter.get_char()
+        prefix = ''
+
+        while char not in self.punctuation:
+            prefix = char + prefix
+            moved = insertIter.backward_char()
+            if moved:
+                char = insertIter.get_char()
+            else:
+                break
+
+        return str(prefix)
+
+    def updateIter(self):
+        cursorPrefix = self.cursorPrefix()
+        if cursorPrefix != self.prefix:
+            suffixes = [item[0] for item in self.trie.items(unicode(cursorPrefix))]
+            self.iter = CompletionIter(suffixes)
+        self.prefix = cursorPrefix
+        print self.iter.suffix()
+
+    # def complete(self):
+    #     self.updateIter()
+    #     if self.iter is not None:
+    #         print self.iter.suffixes
+
+    def forward(self):
+        if self.iter is not None:
+            self.iter.forward()
+
+    def backward(self):
+        if self.iter is not None:
+            self.iter.backward()
+
+    def suffix(self):
+        if self.iter is not None:
+            return self.iter.suffix()
+        return ''
+
+
+class CompletionIter(object):
+
+    def __init__(self, suffixes):
+        self.suffixes = suffixes
+        self.index = 0
+
+    def forward(self):
+        if self.index + 1 < len(self.suffixes):
+            self.index += 1
+        else:
+            self.index = 0
+
+    def backward(self):
+        if self.index - 1 >= 0:
+            self.index -= 1
+        else:
+            self.index = len(self.suffixes) - 1
+
+    def suffix(self):
+        if len(self.suffixes):
+            return self.suffixes[self.index]
+        return ''
+
+
+class Completion(object):
+
+    def __init__(self, control, line, offset, suffix, sceneIndex, pageIndex):
+        self.control = control
+        self.line = line
+        self.offset = offset
+        self.suffix = suffix
+
+    def insert(self):
+        buffer = self.control.scriptView.textView.get_buffer()
+        lineIndex = self.control.scriptView.lines.index(self.line)
+        insertIter = self.control.scriptView.textView.iterAtLocation(lineIndex, self.offset)
+        buffer.insert(insertIter, self.suffix, len(self.suffix))
+        #apply tags
+
+    def delete(self):
+        buffer = self.control.scriptView.textView.get_buffer()
+        lineIndex = self.control.scriptView.lines.index(self.line)
+        startIter = self.control.scriptView.textView.iterAtLocation(lineIndex, self.offset)
+        endIter = self.control.scriptView.textView.iterAtLocation(lineIndex, self.offset + len(self.suffix))
+        buffer.delete(startIter, endIter)
+
+    def commit(self):
+        lineIndex = self.control.scriptView.lines.index(self.line)
+        event = _event.Insertion(self.sceneIndex,
+            self.pageIndex,
+            lineIndex,
+            self.offset,
+            self.suffix,
+            [self.line.tag])
+
+        event.beforeTags = [self.line.tag]
+        self.control.eventManager.addEvent(event)
+
 
 class TagIter(object):
 
@@ -111,16 +224,35 @@ class SceneHeading(object):
         hitLocation = False
         hitTime = False
 
+        split = text.split(" ")
+
+        if len(split) == 1:
+            return component
+        else:
+            if split[0] == '':
+                return component
+            elif offset <= len(split[0]):
+                return component
+            else:
+                for ie in ['INT.', 'EXT.', 'INT./EXT.']:
+                    if ie in split[0]:
+                        if offset <= len(ie):
+                            return component
+
         for i in range(len(text)):
+
             if offset == i:
                 return component
+
             c = text[i]
-            if c == '.' and not hitLocation:
+
+            if c == ' ' and component not in ['location', 'time', 'notation']:
                 component = 'location'
-            if c == '-' and not hitTime:
+
+            elif c == '-' and component not in ['time', 'notation']:
                 component = 'time'
 
-            if c == '-' and hitTime:
+            elif c == '-' and component in ['time']:
                 component = 'notation'
 
         return component
@@ -190,6 +322,8 @@ class TextView(Gtk.TextView):
 
         self.control = control
 
+        self.completionManager = CompletionManager(self.control)
+
         self.selectionMarkStart = None
         self.selectionMarkEnd = None
 
@@ -246,7 +380,7 @@ class TextView(Gtk.TextView):
         self.nameIter = None
         self.sceneHeadingIter = None
 
-        self.intExts = ["INT.", "EXT."]
+        self.intExts = ["INT.", "EXT.", "INT./EXT."]
         self.selectionTags = []
         self.selectedClipboard = []
 
@@ -254,7 +388,8 @@ class TextView(Gtk.TextView):
     # Press/Release Handling
     def buttonPress(self, widget, event):
         self.forceWordEvent()
-        self.updateNameLocationAndTime()
+        if self.control.currentLine().tag == 'sceneHeading':
+            self.updateNameLocationAndTime()
 
     def buttonRelease(self, widget, event):
 
@@ -286,6 +421,9 @@ class TextView(Gtk.TextView):
             self.get_buffer().place_cursor(insertIter)
             if bounds:
                 self.get_buffer().select_range(self.markIter(startMark), self.markIter(endMark))
+
+        if tag == 'sceneHeading':
+            self.updateNameLocationAndTime()
 
     def keyPress(self, widget, event):
 
@@ -397,21 +535,13 @@ class TextView(Gtk.TextView):
         self.nameIter = None
         self.sceneHeadingIter = None
 
-        if event.keyval == 65289: # doing formating for the tab character now.
-            self.formatPress(currentLine)
+        if event.keyval == 65289: # tab
+            self.completionManager.forward()
+            #self.completionManager.suffix()
             self.keyPressFollowUp()
             return 1
 
         if event.keyval == 65307: # esc
-            # self.control.settingPanedWithEsc = True
-            # if self.control.scriptView.paned.get_position() <= 10:
-            #     if self.control.scriptViewPanedPosition <= 10:
-            #         self.control.scriptViewPanedPosition = 150
-            #     self.control.scriptView.paned.set_position(self.control.scriptViewPanedPosition)
-            # else:
-            #     #self.control.scriptViewPanedPosition = self.control.scriptView.paned.get_position()
-            #     self.control.scriptView.paned.set_position(0)
-            # GObject.timeout_add(2000, self.resetSettingPanedWithEsc)
             return
 
         if event.keyval == 65470: # F1 press
@@ -478,6 +608,7 @@ class TextView(Gtk.TextView):
             if cutEvent:
                 self.forceWordEvent()
 
+
         if event.keyval == 32:
             self.forcingWordEvent = True
             self.currentLineMispelled()
@@ -492,6 +623,8 @@ class TextView(Gtk.TextView):
 
     def keyRelease(self, widget, event):
         self.undoing = False
+        #self.completeSpelling(None)
+        self.completionManager.updateIter()
         return
 
     def keyPressFollowUp(self):
@@ -983,7 +1116,6 @@ class TextView(Gtk.TextView):
             character = chr(event.keyval).upper()
             wordHasLength = len(self.word)
             if (char == character and wordHasLength) or self.sceneHeadingIter != None:
-
                 sh = SceneHeading()
                 component = sh.cursorComponent(self.control.currentLine().text, self.control.currentStory().index.offset)
 
@@ -1066,7 +1198,6 @@ class TextView(Gtk.TextView):
 
                         # The index must be updated where the deletion began.
                         self.control.currentStory().index.offset = deleteOffset
-
 
                         # Here means we atleast autocompleted once and continue to do so.
                         if self.sceneHeadingIter.initChar == character:
@@ -1976,8 +2107,6 @@ class TextView(Gtk.TextView):
         cs = self.control.currentScene()
         cs.updateLocations(sh, self.control.currentStory())
         cs.updateTimes(sh, self.control.currentStory())
-        print self.control.currentStory().locations
-        print self.control.currentStory().times
 
     # Misc./Debugging
     def printTags(self):
@@ -2641,6 +2770,9 @@ class ScriptView(Gtk.Box):
         self.control.searchView.find = None
 
         self.control.updateHistoryColor()
+
+        self.control.currentStory().updateTimes()
+        self.control.currentStory().updateLocations()
 
         return lastTag
 

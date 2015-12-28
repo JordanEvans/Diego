@@ -59,6 +59,7 @@ class App(object):
             self.loadTrie()
             self.loadAddWordTrie()
             self.loadRemoveWordTrie()
+            self.control.scriptView.textView.completionManager.trie = self.control.trie
         except:
             print "spellcheck not active"
 
