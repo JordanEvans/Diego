@@ -8,7 +8,7 @@ import _dialog
 
 ZERO_WIDTH_SPACE = u'\u200B'.encode('utf-8')
 HEADING = '\xef\xbf\xbc'
-NON_WORD_CHARACTERS = [' ', '\n', ',', ':', ';', '!', '"', "'", HEADING]
+NON_WORD_CHARACTERS = list(""" \\/~!@#$%^&*()_+=-{}|[]:";'<>?,.`\n""") + [HEADING]
 
 DESCRIPTION_WIDTH = 52.0
 CHARACTER_WIDTH_FACTOR = 0.35
@@ -28,7 +28,15 @@ class CompletionManager(object):
         self.trie = None
         self.prefix = ''
         self.iter = None
-        self.punctuation = list(""" \\/~!@#$%^&*()_+=-{}|[]:";'<>?,.`""")
+        self.punctuation = NON_WORD_CHARACTERS
+
+        self.hasInserted = False
+
+    def insert(self):
+        pass
+
+    def delete(self):
+        pass
 
     def cursorPrefix(self):
 
@@ -47,20 +55,21 @@ class CompletionManager(object):
             else:
                 break
 
-        return str(prefix)
+        try:
+            unicode(prefix)
+        except:
+            prefix = ''
+
+        return prefix
 
     def updateIter(self):
         cursorPrefix = self.cursorPrefix()
-        if cursorPrefix != self.prefix:
+        if len(cursorPrefix) > 1 and cursorPrefix != self.prefix:
             suffixes = [item[0] for item in self.trie.items(unicode(cursorPrefix))]
             self.iter = CompletionIter(suffixes)
+            if len(suffixes) and len(cursorPrefix) == len(suffixes[0]):
+                self.forward()
         self.prefix = cursorPrefix
-        print self.iter.suffix()
-
-    # def complete(self):
-    #     self.updateIter()
-    #     if self.iter is not None:
-    #         print self.iter.suffixes
 
     def forward(self):
         if self.iter is not None:
@@ -72,8 +81,12 @@ class CompletionManager(object):
 
     def suffix(self):
         if self.iter is not None:
-            return self.iter.suffix()
+            return self.iter.suffix()[len(self.prefix):]
         return ''
+
+    def reset(self):
+        self.prefix = ''
+        self.iter = None
 
 
 class CompletionIter(object):
@@ -102,37 +115,40 @@ class CompletionIter(object):
 
 class Completion(object):
 
-    def __init__(self, control, line, offset, suffix, sceneIndex, pageIndex):
+    def __init__(self, control, pageLineIndex, offset, suffix, sceneIndex, pageIndex):
         self.control = control
-        self.line = line
+        self.pageLineIndex = pageLineIndex
         self.offset = offset
         self.suffix = suffix
+        self.sceneIndex = sceneIndex
+        self.pageIndex = pageIndex
 
     def insert(self):
-        buffer = self.control.scriptView.textView.get_buffer()
-        lineIndex = self.control.scriptView.lines.index(self.line)
-        insertIter = self.control.scriptView.textView.iterAtLocation(lineIndex, self.offset)
-        buffer.insert(insertIter, self.suffix, len(self.suffix))
-        #apply tags
-
-    def delete(self):
-        buffer = self.control.scriptView.textView.get_buffer()
-        lineIndex = self.control.scriptView.lines.index(self.line)
-        startIter = self.control.scriptView.textView.iterAtLocation(lineIndex, self.offset)
-        endIter = self.control.scriptView.textView.iterAtLocation(lineIndex, self.offset + len(self.suffix))
-        buffer.delete(startIter, endIter)
-
-    def commit(self):
-        lineIndex = self.control.scriptView.lines.index(self.line)
+        line = self.control.currentStory().sequences[0].scenes[self.sceneIndex].pages[self.pageIndex].lines[self.pageLineIndex]
         event = _event.Insertion(self.sceneIndex,
             self.pageIndex,
-            lineIndex,
+            self.pageLineIndex,
             self.offset,
             self.suffix,
-            [self.line.tag])
-
-        event.beforeTags = [self.line.tag]
+            [line.tag])
+        event.beforeTags = [line.tag]
         self.control.eventManager.addEvent(event)
+        event.modelUpdate(self.control)
+        event.viewUpdate(self.control)
+
+    def delete(self):
+        line = self.control.currentStory().sequences[0].scenes[self.sceneIndex].pages[self.pageIndex].lines[self.pageLineIndex]
+        print "delete", line
+        event = _event.Deletion(self.sceneIndex,
+            self.pageIndex,
+            self.pageLineIndex,
+            self.offset,
+            self.suffix,
+            [line.tag])
+        event.beforeTags = [line.tag]
+        self.control.eventManager.addEvent(event)
+        event.modelUpdate(self.control)
+        event.viewUpdate(self.control)
 
 
 class TagIter(object):
@@ -323,6 +339,8 @@ class TextView(Gtk.TextView):
         self.control = control
 
         self.completionManager = CompletionManager(self.control)
+        self.completion = None
+        self.completing = False
 
         self.selectionMarkStart = None
         self.selectionMarkEnd = None
@@ -384,7 +402,6 @@ class TextView(Gtk.TextView):
         self.selectionTags = []
         self.selectedClipboard = []
 
-
     # Press/Release Handling
     def buttonPress(self, widget, event):
         self.forceWordEvent()
@@ -426,6 +443,18 @@ class TextView(Gtk.TextView):
             self.updateNameLocationAndTime()
 
     def keyPress(self, widget, event):
+
+        if self.completion is not None:
+            if event.string.isalpha() and event.string != ' ' or event.keyval in [65289, 65288, 65535]: # tab, backspace, del
+                self.completion.delete()
+                if event.keyval == 65289: # tab
+                    pass
+                else:
+                    pass
+                    self.completion = None
+                    self.completionManager.reset()
+                    # print "breaking"
+                    # return 1
 
         self.forcingWordEvent = False
         self.newLineEvent = False
@@ -469,7 +498,7 @@ class TextView(Gtk.TextView):
                 nextCharIsHeading = True
 
         if self.removeCrossPageSelection():
-            self.keyPressFollowUp()
+            self.keyPressFollowUp(event)
             return 1
 
         if event.state & Gdk.ModifierType.SHIFT_MASK:
@@ -482,14 +511,14 @@ class TextView(Gtk.TextView):
                 if event.keyval==90: # redo
                     self.forceWordEvent()
                     self.control.eventManager.redo()
-                    self.keyPressFollowUp()
+                    self.keyPressFollowUp(event)
 
                 return 1
 
             if event.keyval >= 65 and event.keyval <= 90:
                 if self.control.currentLine().tag == 'sceneHeading':
                     returnValue = self.completeSceneHeading(event)
-                    self.keyPressFollowUp()
+                    self.keyPressFollowUp(event)
                     if returnValue:
                         return 1
                 else:
@@ -525,41 +554,71 @@ class TextView(Gtk.TextView):
                 self.clearHistory(None, self.control)
 
             elif event.keyval==122: # undo
+                self.completion = None
+                self.completionManager.reset()
+
                 self.undoing = True
                 self.forceWordEvent()
                 self.control.eventManager.undo()
 
-            self.keyPressFollowUp()
+            self.keyPressFollowUp(event)
             return 1
 
         self.nameIter = None
         self.sceneHeadingIter = None
 
         if event.keyval == 65289: # tab
+
+            self.completing = True
+
+            self.forceWordEvent()
+
+            self.completionManager.updateIter()
+
+            if self.completionManager.iter:
+
+                currentLine = self.control.currentLine()
+
+                cp = self.control.currentPage()
+                pageLineIndex = cp.lines.index(currentLine)
+
+                sceneIndex = self.control.currentSequence().scenes.index(self.control.currentScene())
+                pageIndex = self.control.currentScene().pages.index(self.control.currentPage())
+                offset = self.control.currentStory().index.offset
+                suffix = self.completionManager.suffix()
+
+                self.completion = Completion(self.control, pageLineIndex, offset, suffix, sceneIndex, pageIndex)
+
+                self.completion.insert()
+
+                self.applyCompletionTag(currentLine, offset, suffix)
+
+            else:
+                self.completion = None
+
             self.completionManager.forward()
-            #self.completionManager.suffix()
-            self.keyPressFollowUp()
+            self.keyPressFollowUp(event)
             return 1
 
         if event.keyval == 65307: # esc
             return
 
         if event.keyval == 65470: # F1 press
-            self.printTags()
+            self.control.currentStory().printTags()
             return 1
 
         if event.keyval == 65471: # F2 press
             self.control.currentStory().correspond(self.control, verbose=1)
-            self.keyPressFollowUp()
+            self.keyPressFollowUp(event)
             return 1
 
         if self.insertingOnFirstIter(event):
-            self.keyPressFollowUp()
+            self.keyPressFollowUp(event)
             return 1
 
         if event.keyval == 32 and insertIter.get_line_offset() == 0: # format line
             self.formatPress(currentLine)
-            self.keyPressFollowUp()
+            self.keyPressFollowUp(event)
             return 1
 
         if (event.keyval == 65293): # new line
@@ -567,23 +626,23 @@ class TextView(Gtk.TextView):
 
         elif (event.keyval == 65288): # backspace
             self.backspacePress()
-            self.keyPressFollowUp()
+            self.keyPressFollowUp(event)
             return 1
 
         elif (event.keyval == 65535): # delete
             self.deletePress()
-            self.keyPressFollowUp()
+            self.keyPressFollowUp(event)
             return 1
 
         elif event.keyval in [65361,65362,65363,65364]: # arrow key
             self.forceWordEvent()
             self.arrowPress = True
             self.updateNameLocationAndTime()
-            self.keyPressFollowUp()
+            self.keyPressFollowUp(event)
             return 0
 
         if self.pressOnHeading():
-            self.keyPressFollowUp()
+            self.keyPressFollowUp(event)
             return 1
 
         # if not self.deleteEvent and not self.backspaceEvent and not self.arrowPress and self.isPrintable(event.string):
@@ -608,7 +667,6 @@ class TextView(Gtk.TextView):
             if cutEvent:
                 self.forceWordEvent()
 
-
         if event.keyval == 32:
             self.forcingWordEvent = True
             self.currentLineMispelled()
@@ -617,17 +675,17 @@ class TextView(Gtk.TextView):
         if event.keyval == 41:
             self.currentLineMispelled()
 
-        self.keyPressFollowUp()
+        self.keyPressFollowUp(event)
 
         return 1
 
     def keyRelease(self, widget, event):
         self.undoing = False
-        #self.completeSpelling(None)
-        self.completionManager.updateIter()
+
+
         return
 
-    def keyPressFollowUp(self):
+    def keyPressFollowUp(self, event):
 
         visibleRect = self.get_visible_rect()
         insertIter = self.insertIter()
@@ -648,6 +706,41 @@ class TextView(Gtk.TextView):
         if self.arrowPress:
             # In case the line has changed, TagIter needs current line tag.
             self.tagIter.load(self.control.currentLine().tag)
+
+        if event.string == ' ':
+            self.completionManager.reset()
+        if self.completionManager.iter is None:
+            self.completion = None
+            self.completing = False
+
+        # if self.completing and self.completion and event.string.isalpha() and event.string != ' ': # tab, backspace, del
+        #     # self.completion.delete()
+        #     if event.keyval == 65289: # tab
+        #         pass
+        #     else:
+        #
+        #         self.completionManager.updateIter()
+        #
+        #         if self.completionManager.iter:
+        #
+        #             currentLine = self.control.currentLine()
+        #
+        #             cp = self.control.currentPage()
+        #             pageLineIndex = cp.lines.index(currentLine)
+        #
+        #             sceneIndex = self.control.currentSequence().scenes.index(self.control.currentScene())
+        #             pageIndex = self.control.currentScene().pages.index(self.control.currentPage())
+        #             offset = self.control.currentStory().index.offset
+        #             suffix = self.completionManager.suffix()
+        #
+        #             self.completion = Completion(self.control, pageLineIndex, offset, suffix, sceneIndex, pageIndex)
+        #
+        #             self.completion.insert()
+        #
+        #             self.applyCompletionTag(currentLine, offset, suffix)
+        #
+        #         else:
+        #             self.completion = None
 
         return
 
@@ -1478,6 +1571,12 @@ class TextView(Gtk.TextView):
         self.parentheticScrollTag.props.left_margin = self.parentheticLeftMargin
         self.sceneHeadingScrollTag.props.left_margin = self.descriptionLeftMargin
 
+        self.descriptionCompletionTag.props.left_margin = self.descriptionLeftMargin
+        self.characterCompletionTag.props.left_margin = self.characterLeftMargin
+        self.dialogCompletionTag.props.left_margin = self.dialogLeftMargin
+        self.parentheticCompletionTag.props.left_margin = self.parentheticLeftMargin
+        self.sceneHeadingCompletionTag.props.left_margin = self.descriptionLeftMargin
+
         self.sceneHeadingMispelledTag.props.left_margin = self.descriptionLeftMargin
         self.descriptionMispelledTag.props.left_margin = self.descriptionLeftMargin
         self.characterMispelledTag.props.left_margin = self.characterLeftMargin
@@ -1502,6 +1601,12 @@ class TextView(Gtk.TextView):
         self.parentheticScrollTag.props.right_margin = self.parentheticRightMargin
         self.sceneHeadingScrollTag.props.right_margin = self.descriptionRightMargin
 
+        self.descriptionCompletionTag.props.right_margin = self.descriptionRightMargin
+        self.characterCompletionTag.props.right_margin = self.characterRightMargin
+        self.dialogCompletionTag.props.right_margin = self.dialogRightMargin
+        self.parentheticCompletionTag.props.right_margin = self.parentheticRightMargin
+        self.sceneHeadingCompletionTag.props.right_margin = self.descriptionRightMargin
+
         self.descriptionTag.props.font = "Courier Prime " + str(self.fontSize)
         self.characterTag.props.font = "Courier Prime " + str(self.fontSize)
         self.dialogTag.props.font = "Courier Prime " + str(self.fontSize)
@@ -1519,6 +1624,13 @@ class TextView(Gtk.TextView):
         self.dialogScrollTag.props.font = "Courier Prime " + str(self.fontSize)
         self.parentheticScrollTag.props.font = "Courier Prime " + str(self.fontSize)
         self.sceneHeadingScrollTag.props.font = "Courier Prime " + str(self.fontSize)
+
+
+        self.descriptionCompletionTag.props.font = "Courier Prime " + str(self.fontSize)
+        self.characterCompletionTag.props.font = "Courier Prime " + str(self.fontSize)
+        self.dialogCompletionTag.props.font = "Courier Prime " + str(self.fontSize)
+        self.parentheticCompletionTag.props.font = "Courier Prime " + str(self.fontSize)
+        self.sceneHeadingCompletionTag.props.font = "Courier Prime " + str(self.fontSize)
 
         self.descriptionMispelledTag.props.font = "Courier Prime " + str(self.fontSize)
         self.characterMispelledTag.props.font = "Courier Prime " + str(self.fontSize)
@@ -1549,6 +1661,7 @@ class TextView(Gtk.TextView):
 
         findColor = Gdk.RGBA(0.0, 0.1, 1.8, 0.15)
         scrollColor = Gdk.RGBA(0.3, 0.7, 0.3, 0.8)
+        completionColor = Gdk.RGBA(0.8, 0.8, 0.8, 0.8)
 
         self.descriptionTag = self.get_buffer().create_tag("description",
                                                      background_rgba=descriptionBackground,
@@ -1759,6 +1872,83 @@ class TextView(Gtk.TextView):
                                                      left_margin=self.descriptionLeftMargin,
                                                      right_margin=self.descriptionRightMargin,
                                                      font="Courier Prime " + str(self.fontSize))
+
+
+
+        ## Completion Tags
+
+        self.descriptionCompletionTag = self.get_buffer().create_tag("descriptionCompletion",
+                                                     foreground_rgba=completionColor,
+                                                     pixels_inside_wrap=pixelsInsideWrap,
+                                                     pixels_above_lines=10,
+                                                     pixels_below_lines=10,
+                                                     left_margin=self.descriptionLeftMargin,
+                                                     right_margin=self.descriptionRightMargin,
+                                                     font="Courier Prime " + str(self.fontSize))
+
+        self.characterCompletionTag = self.get_buffer().create_tag("characterCompletion",
+                                                   foreground_rgba=completionColor,
+                                                   left_margin=self.characterLeftMargin,
+                                                   right_margin=self.characterRightMargin,
+                                                   justification=Gtk.Justification.LEFT,
+                                                   pixels_inside_wrap=pixelsInsideWrap,
+                                                   pixels_above_lines=10,
+                                                   pixels_below_lines=0,
+                                                   font="Courier Prime " + str(self.fontSize))
+
+        self.dialogCompletionTag = self.get_buffer().create_tag("dialogCompletion",
+                                                foreground_rgba=completionColor,
+                                                left_margin=self.dialogLeftMargin,
+                                                right_margin=self.dialogRightMargin,
+                                                pixels_inside_wrap=pixelsInsideWrap,
+                                                pixels_above_lines=0,
+                                                pixels_below_lines=10,
+                                                font="Courier Prime " + str(self.fontSize))
+
+        self.parentheticCompletionTag = self.get_buffer().create_tag("parentheticCompletion",
+                                                     foreground_rgba=completionColor,
+                                                     pixels_inside_wrap=pixelsInsideWrap,
+                                                     pixels_above_lines=0,
+                                                     pixels_below_lines=0,
+                                                     left_margin=self.parentheticLeftMargin,
+                                                     right_margin=self.descriptionRightMargin,
+                                                     font="Courier Prime " + str(self.fontSize))
+
+
+        self.sceneHeadingCompletionTag = self.get_buffer().create_tag("sceneHeadingCompletion",
+                                                     foreground_rgba=completionColor, #descriptionBackground,
+                                                     pixels_inside_wrap=pixelsInsideWrap,
+                                                     pixels_above_lines=10,
+                                                     pixels_below_lines=10,
+                                                     left_margin=self.descriptionLeftMargin,
+                                                     right_margin=self.descriptionRightMargin,
+                                                     font="Courier Prime " + str(self.fontSize))
+
+    def applyCompletionTag(self, line, offset, word):
+
+        lineIndex = self.control.scriptView.lines.index(line)
+
+        print "act index", lineIndex, line.tag
+
+        startIter = self.control.scriptView.textView.get_buffer().get_iter_at_line(lineIndex)
+        startIter.forward_chars(offset)
+        endIter = self.control.scriptView.textView.get_buffer().get_iter_at_line(lineIndex)
+        endIter.forward_chars(offset + len(word))
+
+        self.control.scriptView.textView.get_buffer().remove_all_tags(startIter, endIter)
+        self.control.scriptView.textView.get_buffer().apply_tag_by_name(line.tag + "Completion", startIter, endIter)
+
+    def removeCompletionTag(self, line, offset, word):
+
+        lineIndex = self.control.scriptView.lines.index(line)
+
+        startIter = self.control.scriptView.textView.get_buffer().get_iter_at_line(lineIndex)
+        startIter.forward_chars(offset)
+        endIter = self.control.scriptView.textView.get_buffer().get_iter_at_line(lineIndex)
+        endIter.forward_chars(offset + len(word))
+
+        self.control.scriptView.textView.get_buffer().remove_all_tags(startIter, endIter)
+        self.control.scriptView.textView.get_buffer().apply_tag_by_name(line.tag, startIter, endIter)
 
     def resetGlobalMargin(self, tag):
         margin = None
@@ -2107,6 +2297,7 @@ class TextView(Gtk.TextView):
         cs = self.control.currentScene()
         cs.updateLocations(sh, self.control.currentStory())
         cs.updateTimes(sh, self.control.currentStory())
+
 
     # Misc./Debugging
     def printTags(self):

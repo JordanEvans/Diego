@@ -155,10 +155,8 @@ class View(Gtk.Box):
                         offset += len(w)
 
     def applyFindTags(self):
-
         for find in self.finds:
             self.applyFindTag(find.line, offset=find.offset)
-
 
     def applyFindTag(self, line, offset):
 
@@ -168,8 +166,6 @@ class View(Gtk.Box):
         startIter.forward_chars(offset)
         endIter = self.control.scriptView.textView.get_buffer().get_iter_at_line(lineIndex)
         endIter.forward_chars(offset + len(self.find))
-
-        # sc,ec,soff, eoff, text = startIter.get_char(), endIter.get_char(), startIter.get_offset(), endIter.get_offset(), self.control.scriptView.textView.get_buffer().get_text(startIter, endIter, True)
 
         self.control.scriptView.textView.get_buffer().remove_all_tags(startIter, endIter)
         self.control.scriptView.textView.get_buffer().apply_tag_by_name(line.tag + "Find", startIter, endIter)
@@ -184,8 +180,6 @@ class View(Gtk.Box):
         endIter = self.control.scriptView.textView.get_buffer().get_iter_at_line(lineIndex)
         endIter.forward_chars(offset + len(self.find))
 
-        # sc,ec,soff, eoff, text = startIter.get_char(), endIter.get_char(), startIter.get_offset(), endIter.get_offset(), self.control.scriptView.textView.get_buffer().get_text(startIter, endIter, True)
-
         self.control.scriptView.textView.get_buffer().remove_all_tags(startIter, endIter)
         self.control.scriptView.textView.get_buffer().apply_tag_by_name(line.tag + "Scroll", startIter, endIter)
 
@@ -197,8 +191,6 @@ class View(Gtk.Box):
         startIter.forward_chars(offset)
         endIter = self.control.scriptView.textView.get_buffer().get_iter_at_line(lineIndex)
         endIter.forward_chars(offset + len(self.find))
-
-        # sc,ec,soff, eoff, text = startIter.get_char(), endIter.get_char(), startIter.get_offset(), endIter.get_offset(), self.control.scriptView.textView.get_buffer().get_text(startIter, endIter, True)
 
         self.control.scriptView.textView.get_buffer().remove_all_tags(startIter, endIter)
         self.control.scriptView.textView.get_buffer().apply_tag_by_name(line.tag, startIter, endIter)

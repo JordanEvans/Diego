@@ -494,6 +494,11 @@ class Scene(object):
                 story.addTime(tm)
         story.locations.sort()
 
+    def printTags(self):
+        for page in self.pages:
+            page.printTags()
+
+
 class Page(object):
 
     def __init__(self, lines=[], info=''):
@@ -604,6 +609,10 @@ class Page(object):
         for line in self.lines:
             line.updateStoryNames(control)
 
+    def printTags(self):
+        count = 0
+        for line in self.lines:
+            print count, line.tag
 
 class Story(object):
 
@@ -1144,6 +1153,9 @@ class Story(object):
                 sc.correspond(control, verbose=verbose)
                 index += 1
 
+    def printTags(self):
+        for scene in self.sequences[0].scenes:
+            scene.printTags()
 
 class MispelledWord(object):
     def __init__(self, word, offset):

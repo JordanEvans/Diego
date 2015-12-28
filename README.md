@@ -63,6 +63,10 @@ If the line is empty, press the Spacebar. If the line has text, then place the c
 
 Diego uses The Double Cap Method. Hold down the Shift Key and press the character of the word you are looking for 2 times. Keep pressing the first letter of the word with the shift down to cycle through candidates. There are three things that auto-complete in Diego: Character Names and for screenplays Locations and Times.
 
+<b>Spelling Completion</b>
+
+To get help spelling a word, type as much of the word as you can and press the tab button. Hit space it you find word. Hit backspace to reset spelling completion.
+
 <i>Characters in current scene are listed first. Character in rest of story follow in completion list.</i>
 
 <b>Rename Story/Save As</b>
