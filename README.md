@@ -57,25 +57,21 @@ Select an item in the Scene or Page View. Hit Delete key. Deleting a Scene will 
 
 If the line is empty, press the Spacebar. If the line has text, then place the cursor at the beginning of the line and hit Spacebar.
 
-<i>Optionally, pressing tab will reformat the line no matter where the cursor is placed on the line.</i>
+<b>How To Complete Character Names, Locations and Times</b>
 
-<b>How To Auto-complete</b>
-
-Diego uses The Double Cap Method. Hold down the Shift Key and press the character of the word you are looking for 2 times. Keep pressing the first letter of the word with the shift down to cycle through candidates. There are three things that auto-complete in Diego: Character Names and for screenplays Locations and Times.
+Diego uses The Double Cap Method. Hold down the Shift Key and press the character of the word you are looking for 2 times. Keep pressing the first letter of the word with the shift down to cycle through candidates.
 
 <b>Spelling Completion</b>
 
 To get help spelling a word, type as much of the word as you can and press the tab button. Hit space it you find word.
 
-<i>Characters in current scene are listed first. Character in rest of story follow in completion list.</i>
-
 <b>Rename Story/Save As</b>
 
-Double click the story title in the story view. Type in new name.
+Double click the story title in the Story View. Type in new name.
 
 <b>Name/Rename A Scene Title</b>
 
-Double click the scene title in the scene view. Type in new name.
+Double click the scene title in the Scene View. Type in new name.
 
 <b>Find And Replace</b>
 
@@ -83,11 +79,11 @@ Control + r
 
 <b>Save Story</b>
 
-Control + s.  Also creates an rtf and pdf (if you have libreoffice installed).
+Control + s.  Also creates an rtf and pdf if you have Libre Office installed.
 
-<b>Save Story</b>
+<b>Save Story As</b>
 
-Control + Shift + s.  Also, just rename by double clicking the Story Title in Story View (but you will be working with the newly named document from that point on.)
+Rename by double clicking the Story Title in Story View. <i>Optionally, Control + Shift + s.</i>
 
 <b>Open Story</b>
 
@@ -99,7 +95,7 @@ Select the Scene or page in which you want the Scene/Page to be inserted before.
 
 <b>Increase/Decrease Font Size</b>
 
-Place the cursor in the editor you want to resize font. Hold down Control and press + or - keys (plus or minus).
+Place the cursor in the editor you want to resize font. Hold down Control and press the plus or minus keys.
 
 <b>Toggle Story/Scene Numbering</b>
 
