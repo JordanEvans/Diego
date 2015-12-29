@@ -1,5 +1,7 @@
 import sys
-import os, string
+import os
+import string
+import fcntl
 
 from gi.repository import Gtk, GObject, Gdk
 
@@ -161,5 +163,14 @@ class App(object):
                 story.save()
 
 if __name__ == "__main__":
+
+    pid_file = 'program.pid'
+    fp = open(pid_file, 'w')
+    try:
+        fcntl.lockf(fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except IOError:
+        _dialog.infoDialog2("Diego is already running.")
+        sys.exit(0)
+
     app = App()
     Gtk.main()

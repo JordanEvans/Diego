@@ -63,7 +63,7 @@ Diego uses The Double Cap Method. Hold down the Shift Key and press the characte
 
 <b>Spelling Completion</b>
 
-To get help spelling a word, type as much of the word as you can and press the tab button. Hit space it you find word.
+To get help spelling a word, type as much of the word as you can and press the tab button. Hit spacebar if you find word.
 
 <b>Rename Story/Save As</b>
 

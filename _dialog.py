@@ -238,3 +238,15 @@ def infoDialog(control, info=''):
     dialog.set_markup(info)
     dialog.run()
     dialog.destroy()
+
+def infoDialog2(info=''):
+    dialog = Gtk.MessageDialog(
+        None,
+        Gtk.DialogFlags.MODAL | Gtk.DialogFlags.DESTROY_WITH_PARENT,
+        Gtk.MessageType.INFO,
+        (Gtk.STOCK_OK, Gtk.ResponseType.OK),
+        None)
+
+    dialog.set_markup(info)
+    dialog.run()
+    dialog.destroy()
