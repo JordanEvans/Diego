@@ -18,9 +18,11 @@ class ArchiveManager(object):
         self.events = {}
 
         self.pathIndex = 0
+        self.scene.undoIndex = 0
         self.appendExistingPath()
         self.save()
         self.control.updateHistoryColor()
+
 
     def clear(self):
         if os.path.exists(self.control.currentStory().historyDir() + "/"):
@@ -42,6 +44,7 @@ class ArchiveManager(object):
 
         self.paths = []
         self.events = {}
+        self.scene.undoIndex = 0
 
         self.pathIndex = 0
         self.appendExistingPath()

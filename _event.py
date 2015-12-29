@@ -53,7 +53,6 @@ class Insertion(Event):
         self.offset = offset
         self.text = text
         self.tags = tags
-        print "Insertion", tags
 
         if u'heading' in tags:
             tags = tags
@@ -173,8 +172,6 @@ class Deletion(Event):
         self.text = text
         self.tags = tags
 
-        print "Deletion", tags
-
         if u'heading' in tags:
             tags = tags
             raise Exception()
@@ -197,10 +194,6 @@ class Deletion(Event):
         control.scriptView.textView.get_buffer().delete(startIter, endIter)
 
         tags = list(self.tags)
-
-        print 'Deltion v update'
-        if u'heading' in tags:
-            tags = tags
 
         tags = tags[:1]
 
@@ -283,12 +276,8 @@ class Deletion(Event):
             firstLine.text = firstLineText + lastLineText
 
         tags = list(self.tags)
-        print 'Deltion m update'
-        if u'heading' in tags:
-            tags = tags
 
         tags = tags[:1]
-
 
         for i in range(len(tags)):
             control.scriptView.textView.updateLineTag(bufferIndex + i, tags[i])

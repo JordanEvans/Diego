@@ -256,9 +256,9 @@ class Sequence(object):
         data['info'] = self.info
         return data
 
-    def findAndReplace(self, find, replace):
+    def findAndReplace(self, find, replace, control):
         for scene in self.scenes:
-            scene.findAndReplace(find, replace)
+            scene.findAndReplace(find, replace, control)
 
 
 class Scene(object):
@@ -446,9 +446,10 @@ class Scene(object):
     def createTimeStamp(self):
         self.timeStamp = time.time()
 
-    def findAndReplace(self, find, replace):
+    def findAndReplace(self, find, replace, control):
         for page in self.pages:
             page.findAndReplace(find, replace)
+        self.clearHistory(control)
 
     def names(self, control):
         names = []
@@ -524,13 +525,13 @@ class Page(object):
         find = unicode(find)
         replace = unicode(replace)
         for line in self.lines:
-            splitText = re.findall(r"[\w']+|[ .,!?;-]", line.text)
+            words = re.findall(r"[\w']+|[ .,!?;-]", line.text)
             newLine = []
-            for split in splitText:
-                if split == find:
+            for word in words:
+                if word == find:
                     newLine.append(replace)
                 else:
-                    newLine.append(split)
+                    newLine.append(word)
 
             line.text = "".join(newLine)
 
@@ -613,6 +614,7 @@ class Page(object):
         count = 0
         for line in self.lines:
             print count, line.tag
+
 
 class Story(object):
 
@@ -1036,7 +1038,7 @@ class Story(object):
 
     def findAndReplace(self, find, replace):
         for seq in self.sequences:
-            seq.findAndReplace(find, replace)
+            seq.findAndReplace(find, replace, self.control)
 
     def addName(self, name):
         name = name.upper()
@@ -1156,6 +1158,7 @@ class Story(object):
     def printTags(self):
         for scene in self.sequences[0].scenes:
             scene.printTags()
+
 
 class MispelledWord(object):
     def __init__(self, word, offset):

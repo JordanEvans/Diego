@@ -349,6 +349,8 @@ class Control(object):
 
         currentScene = self.currentScene()
 
+        print "currentScene.undoIndex", currentScene.undoIndex
+
         if currentScene.undoIndex > 0:
 
             # Gone back to the point where save occured or before (if undo is into save area)
