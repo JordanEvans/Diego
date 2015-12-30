@@ -11,7 +11,7 @@ import _archive
 from _event import EventManager
 
 DEFAULT_TIMES = ["DAY", "NIGHT", "DUSK", "DAWN"]
-RESTRICTED_CHARACTER_NAMES = ["POV", "LATER", "MONTAGE", "FLASHBACK"]
+RESTRICTED_CHARACTER_NAMES = ["POV", "LATER", "MONTAGE", 'ZOOM:', 'XLS', 'WIPE TO:', 'V.O.', 'TIME CUT', 'TIGHT ON', 'SUPER:', 'STOCK SHOT:', 'SPLIT SCREEN SHOT:', 'SMASH CUT TO:', 'SAME', 'ROLL', 'REVERSE ANGLE', 'PUSH IN:', 'PRELAP', 'O.S.', 'O.C.', 'MOS', 'MATCH DISSOLVE TO:', 'MATCH CUT TO:', 'LAP DISSOLVE:', 'JUMP CUT TO:', 'INTO VIEW:', 'INTO FRAME:', 'INSERT', 'FREEZE FRAME:', 'FLASHBACK:', 'FLASH CUT:', 'FAVOR ON', 'FADE TO:', 'EXTREME LONG SHOT', 'EXTREME CLOSE UP', 'ESTABLISHING SHOT:', 'ECU', 'EXTREME CLOSE UP', 'DISSOLVE TO:', 'CUT TO:', 'CROSSFADE:', 'CRAWL', 'CONTINUOUS', 'CLOSER ANGLE', 'CLOSE ON', 'ANGLE ON', 'AERIAL SHOT', ]
 
 class StoryIndex(object):
 
@@ -1107,7 +1107,6 @@ class Story(object):
             for scene in sequence.scenes:
                 scene.updateLocations(sh, self)
         self.locations.sort()
-        print "locations", self.locations
 
     def updateTimes(self):
         self.times = DEFAULT_TIMES
@@ -1117,7 +1116,6 @@ class Story(object):
                 scene.updateTimes(sh, self)
 
         self.times.sort()
-        print "times", self.times
 
     def updateFirstAppearancesAtLine(self, line):
         splitText = re.findall(r"[\w']+|[ .,!?;-]", line.text)

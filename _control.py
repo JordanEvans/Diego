@@ -6,7 +6,6 @@ from gi.repository import Gtk, GObject, Gdk
 # app
 import _appWindow
 import _search
-import _screenplayModeSwitch
 import _event
 
 # data
@@ -75,7 +74,6 @@ class Control(object):
         self.headerBar = Gtk.HeaderBar()
         self.pathLabel = Gtk.Label()
         self.searchView = _search.View(self)
-        self.screenplayModeSwitch = _screenplayModeSwitch.Switch(self)
 
         self.doMarkSetIndexUpdate = True
 
@@ -89,8 +87,6 @@ class Control(object):
 
         self.scriptViewPanedPosition = 0
         self.settingPanedWithEsc = False
-
-        print self.uniqueStoryId()
 
     def mispelledTimer(self):
         GObject.timeout_add(1000, self.removeMispelledTags)
@@ -152,7 +148,7 @@ class Control(object):
         self.printCount += 1
         print self.printCount, args
 
-        # if self.printCount == 5:
+        # if self.printCount == 8:
         #     print
 
         raiseException = 0
@@ -338,9 +334,6 @@ class Control(object):
     def moveCurrentPageDown(self):
         self.p('mcpd')
 
-    def screenplayMode(self):
-        return self.screenplayModeSwitch.get_active()
-
     def updateHistoryColor(self):
 
         val = 0.94
@@ -349,15 +342,12 @@ class Control(object):
 
         currentScene = self.currentScene()
 
-        print "currentScene.undoIndex", currentScene.undoIndex
-
         if currentScene.undoIndex > 0:
 
-            # Gone back to the point where save occured or before (if undo is into save area)
             if currentScene.saveIndex <= 0:
-                color = Gdk.RGBA(0.90, 0.91, 1.0, 1.0)
+                self.p("before session")
+                color = Gdk.RGBA(0.90, 0.90, 1.0, 1.0)
 
-            # Undoing before the save point.
             else:
                 color = Gdk.RGBA(val, val, val, 1.0)
 
@@ -387,7 +377,6 @@ class Control(object):
         lineIndex = self.scriptView.lines.index(line)
         lineIter = self.scriptView.textView.get_buffer().get_iter_at_line(lineIndex)
         lineIter.forward_chars(offset)
-        self.scriptView.textView.iterInfo(lineIter)
         self.scriptView.textView.scroll_to_iter(lineIter, 0.1, False, 0.0, 0.0)
         self.scriptView.textView.get_buffer().place_cursor(lineIter)
         self.scriptView.textView.grab_focus()

@@ -82,16 +82,51 @@ class App(object):
 
 
     def timedScroll(self):
-        GObject.timeout_add(300, self.scroll)
+        GObject.timeout_add(1000, self.scroll)
 
     def scroll(self):
 
+        if self.control.state.lastStoryIndex.story > len(self.control.stories) - 1:
+            self.control.state.lastStoryIndex.story = 0
+            self.control.state.lastStoryIndex.scene = 0
+            self.control.state.lastStoryIndex.page = 0
+            self.control.state.lastStoryIndex.line = 0
+            self.control.state.lastStoryIndex.offset = 0
         story = self.control.stories[self.control.state.lastStoryIndex.story]
-        sequence = story.sequences[self.control.state.lastStoryIndex.sequence]
+
+        sequence = story.sequences[0]
+
+        if self.control.state.lastStoryIndex.scene > len(sequence.scenes) - 1:
+            self.control.state.lastStoryIndex.scene = 0
+            self.control.state.lastStoryIndex.page = 0
+            self.control.state.lastStoryIndex.line = 0
+            self.control.state.lastStoryIndex.offset = 0
         scene = sequence.scenes[self.control.state.lastStoryIndex.scene]
+
+        if self.control.state.lastStoryIndex.page > len(scene.pages) - 1:
+            self.control.state.lastStoryIndex.page = 0
+            self.control.state.lastStoryIndex.line = 0
+            self.control.state.lastStoryIndex.offset = 0
         page = scene.pages[self.control.state.lastStoryIndex.page]
+
+        if self.control.state.lastStoryIndex.line > len(page.lines) - 1:
+            self.control.state.lastStoryIndex.line = 0
+            self.control.state.lastStoryIndex.offset = 0
         line = page.lines[self.control.state.lastStoryIndex.line]
+
+        if self.control.state.lastStoryIndex.offset > len(line.text) - 1:
+            self.control.state.lastStoryIndex.offset = 0
         offset = self.control.state.lastStoryIndex.offset
+
+        if line in self.control.scriptView.lines:
+            lineIndex = self.control.scriptView.lines.index(line)
+
+            # self.control.p("scroll line", line.text, lineIndex)
+
+            scrollIter = self.control.scriptView.textView.iterAtLocation(lineIndex, offset)
+            scrollMark = self.control.scriptView.textView.iterMark(scrollIter)
+            self.control.scriptView.textView.scroll_to_mark(scrollMark, 0.1, False, 0.0, 0.0)
+
 
     def select(self):
         if self.control.state.lastSelection[0] is not None:

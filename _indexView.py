@@ -21,7 +21,8 @@ class IndexView(Gtk.Box):
             self.stack.add_titled(self.control.sequenceItemBox, "sequence", "Sequence")
 
         self.stack.add_titled(self.control.sceneItemBox, "scene", "Scene")
-        self.stack.add_titled(self.control.pageItemBox, "page", "Page")
+
+        # self.stack.add_titled(self.control.pageItemBox, "page", "Page")
 
         self.pack_start(self.stack, 1, 1, 0)
 

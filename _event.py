@@ -68,6 +68,11 @@ class Insertion(Event):
         bufferIndex = control.scriptView.lines.index(eventLine)
 
         insertIter = control.scriptView.textView.iterAtLocation(bufferIndex, self.offset)
+        endIter = control.scriptView.textView.endIter()
+
+        if insertIter.get_offset() == endIter.get_offset():
+            insertIter.backward_char()
+
         control.scriptView.textView.get_buffer().insert(insertIter, self.text, len(self.text))
 
         tags = list(self.tags)
@@ -84,6 +89,9 @@ class Insertion(Event):
         else:
             afterInsertIter = control.scriptView.textView.iterAtLocation(bufferIndex, self.offset)
             afterInsertIter.forward_chars(len(self.text))
+            endIter = control.scriptView.textView.endIter()
+            if afterInsertIter.get_offset() == endIter.get_offset():
+                afterInsertIter.backward_chars(1)
             control.scriptView.textView.get_buffer().place_cursor(afterInsertIter)
 
     def modelUpdate(self, control, pushedOffHeading=False):
@@ -191,6 +199,10 @@ class Deletion(Event):
         endIter = control.scriptView.textView.iterAtLocation(bufferIndex, self.offset)
         endIter.forward_chars(len(self.text))
 
+        if startIter.get_offset() == control.scriptView.textView.endIter().get_offset():
+            startIter.backward_chars(2)
+            endIter.backward_chars(1)
+
         control.scriptView.textView.get_buffer().delete(startIter, endIter)
 
         tags = list(self.tags)
@@ -201,6 +213,7 @@ class Deletion(Event):
             control.scriptView.textView.updateLineTag(bufferIndex + i, tags[i])
 
         afterDeleteIter = control.scriptView.textView.iterAtLocation(bufferIndex, self.offset)
+
         control.scriptView.textView.get_buffer().place_cursor(afterDeleteIter)
 
     def modelUpdate(self, control, isDeleteKey=False):

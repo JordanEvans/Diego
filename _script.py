@@ -138,7 +138,6 @@ class Completion(object):
 
     def delete(self):
         line = self.control.currentStory().sequences[0].scenes[self.sceneIndex].pages[self.pageIndex].lines[self.pageLineIndex]
-        print "delete", line
         event = _event.Deletion(self.sceneIndex,
             self.pageIndex,
             self.pageLineIndex,
@@ -338,6 +337,8 @@ class TextView(Gtk.TextView):
 
         self.control = control
 
+        self.keyBeingPressed = False
+
         self.completionManager = CompletionManager(self.control)
         self.completion = None
         self.completing = False
@@ -403,13 +404,17 @@ class TextView(Gtk.TextView):
         self.selectionTags = []
         self.selectedClipboard = []
 
+
     # Press/Release Handling
     def buttonPress(self, widget, event):
+
         self.forceWordEvent()
         if self.control.currentLine().tag == 'sceneHeading':
             self.updateNameLocationAndTime()
 
     def buttonRelease(self, widget, event):
+
+        # self.iterInfo(self.insertIter())
 
         buttonReleaseScene = self.control.currentScene()
 
@@ -444,6 +449,12 @@ class TextView(Gtk.TextView):
             self.updateNameLocationAndTime()
 
     def keyPress(self, widget, event):
+
+        # if self.keyBeingPressed:
+        #     return 1
+        #
+        # if event.keyval not in [65507,65505,65509,65289,65506]:
+        #     self.keyBeingPressed = True
 
         if self.completion:
             if event.string.isalpha() and event.string != ' ' or event.keyval in [65289, 65288, 65535]: # tab, backspace, del
@@ -601,11 +612,18 @@ class TextView(Gtk.TextView):
             return 1
 
         if event.keyval == 65307: # esc
+            if self.completion:
+                self.completion.delete()
+            self.completionManager.reset()
+            self.completion = None
+            self.completing = False
+            self.completeReset = False
             self.clearFindTags()
             return
 
         if event.keyval == 65470: # F1 press
-            self.control.currentStory().printTags()
+            # self.control.currentStory().printTags()
+            self.printTags()
             return 1
 
         if event.keyval == 65471: # F2 press
@@ -623,20 +641,20 @@ class TextView(Gtk.TextView):
             return 1
 
         if (event.keyval == 65293): # new line
-            return self.returnPress()
+            self.returnPress()
+            tag = self.tagIter.tag()
+            self.keyPressFollowUp(event)
+            self.resetGlobalMargin(tag)
+            return 1
 
         elif (event.keyval == 65288): # backspace
-            # self.completionManager.reset()
-            # self.completion = None
-            # self.completing = False
-            # self.completeReset = False
-
             self.backspacePress()
             self.keyPressFollowUp(event)
             return 1
 
         elif (event.keyval == 65535): # delete
-            self.completionManager.reset()
+            if self.completion:
+                self.completion.delete()
             self.completion = None
             self.completing = False
             self.completeReset = False
@@ -698,12 +716,6 @@ class TextView(Gtk.TextView):
                 self.updateLineTag(lineIndex)
 
     def keyRelease(self, widget, event):
-        self.undoing = False
-
-
-        return
-
-    def keyPressFollowUp(self, event):
 
         visibleRect = self.get_visible_rect()
         insertIter = self.insertIter()
@@ -713,7 +725,18 @@ class TextView(Gtk.TextView):
         else:
             self.scroll_to_iter(insertIter, 0.1, False, 0.0, 0.0)
 
-        self.control.scriptView.updateCurrentStoryIndex()
+        self.undoing = False
+        return
+
+    def keyPressFollowUp(self, event):
+
+        # visibleRect = self.get_visible_rect()
+        # insertIter = self.insertIter()
+        # insertRect = self.get_iter_location(insertIter)
+        # if (insertRect.y >= visibleRect.y) and (insertRect.y + insertRect.height <= visibleRect.y + visibleRect.height):
+        #     pass
+        # else:
+        #     self.scroll_to_iter(insertIter, 0.1, False, 0.0, 0.0)
 
         if self.backspaceEvent or self.deleteEvent:
             self.updateLineTag()
@@ -751,8 +774,6 @@ class TextView(Gtk.TextView):
             offset = self.control.currentStory().index.offset
             suffix = self.completionManager.suffix()
 
-            print 'offset', offset
-
             self.completion = Completion(self.control, pageLineIndex, offset, suffix, sceneIndex, pageIndex)
 
             self.completion.insert()
@@ -760,6 +781,8 @@ class TextView(Gtk.TextView):
             self.applyCompletionTag(currentLine, offset, suffix)
 
             self.completeReset = False
+
+        self.control.scriptView.updateCurrentStoryIndex()
 
         return
 
@@ -928,7 +951,7 @@ class TextView(Gtk.TextView):
 
         self.newLineEvent = True
 
-
+        # self.iterInfo(self.insertIter())
 
         return 1
 
@@ -1947,8 +1970,6 @@ class TextView(Gtk.TextView):
 
         lineIndex = self.control.scriptView.lines.index(line)
 
-        print "act index", lineIndex, line.tag
-
         startIter = self.control.scriptView.textView.get_buffer().get_iter_at_line(lineIndex)
         startIter.forward_chars(offset)
         endIter = self.control.scriptView.textView.get_buffer().get_iter_at_line(lineIndex)
@@ -2354,6 +2375,95 @@ class TextView(Gtk.TextView):
 
 
     # Context Menu
+    def populatePopup(self, textView, popup):
+
+        sep = Gtk.SeparatorMenuItem()
+        popup.append(sep)
+        sep.show()
+
+        addSelectedWord = self.addSelectedWord()
+        if len(addSelectedWord):
+            addWord = Gtk.MenuItem("Add " + addSelectedWord + " to Dictionary")
+            popup.append(addWord)
+            addWord.show()
+            addWord.connect('activate', self.addWord, addSelectedWord)
+
+        removeSelectedWord = self.removeSelectedWord()
+        if len(removeSelectedWord):
+            removeWord = Gtk.MenuItem("Remove " + removeSelectedWord + " from Dictionary")
+            popup.append(removeWord)
+            removeWord.show()
+            removeWord.connect('activate', self.removeWord, removeSelectedWord)
+
+        if self.control.currentStory().isScreenplay:
+            modeItem = Gtk.MenuItem("Graphic Novel Mode")
+            popup.append(modeItem)
+            modeItem.show()
+            modeItem.connect('activate', self.graphicNovelMode)
+        else:
+            modeItem = Gtk.MenuItem("Screenplay Mode")
+            popup.append(modeItem)
+            modeItem.show()
+            modeItem.connect('activate', self.screenplayMode)
+
+        clearHistory = Gtk.MenuItem("Clear History")
+        popup.append(clearHistory)
+        clearHistory.show()
+        clearHistory.connect('activate', self.clearHistory, self.control)
+
+        authorContact = Gtk.MenuItem("Set Author/Contact")
+        popup.append(authorContact)
+        authorContact.show()
+        authorContact.connect('activate', self.authorContact)
+
+        help = Gtk.MenuItem("Help")
+        popup.append(help)
+        help.show()
+        help.connect('activate', self.help)
+
+    def screenplayMode(self, arg=None):
+        self.control.scriptView.modeChanging = True
+        children = self.control.indexView.stack.get_children()
+        if self.control.pageItemBox in children:
+            self.control.indexView.stack.remove(self.control.pageItemBox)
+
+        children = self.control.appBox.panelLabelBox.get_children()
+        if self.control.panelLabel in children:
+            self.control.appBox.panelLabelBox.remove(self.control.panelLabel)
+
+        self.control.currentStory().isScreenplay = True
+
+        self.control.scriptView.textView.tagIter.updateMode(self.control)
+
+        self.control.indexView.stack.set_focus_child(self.control.storyItemBox)
+
+        self.control.category = "story"
+        self.control.scriptView.resetAndLoad()
+        self.control.app.window.show_all()
+        self.control.scriptView.modeChanging = False
+
+    def graphicNovelMode(self, arg=None):
+        self.control.scriptView.modeChanging = True
+        children = self.control.indexView.stack.get_children()
+        if self.control.pageItemBox not in children:
+            self.control.indexView.stack.add_titled(self.control.pageItemBox, "page", "Page")
+
+        children = self.control.appBox.panelLabelBox.get_children()
+        if self.control.panelLabel not in  self.control.appBox.panelLabelBox:
+            self.control.appBox.panelLabelBox.add(self.control.panelLabel)
+
+        self.control.currentStory().isScreenplay = False
+        self.control.scriptView.removeScreenplayTags()
+
+        self.control.scriptView.textView.tagIter.updateMode(self.control)
+
+        self.control.indexView.stack.set_focus_child(self.control.storyItemBox)
+
+        self.control.category = "story"
+        self.control.scriptView.resetAndLoad()
+        self.control.app.window.show_all()
+        self.control.scriptView.modeChanging = False
+
     def addWord(self, arg, word):
         f = open(self.control.addWordPath, 'r')
         addWords = f.read().split('\n')
@@ -2590,41 +2700,6 @@ class TextView(Gtk.TextView):
         self.selectAllCurrentPage()
         self.get_buffer().select_range(self.endIter(), self.endIter())
 
-    def populatePopup(self, textView, popup):
-
-        sep = Gtk.SeparatorMenuItem()
-        popup.append(sep)
-        sep.show()
-
-        addSelectedWord = self.addSelectedWord()
-        if len(addSelectedWord):
-            addWord = Gtk.MenuItem("Add " + addSelectedWord + " to Dictionary")
-            popup.append(addWord)
-            addWord.show()
-            addWord.connect('activate', self.addWord, addSelectedWord)
-
-        removeSelectedWord = self.removeSelectedWord()
-        if len(removeSelectedWord):
-            removeWord = Gtk.MenuItem("Remove " + removeSelectedWord + " from Dictionary")
-            popup.append(removeWord)
-            removeWord.show()
-            removeWord.connect('activate', self.removeWord, removeSelectedWord)
-
-        clearHistory = Gtk.MenuItem("Clear History")
-        popup.append(clearHistory)
-        clearHistory.show()
-        clearHistory.connect('activate', self.clearHistory, self.control)
-
-        authorContact = Gtk.MenuItem("Set Author/Contact")
-        popup.append(authorContact)
-        authorContact.show()
-        authorContact.connect('activate', self.authorContact)
-
-        help = Gtk.MenuItem("Help")
-        popup.append(help)
-        help.show()
-        help.connect('activate', self.help)
-
     def clearHistory(self, event, control):
         for scene in self.control.currentSequence().scenes:
             scene.clearHistory(control)
@@ -2768,56 +2843,22 @@ class ScriptView(Gtk.Box):
         Gtk.Box.__init__(self)
         self.control = control
         self.off = True
+        self.modeChanging = False
 
         self.lines = []
         self.headingEntries = []
 
-        # self.paned = Gtk.Paned(orientation=Gtk.Orientation.VERTICAL)
-        # self.paned.connect('map-event', self.acceptPosition)
-        # self.pack_start(self.paned, 1, 1, 0)
-
-        # self.infoTextView = Gtk.TextView()
-        # self.infoViewFontSize = 16
-        # self.infoTextView.connect('key-release-event', self.updateInfo)
-        # self.infoTextView.connect('key-press-event', self.infoTextViewKeyPress)
-
-        # self.scrolledWindow = Gtk.ScrolledWindow()
-        # self.scrolledWindow.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-
-        # props = self.infoTextView.props
-
-        # vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        #
-        # eventBox = Gtk.EventBox()
-        # eventBox.modify_bg(Gtk.StateFlags.NORMAL, Gdk.RGBA(1.0, 1.0, 1.0, 0.0).to_color())
-        # eventBox.add(vbox)
-        # self.paned.add1(eventBox)
-        # self.pack_start(eventBox, 1, 1, 0)
-
-        # children = self.scrolledWindow2.get_children()
-        # self.scrolledWindow.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
-        # self.scrolledWindow.set_size_request(700, 400)
-        # self.scrolledWindow.set_halign(Gtk.Align.CENTER)
-        # hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        # hbox.pack_start(self.scrolledWindow, 1, 1, 0)
-        # vbox.pack_start(hbox, 1, 1, 0)
-
-        # self.scrolledWindow.add(self.infoTextView)
-
-        # self.paned.add1(self.scrolledWindow)
 
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
 
         eventBox = Gtk.EventBox()
         eventBox.modify_bg(Gtk.StateFlags.NORMAL, Gdk.RGBA(1.0, 1.0, 1.0, 0.0).to_color())
         eventBox.add(vbox)
-        # self.paned.add2(eventBox)
         self.pack_start(eventBox, 1, 1, 0)
 
         self.scrolledWindow2 = Gtk.ScrolledWindow()
         self.scrolledWindow2.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
-        # self.scrolledWindow2.set_size_request(200, 400)
-        # self.scrolledWindow2.set_halign(Gtk.Align.CENTER)
+
         hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         hbox.pack_start(self.scrolledWindow2, 1, 1, 0)
         vbox.pack_start(hbox, 1, 1, 0)
@@ -2825,16 +2866,7 @@ class ScriptView(Gtk.Box):
         self.createTextView()
         self.scrolledWindow2.add(self.textView)
 
-        # self.infoTextView.props.left_margin = 25
-        # self.infoTextView.props.right_margin = 100
-        # self.infoTextView.props.wrap_mode = Gtk.WrapMode.WORD
-        # self.infoTextView.props.pixels_below_lines = 10
-        # self.infoTextView.props.pixels_above_lines = 10
-        # self.infoTextView.props.left_margin = self.textView.descriptionLeftMargin
-        # self.infoTextView.props.right_margin = self.textView.descriptionRightMargin
-
     def loadStory(self):
-
         self.lines = []
         self.headingEntries = []
 
@@ -3040,11 +3072,7 @@ class ScriptView(Gtk.Box):
 
         lastTag = self.applyTags()
         self.textView.updatePanel()
-        # self.infoTextView.get_buffer().delete(self.infoTextView.get_buffer().get_start_iter(), self.infoTextView.get_buffer().get_end_iter())
-        # self.infoTextView.get_buffer().insert(self.infoTextView.get_buffer().get_start_iter(), currentPage.info)
 
-        self.control.doMarkSetIndexUpdate = False
-        # self.addZeroWidthSpace(lastTag)
         self.control.doMarkSetIndexUpdate = True
 
         self.control.searchView.reset()
@@ -3053,23 +3081,6 @@ class ScriptView(Gtk.Box):
         self.control.updateHistoryColor()
 
         return lastTag
-
-    # def infoTextViewKeyPress(self, widget, event):
-    #
-    #     if event.state & Gdk.ModifierType.CONTROL_MASK:
-    #
-    #         if event.keyval == 45: # minus key
-    #             if self.control.scriptView.infoViewFontSize > 4:
-    #                 self.infoViewFontSize -= 1
-    #                 self.infoTextView.modify_font(Pango.FontDescription("Courier Prime " + str(self.infoViewFontSize)))
-    #                 self.infoTextView.props.left_margin = self.textView.descriptionLeftMargin
-    #                 self.infoTextView.props.right_margin = self.textView.descriptionRightMargin
-    #
-    #         elif event.keyval==61: # equal key
-    #             self.infoViewFontSize += 1
-    #             self.infoTextView.modify_font(Pango.FontDescription("Courier Prime " + str(self.infoViewFontSize)))
-    #             self.infoTextView.props.left_margin = self.textView.descriptionLeftMargin
-    #             self.infoTextView.props.right_margin = self.textView.descriptionRightMargin
 
     def acceptPosition(self):
         pass
@@ -3163,37 +3174,6 @@ class ScriptView(Gtk.Box):
 
         return line.tag
 
-    # def updateInfo(self, textView, eventKey):
-    #
-    #     if eventKey.keyval == 65307: # esc
-    #         self.control.settingPanedWithEsc = True
-    #
-    #         panePosition = self.control.scriptView.paned.get_position()
-    #
-    #         if panePosition > self.get_allocated_height() -10:
-    #
-    #             self.control.scriptViewPanedPosition = 150
-    #
-    #             self.control.scriptView.paned.set_position(self.control.scriptViewPanedPosition)
-    #         else:
-    #
-    #             self.control.scriptView.paned.set_position(self.get_allocated_height())
-    #
-    #         GObject.timeout_add(2000, self.textView.resetSettingPanedWithEsc)
-    #         return 1
-    #
-    #
-    #     # text = self.infoTextView.get_buffer().get_text(self.infoTextView.get_buffer().get_start_iter(), self.infoTextView.get_buffer().get_end_iter(), True)
-    #
-    #     # if self.control.category == 'story':
-    #     #     self.currentStory().info = text
-    #     # elif self.control.category == 'sequence':
-    #     #     self.currentSequence().info = text
-    #     # elif self.control.category == 'scene':
-    #     #     self.currentScene().info = text
-    #     # elif self.control.category == 'page':
-    #     #     self.currentPage().info = text
-
     def load(self):
         pass
 
@@ -3213,20 +3193,15 @@ class ScriptView(Gtk.Box):
 
         self.control.app.updateWindowTitle()
 
-        # self.control.currentStory().updateStoryNames()
-
-        # self.paned.set_position(self.control.scriptViewPanedPosition)
-
         self.control.category = category
 
         self.control.scriptView.addZeroWidthSpace(lastTag)
 
-        if not self.control.screenplayModeSwitch.activating:
-            if self.control.currentStory().isScreenplay:
-                self.control.screenplayModeSwitch.set_state(True)
-            else:
-                self.control.screenplayModeSwitch.set_state(False)
-            self.control.screenplayModeSwitch.callHandlerCode = False
+        # if not self.modeChanging:
+        #     if self.control.currentStory().isScreenplay:
+        #         self.control.scriptView.textView.screenplayMode()
+        #     else:
+        #         self.control.scriptView.textView.graphicNovelMode()
 
         self.textView.tagIter.updateMode(self.control)
 

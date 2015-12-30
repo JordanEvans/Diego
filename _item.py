@@ -14,6 +14,7 @@ class Item(Gtk.EventBox):
 
         self.saving = False
         self.editing = False
+        self.doubleClick = False
 
         self.connect('button-press-event', self.buttonPress)
         self.connect('button-release-event', self.buttonRelease)

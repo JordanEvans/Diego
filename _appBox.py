@@ -37,14 +37,14 @@ class AppBox(Gtk.Box):
 
         # Add the Panel box
         self.panelLabelBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        self.panelLabelBox.pack_start(self.control.panelLabel, 1, 1, 1)
+        # self.panelLabelBox.pack_start(self.control.panelLabel, 1, 1, 1)
         self.control.appHeaderBar.pack_start(self.panelLabelBox)
 
         # Add SearchEntry
         self.control.appHeaderBar.pack_end(self.control.searchView)
 
         # Add Screenplay Mode Switch
-        self.control.appHeaderBar.pack_end(self.control.screenplayModeSwitch)
+        # self.control.appHeaderBar.pack_end(self.control.screenplayModeSwitch)
 
         # Add Paned, which includes IndexView on left and ScriptView on right.
         self.paned = Paned()
