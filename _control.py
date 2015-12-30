@@ -345,7 +345,6 @@ class Control(object):
         if currentScene.undoIndex > 0:
 
             if currentScene.saveIndex <= 0:
-                self.p("before session")
                 color = Gdk.RGBA(0.90, 0.90, 1.0, 1.0)
 
             else:

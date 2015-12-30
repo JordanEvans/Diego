@@ -2421,7 +2421,7 @@ class TextView(Gtk.TextView):
         help.show()
         help.connect('activate', self.help)
 
-    def screenplayMode(self, arg=None):
+    def screenplayMode(self, arg=None, reset=True):
         self.control.scriptView.modeChanging = True
         children = self.control.indexView.stack.get_children()
         if self.control.pageItemBox in children:
@@ -2437,12 +2437,13 @@ class TextView(Gtk.TextView):
 
         self.control.indexView.stack.set_focus_child(self.control.storyItemBox)
 
-        self.control.category = "story"
-        self.control.scriptView.resetAndLoad()
-        self.control.app.window.show_all()
+        if reset:
+            self.control.category = "story"
+            self.control.scriptView.resetAndLoad()
+            self.control.app.window.show_all()
         self.control.scriptView.modeChanging = False
 
-    def graphicNovelMode(self, arg=None):
+    def graphicNovelMode(self, arg=None, reset=True):
         self.control.scriptView.modeChanging = True
         children = self.control.indexView.stack.get_children()
         if self.control.pageItemBox not in children:
@@ -2459,9 +2460,10 @@ class TextView(Gtk.TextView):
 
         self.control.indexView.stack.set_focus_child(self.control.storyItemBox)
 
-        self.control.category = "story"
-        self.control.scriptView.resetAndLoad()
-        self.control.app.window.show_all()
+        if reset:
+            self.control.category = "story"
+            self.control.scriptView.resetAndLoad()
+            self.control.app.window.show_all()
         self.control.scriptView.modeChanging = False
 
     def addWord(self, arg, word):
@@ -3197,11 +3199,11 @@ class ScriptView(Gtk.Box):
 
         self.control.scriptView.addZeroWidthSpace(lastTag)
 
-        # if not self.modeChanging:
-        #     if self.control.currentStory().isScreenplay:
-        #         self.control.scriptView.textView.screenplayMode()
-        #     else:
-        #         self.control.scriptView.textView.graphicNovelMode()
+        if not self.modeChanging:
+            if self.control.currentStory().isScreenplay:
+                self.control.scriptView.textView.screenplayMode(reset=False)
+            else:
+                self.control.scriptView.textView.graphicNovelMode(reset=False)
 
         self.textView.tagIter.updateMode(self.control)
 
