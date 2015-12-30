@@ -65,10 +65,6 @@ Diego uses The Double Cap Method. Hold down the Shift Key and press the characte
 
 To get help spelling a word, type as much of the word as you can and press the tab button. Hit spacebar if you find word. Hit Escape key to cancel completion.
 
-<b>Rename Story/Save As</b>
-
-Double click the story title in the Story View. Type in new name.
-
 <b>Name/Rename A Scene Title</b>
 
 Double click the scene title in the Scene View. Type in new name.
@@ -107,7 +103,7 @@ Go to Story, Scene, or Page View. Type single word in Find Entry.
 
 <b>Screenplay Mode</b>
 
-Right click over the text editor and choose Screenplay Mode. In Screenplay mode, Locations and Times will complete using the Double Cap Method.
+Right click over the text editor. Choose Screenplay Mode from the popup menu. In Screenplay mode, Locations and Times will complete using the Double Cap Method.
 
 <b>Set Author/Contact Information</b>
 
