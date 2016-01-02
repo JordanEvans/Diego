@@ -2,7 +2,7 @@
 
 <h3>Simple. Fast. Organized.</h3>
 
-Diego's goals are to be a simple, fast, organized, unobtrusive scriptwriting software for Graphic Novel Writers. Diego seconds as specscript software as well.
+Diego's goals are to be a simple, fast, organized, unobtrusive scriptwriting software for Graphic Novel Writers. Diego seconds as [spec script](https://en.wikipedia.org/wiki/Spec_script>spec script) software as well.
 
 Diego has traded feature bloat for simplicity. Only features that are necessary to get the job done are added. Diego's design centers around keeping the writers hands on the keyboard. Keyboard shortcuts replace the common interface cluttered with buttons and menus and sub-menus.
 
