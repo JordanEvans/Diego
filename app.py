@@ -65,8 +65,6 @@ class App(object):
         except:
             print "spellcheck not active"
 
-        # self.control.scriptView.paned.set_position(self.control.state.scriptViewPanedPosition)
-
         self.control.category = self.control.state.lastCategory
         self.control.indexView.stack.set_visible_child_name(self.control.state.lastCategory)
 
@@ -74,15 +72,15 @@ class App(object):
             self.control.timedSelect(self.control.state.lastSelection[0], self.control.state.lastSelection[1], 100)
 
         self.timedFontReset()
-        self.timedScroll()
+        # self.timedScroll() # not working
 
     def timedFontReset(self):
         a = Gdk.Rectangle(self.control.windowPosition[0], self.control.windowPosition[1], self.control.state.width, self.control.state.height)
-        GObject.timeout_add(200, self.control.scriptView.textView.do_size_allocate, a)
-
+        # This may need to be larger than the scroll time, not sure entirely what the bug is.
+        GObject.timeout_add(1000, self.control.scriptView.textView.do_size_allocate, a)
 
     def timedScroll(self):
-        GObject.timeout_add(1000, self.scroll)
+        GObject.timeout_add(500, self.scroll)
 
     def scroll(self):
 

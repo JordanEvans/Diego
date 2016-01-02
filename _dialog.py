@@ -22,9 +22,12 @@ class SetAuthorAndContactDialog(Gtk.Dialog):
 
         hbox = Gtk.HBox()
         label = Gtk.Label("Author")
-        hbox.pack_start(label, 0, 0, 5)
+        hbox.pack_start(label, 1, 1, 5)
+        vbox.pack_start(hbox, 0, 0, 2)
+
+        hbox = Gtk.HBox()
         self.authorEntry = Gtk.Entry()
-        hbox.pack_end(self.authorEntry, 0, 0, 5)
+        hbox.pack_start(self.authorEntry, 1, 1, 5)
         vbox.pack_start(hbox, 0, 0, 2)
 
         hbox = Gtk.VBox()
@@ -81,6 +84,7 @@ class FindAndReplaceDialog(Gtk.Dialog):
             self.destroy()
 
     def findAndReplace(self):
+        self.control.scriptView.textView.forceWordEvent()
         self.control.currentStory().findAndReplace(self.findEntry.get_text(), self.replaceEntry.get_text())
         self.control.scriptView.resetAndLoad()
         self.control.scriptView.textView.show_all()

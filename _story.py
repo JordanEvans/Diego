@@ -110,13 +110,13 @@ class Line(object):
 
                 lineIndex = control.scriptView.lines.index(self)
 
-                startIter = control.scriptView.textView.get_buffer().get_iter_at_line(lineIndex)
+                startIter = control.scriptView.textView.buffer.get_iter_at_line(lineIndex)
                 startIter.forward_chars(word.offset)
-                endIter = control.scriptView.textView.get_buffer().get_iter_at_line(lineIndex)
+                endIter = control.scriptView.textView.buffer.get_iter_at_line(lineIndex)
                 endIter.forward_chars(word.offset + len(word.word))
 
-                control.scriptView.textView.get_buffer().remove_all_tags(startIter, endIter)
-                control.scriptView.textView.get_buffer().apply_tag_by_name(self.tag + "Mispelled", startIter, endIter)
+                control.scriptView.textView.buffer.remove_all_tags(startIter, endIter)
+                control.scriptView.textView.buffer.apply_tag_by_name(self.tag + "Mispelled", startIter, endIter)
         else:
             lineOffset = control.scriptView.textView.insertIter().get_line_offset()
             cursorWord = None
@@ -129,15 +129,15 @@ class Line(object):
                 word = cursorWord
                 lineIndex = control.scriptView.lines.index(self)
 
-                startIter = control.scriptView.textView.get_buffer().get_iter_at_line(lineIndex)
+                startIter = control.scriptView.textView.buffer.get_iter_at_line(lineIndex)
                 startIter.forward_chars(word.offset)
-                endIter = control.scriptView.textView.get_buffer().get_iter_at_line(lineIndex)
+                endIter = control.scriptView.textView.buffer.get_iter_at_line(lineIndex)
                 endIter.forward_chars(word.offset + len(word.word))
 
-                control.scriptView.textView.get_buffer().remove_all_tags(startIter, endIter)
-                control.scriptView.textView.get_buffer().apply_tag_by_name(self.tag + "Mispelled", startIter, endIter)
+                control.scriptView.textView.buffer.remove_all_tags(startIter, endIter)
+                control.scriptView.textView.buffer.apply_tag_by_name(self.tag + "Mispelled", startIter, endIter)
 
-    def updateStoryNames(self, control):
+    def addUppercasNamesToStoryNames(self, control):
         names = []
 
         if self.tag == 'character':
@@ -473,9 +473,9 @@ class Scene(object):
 
         return names + storyNames
 
-    def updateStoryNames(self, control):
+    def addUppercasNamesToStoryNames(self, control):
         for page in self.pages:
-            page.updateStoryNames(control)
+            page.addUppercasNamesToStoryNames(control)
 
     def correspond(self, control, verbose=False):
         for page in self.pages:
@@ -606,9 +606,9 @@ class Page(object):
                 s = str(l[0]) + " " + str(l[1]) + " " + col1Text + col2Text
                 print s
 
-    def updateStoryNames(self, control):
+    def addUppercasNamesToStoryNames(self, control):
         for line in self.lines:
-            line.updateStoryNames(control)
+            line.addUppercasNamesToStoryNames(control)
 
     def printTags(self):
         count = 0
@@ -772,7 +772,6 @@ class Story(object):
             self.updateLocations()
             self.updateTimes()
 
-        # self.updateSceneIds()
         self.makeHistoryDir()
         self.updateEventCount()
 
@@ -1077,7 +1076,7 @@ class Story(object):
 
         for sequence in self.sequences:
             for scene in sequence.scenes:
-                scene.updateStoryNames(self.control)
+                scene.addUppercasNamesToStoryNames(self.control)
 
         self.upperCaseFirstOccurenceOfCharactersInDescription()
 

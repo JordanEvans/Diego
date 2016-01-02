@@ -34,6 +34,11 @@ Pygtk 3.14.15 + installed.
 
 <p><a href="http://quoteunquoteapps.com/courierprime/">Courier Prime Font</a> Courier Prime is needed for correct formatting in viewing and exporting.</p>
 
+<h2>Two Example Scripts are included:</h2>
+Hansel And Gretal - Screenplay directly adapted from the original story.
+Salem - Sample piece of graphic novel.
+
+
 <h2>How To Use Diego</h2>
 <i>At this time the app is in development and only meant for testing.</i>
 

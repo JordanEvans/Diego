@@ -14,6 +14,7 @@ if __name__ == '__main__':
         os.mkdir(path)
     os.system("cp -purv *.py " + path)
     os.system("cp -puv '/home/dev/Diego/Stories/HanselAndGretel' /home/dev/DiegoGit/")
+    os.system("cp -puv '/home/dev/Diego/Stories/Salem' /home/dev/DiegoGit/")
     os.system("cp -puv '/home/dev/Diego/README.md' /home/dev/DiegoGit/")
     os.system("cp -puv '/home/dev/Diego/widgetView.png' /home/dev/DiegoGit/")
 

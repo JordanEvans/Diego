@@ -62,6 +62,8 @@ class Insertion(Event):
 
     def viewUpdate(self, control):
 
+        # control.scriptView.textView.buffer.begin_user_action()
+
         scene = control.currentSequence().scenes[self.scene]
         page = scene.pages[self.page]
         eventLine = page.lines[self.line]
@@ -73,26 +75,35 @@ class Insertion(Event):
         if insertIter.get_offset() == endIter.get_offset():
             insertIter.backward_char()
 
-        control.scriptView.textView.get_buffer().insert(insertIter, self.text, len(self.text))
+        control.scriptView.textView.buffer.insert_interactive(insertIter, self.text, len(self.text), True)
 
         tags = list(self.tags)
 
-        for i in range(len(tags)):
-            line = control.scriptView.lines[bufferIndex + i]
-            control.scriptView.lines[bufferIndex + i].tag = tags[i]
-            control.scriptView.textView.updateLineTag(bufferIndex + i)
+        # for i in range(len(tags)):
+        #     print "bufferIndex + i", bufferIndex + i
+        #     line = control.scriptView.lines[bufferIndex + i]
+        #     line.tag = tags[i]
+        #     control.scriptView.textView.updateLineTag(bufferIndex + i)
+
+        # This is done vs. just doing the lines that are modified due to an unknown bug
+        # that corrupts the formating in the buffer on a multline insertion.
+        for i in range(len(control.scriptView.lines)):
+            if control.scriptView.lines[i].tag != 'heading':
+                control.scriptView.textView.updateLineTag(i)
 
         if self.pushedOffHeading:
             insertIter = control.scriptView.textView.insertIter()
             insertIter.backward_char()
-            control.scriptView.textView.get_buffer().place_cursor(insertIter)
+            control.scriptView.textView.buffer.place_cursor(insertIter)
         else:
             afterInsertIter = control.scriptView.textView.iterAtLocation(bufferIndex, self.offset)
             afterInsertIter.forward_chars(len(self.text))
             endIter = control.scriptView.textView.endIter()
             if afterInsertIter.get_offset() == endIter.get_offset():
                 afterInsertIter.backward_chars(1)
-            control.scriptView.textView.get_buffer().place_cursor(afterInsertIter)
+            control.scriptView.textView.buffer.place_cursor(afterInsertIter)
+
+        # control.scriptView.textView.buffer.end_user_action()
 
     def modelUpdate(self, control, pushedOffHeading=False):
 
@@ -117,6 +128,11 @@ class Insertion(Event):
             eventLine.tag = tags[0]
 
         else:
+
+            # If the line in which the past occurs is empty,
+            # The line being pasted on it will override it's tag.
+            if len(eventLine.text) == 0:
+                eventLine.tag = self.tags[0]
 
             # Inserting extra lines, carry text will be set.
             carryText = eventLine.text[self.offset:]
@@ -203,18 +219,24 @@ class Deletion(Event):
             startIter.backward_chars(2)
             endIter.backward_chars(1)
 
-        control.scriptView.textView.get_buffer().delete(startIter, endIter)
+        control.scriptView.textView.buffer.delete(startIter, endIter)
 
         tags = list(self.tags)
 
         tags = tags[:1]
 
-        for i in range(len(tags)):
-            control.scriptView.textView.updateLineTag(bufferIndex + i, tags[i])
+        # for i in range(len(tags)):
+        #     control.scriptView.textView.updateLineTag(bufferIndex + i, tags[i])
+
+        # This is done vs. just doing the lines that are modified.
+        # This Insertion has a bug, so this is done as a precaution although may be unneccesary.
+        for i in range(len(control.scriptView.lines)):
+            if control.scriptView.lines[i].tag != 'heading':
+                control.scriptView.textView.updateLineTag(i)
 
         afterDeleteIter = control.scriptView.textView.iterAtLocation(bufferIndex, self.offset)
 
-        control.scriptView.textView.get_buffer().place_cursor(afterDeleteIter)
+        control.scriptView.textView.buffer.place_cursor(afterDeleteIter)
 
     def modelUpdate(self, control, isDeleteKey=False):
 
@@ -314,7 +336,7 @@ class Deletion(Event):
         eventLine = page.lines[self.line]
         bufferIndex = control.scriptView.lines.index(eventLine)
         afterDeleteIter = control.scriptView.textView.iterAtLocation(bufferIndex, self.offset)
-        control.scriptView.textView.get_buffer().place_cursor(afterDeleteIter)
+        control.scriptView.textView.buffer.place_cursor(afterDeleteIter)
 
         control.scriptView.textView.grab_focus()
 
@@ -354,7 +376,7 @@ class Backspace(Event):
 
         endIter = control.scriptView.textView.iterAtLocation(bufferIndex, self.offset)
 
-        control.scriptView.textView.get_buffer().delete(startIter, endIter)
+        control.scriptView.textView.buffer.delete(startIter, endIter)
 
         if self.offset != 0:
             control.scriptView.textView.updateLineTag(bufferIndex, self.tags[0])
@@ -403,10 +425,10 @@ class Backspace(Event):
 
             insertIter.backward_chars(len(self.carryText) + zeroSpaceCharacterAdjustment)
 
-            # control.scriptView.textView.get_buffer().insert(insertIter, 'xxx', len('xxx'))
+            # control.scriptView.textView.buffer.insert(insertIter, 'xxx', len('xxx'))
 
             # control.scriptView.textView.iterInfo(insertIter)
-            control.scriptView.textView.get_buffer().insert(insertIter, self.text, len(self.text))
+            control.scriptView.textView.buffer.insert(insertIter, self.text, len(self.text))
 
             # model
             newLine = _story.Line(self.carryText, tag=self.tags[1])
@@ -422,7 +444,7 @@ class Backspace(Event):
             control.scriptView.textView.updateLineTag(bufferIndex)
 
             moveIter = control.scriptView.textView.iterAtLocation(bufferIndex + 1, self.offset)
-            control.scriptView.textView.get_buffer().place_cursor(moveIter)
+            control.scriptView.textView.buffer.place_cursor(moveIter)
 
         else:
             eventLine = page.lines[self.line]
@@ -431,7 +453,7 @@ class Backspace(Event):
             insertIter.backward_char()
 
             # view
-            control.scriptView.textView.get_buffer().insert(insertIter, self.text, len(self.text))
+            control.scriptView.textView.buffer.insert(insertIter, self.text, len(self.text))
 
             # model
 
@@ -440,7 +462,7 @@ class Backspace(Event):
             control.scriptView.textView.updateLineTag(bufferIndex)
 
             moveIter = control.scriptView.textView.iterAtLocation(bufferIndex, self.offset)
-            control.scriptView.textView.get_buffer().place_cursor(moveIter)
+            control.scriptView.textView.buffer.place_cursor(moveIter)
 
         control.scriptView.textView.grab_focus()
 
@@ -516,7 +538,7 @@ class FormatLines(Event):
             control.scriptView.textView.updateLineTag(bufferIndex + i, self.beforeTags[i])
 
         afterEventIter = control.scriptView.textView.iterAtLocation(bufferIndex, self.offset)
-        control.scriptView.textView.get_buffer().place_cursor(afterEventIter)
+        control.scriptView.textView.buffer.place_cursor(afterEventIter)
 
         control.scriptView.textView.resetGlobalMargin(self.beforeTags[0])
 
@@ -531,7 +553,7 @@ class FormatLines(Event):
         bufferIndex = control.scriptView.lines.index(eventLine)
 
         afterEventIter = control.scriptView.textView.iterAtLocation(bufferIndex, self.offset)
-        control.scriptView.textView.get_buffer().place_cursor(afterEventIter)
+        control.scriptView.textView.buffer.place_cursor(afterEventIter)
 
         control.scriptView.textView.resetGlobalMargin(self.tags[0]) # this may cause a problem, only a multiple line format, whatever does multiline should set tag on cursor line after format.
 
@@ -737,7 +759,7 @@ class EventManager(object):
 
     def scroll(self):
         lineIndex = self.control.scriptView.textView.insertIter().get_line()
-        scrollIter = self.control.scriptView.textView.get_buffer().get_iter_at_line(lineIndex)
+        scrollIter = self.control.scriptView.textView.buffer.get_iter_at_line(lineIndex)
         self.control.scriptView.textView.scroll_to_iter(scrollIter, 0, 0, 0, True)
 
 

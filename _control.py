@@ -374,10 +374,10 @@ class Control(object):
         if len(self.scriptView.lines) -1 < line:
             return
         lineIndex = self.scriptView.lines.index(line)
-        lineIter = self.scriptView.textView.get_buffer().get_iter_at_line(lineIndex)
+        lineIter = self.scriptView.textView.buffer.get_iter_at_line(lineIndex)
         lineIter.forward_chars(offset)
         self.scriptView.textView.scroll_to_iter(lineIter, 0.1, False, 0.0, 0.0)
-        self.scriptView.textView.get_buffer().place_cursor(lineIter)
+        self.scriptView.textView.buffer.place_cursor(lineIter)
         self.scriptView.textView.grab_focus()
 
     def timedScroll(self, line, offset, time=250):
@@ -385,7 +385,7 @@ class Control(object):
 
     def selectionOffsets(self):
 
-        bounds = self.scriptView.textView.get_buffer().get_selection_bounds()
+        bounds = self.scriptView.textView.buffer.get_selection_bounds()
 
         if len(bounds):
 
@@ -400,9 +400,9 @@ class Control(object):
         return None, None
 
     def select(self, startOffset, endOffset):
-        selectionStartIter = self.scriptView.textView.get_buffer().get_iter_at_offset(startOffset)
-        selectionEndIter = self.scriptView.textView.get_buffer().get_iter_at_offset(endOffset)
-        self.scriptView.textView.get_buffer().select_range(selectionStartIter, selectionEndIter)
+        selectionStartIter = self.scriptView.textView.buffer.get_iter_at_offset(startOffset)
+        selectionEndIter = self.scriptView.textView.buffer.get_iter_at_offset(endOffset)
+        self.scriptView.textView.buffer.select_range(selectionStartIter, selectionEndIter)
 
     def timedSelect(self, startOffset, endOffset, time=250):
         GObject.timeout_add(time, self.select, startOffset, endOffset)
