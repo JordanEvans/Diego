@@ -795,7 +795,10 @@ class Story(object):
 
     def writeTimeStampFiles(self):
 
+
         historyDir = self.historyDir()
+        if not os.path.exists(historyDir):
+            self.makeHistoryDir()
         for scene in self.sequences[0].scenes:
             timeStampPath = historyDir + "/" + "timestamp-" + str(scene.id)
 
@@ -875,7 +878,7 @@ class Story(object):
             return
 
         else:
-            self.control.saveDir = os.path.split(self.path)[0] + '/'
+            # self.control.saveDir = os.path.split(self.path)[0] + '/'
             self._save(self.path, pdf=pdf, rtf=rtf)
             return
 
@@ -963,9 +966,7 @@ class Story(object):
         if self.path == None:
             self.path = self.uniquePath()
 
-        self.control.saveDir = os.path.split(self.path)[0] + '/'
-
-        self.control.saveDir = os.path.split(self.path)[0] + '/'
+        # self.control.saveDir = os.path.split(self.path)[0] + '/'
         self.control.scriptView.textView.forceWordEvent()
         data = self.data(self)
         with open(self.path, 'w') as fp:

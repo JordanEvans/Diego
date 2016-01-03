@@ -136,4 +136,3 @@ Control + Delete
 
 Select Set Backup Disk from Right Click Menu.
 
-

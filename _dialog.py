@@ -135,7 +135,7 @@ def openFile(control):
             dialog.destroy()
             infoDialog(control, 'That Story is already open.')
             return
-            
+
     if response == Gtk.ResponseType.OK:
 
         if os.path.exists(dialog.get_filename()):
