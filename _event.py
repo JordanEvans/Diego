@@ -75,8 +75,6 @@ class Insertion(Event):
         if insertIter.get_offset() == endIter.get_offset():
             insertIter.backward_char()
 
-        control.scriptView.textView.iterInfo(insertIter)
-
         control.scriptView.textView.buffer.insert_interactive(insertIter, self.text, len(self.text), True)
 
         tags = list(self.tags)

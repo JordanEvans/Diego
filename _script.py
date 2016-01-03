@@ -417,6 +417,13 @@ class TextView(Gtk.TextView):
             self.updateNameLocationAndTime()
         currentLine.addUppercasNamesToStoryNames(self.control)
 
+        if self.completion:
+            self.completeReset = False
+            self.completion = None
+            self.completionManager.reset()
+            self.completing = False
+            self.updateLineTag()
+
     def buttonRelease(self, widget, event):
 
         # self.iterInfo(self.insertIter())
@@ -455,22 +462,42 @@ class TextView(Gtk.TextView):
 
     def keyPress(self, widget, event):
 
-        # if self.keyBeingPressed:
-        #     return 1
-        #
-        # if event.keyval not in [65507,65505,65509,65289,65506]:
-        #     self.keyBeingPressed = True
-
         if self.completion:
-            if event.string.isalpha() and event.string != ' ' or event.keyval in [65289, 65288, 65535]: # tab, backspace, del
-                self.completion.delete()
+            if event.string.isalpha() and event.string != ' ' or event.keyval in [65289, 65288, 65307, 65293]: # tab, backspace, del
 
-                if event.keyval == 65289: # tab
-                    pass
+                if event.keyval == 65293: # enter
+                    self.completionManager.reset()
+                    self.completion = None
+                    self.completing = False
+                    self.completeReset = False
+                    self.completion = None
+                    self.completing = False
+                    self.doCompleteReset()
+                    return 1
+
+                elif event.keyval == 65307: # del
+                    self.completion.delete()
+                    self.doCompleteReset()
+                    event.keyval = 65289
+                    return 1
+
                 else:
-                    self.completeReset = True
+                    self.completion.delete()
+
+                    if event.keyval == 65289: # tab
+                        pass
+                    else:
+                        self.completeReset = True
+                        self.completion = None
+                        self.completionManager.reset()
+
+            elif event.keyval in [65361,65362,65363,65364]: # arrow keys
+                if self.completion:
+                    self.completeReset = False
                     self.completion = None
                     self.completionManager.reset()
+                    self.completing = False
+                    self.updateLineTag()
 
         self.forcingWordEvent = False
         self.newLineEvent = False
@@ -518,6 +545,7 @@ class TextView(Gtk.TextView):
             return 1
 
         if event.state & Gdk.ModifierType.SHIFT_MASK:
+
             if event.state & Gdk.ModifierType.CONTROL_MASK:
 
                 if event.keyval==75: # kill app
@@ -618,12 +646,19 @@ class TextView(Gtk.TextView):
             return 1
 
         if event.keyval == 65307: # esc
+            # if self.completion:
+            #     self.completion.delete()
+            # self.completionManager.reset()
+            # self.completion = None
+            # self.completing = False
+            # self.completeReset = False
+
             if self.completion:
                 self.completion.delete()
-            self.completionManager.reset()
             self.completion = None
             self.completing = False
             self.completeReset = False
+
             self.clearFindTags()
             return
 
@@ -659,8 +694,15 @@ class TextView(Gtk.TextView):
             return 1
 
         elif (event.keyval == 65535): # delete
+            # if self.completion:
+            #     self.completion.delete()
+            # self.completion = None
+            # self.completing = False
+            # self.completeReset = False
+
             if self.completion:
                 self.completion.delete()
+            self.completionManager.reset()
             self.completion = None
             self.completing = False
             self.completeReset = False
@@ -760,28 +802,31 @@ class TextView(Gtk.TextView):
             self.completing = False
 
         if self.completeReset:
-            self.forceWordEvent()
+            self.doCompleteReset()
 
-            self.completionManager.reset()
-            self.completionManager.updateIter()
+    def doCompleteReset(self):
+        self.forceWordEvent()
 
-            currentLine = self.control.currentLine()
+        self.completionManager.reset()
+        self.completionManager.updateIter()
 
-            cp = self.control.currentPage()
-            pageLineIndex = cp.lines.index(currentLine)
+        currentLine = self.control.currentLine()
 
-            sceneIndex = self.control.currentSequence().scenes.index(self.control.currentScene())
-            pageIndex = self.control.currentScene().pages.index(self.control.currentPage())
-            offset = self.control.currentStory().index.offset
-            suffix = self.completionManager.suffix()
+        cp = self.control.currentPage()
+        pageLineIndex = cp.lines.index(currentLine)
 
-            self.completion = Completion(self.control, pageLineIndex, offset, suffix, sceneIndex, pageIndex)
+        sceneIndex = self.control.currentSequence().scenes.index(self.control.currentScene())
+        pageIndex = self.control.currentScene().pages.index(self.control.currentPage())
+        offset = self.control.currentStory().index.offset
+        suffix = self.completionManager.suffix()
 
-            self.completion.insert()
+        self.completion = Completion(self.control, pageLineIndex, offset, suffix, sceneIndex, pageIndex)
 
-            self.applyCompletionTag(currentLine, offset, suffix)
+        self.completion.insert()
 
-            self.completeReset = False
+        self.applyCompletionTag(currentLine, offset, suffix)
+
+        self.completeReset = False
 
         return
 
@@ -2009,6 +2054,7 @@ class TextView(Gtk.TextView):
 
     def updateLineTag(self, line=None, formatingLastLineWhenEmpty=False, autoSceneHeading=True):
 
+
         if line is not None:
             updateLine = self.control.scriptView.lines[line]
             bufferIndex = self.control.scriptView.lines.index(updateLine)
@@ -2416,10 +2462,10 @@ class TextView(Gtk.TextView):
             modeItem.show()
             modeItem.connect('activate', self.screenplayMode)
 
-        clearHistory = Gtk.MenuItem("Clear History")
-        popup.append(clearHistory)
-        clearHistory.show()
-        clearHistory.connect('activate', self.clearHistory, self.control)
+        # clearHistory = Gtk.MenuItem("Clear History")
+        # popup.append(clearHistory)
+        # clearHistory.show()
+        # clearHistory.connect('activate', self.clearHistory, self.control)
 
         authorContact = Gtk.MenuItem("Set Author/Contact")
         popup.append(authorContact)
@@ -2751,10 +2797,15 @@ class TextView(Gtk.TextView):
 
     def focusOut(self, widget, event):
         self.forceWordEvent()
-        self.completionManager.reset()
-        self.completion = None
-        self.completing = False
-        self.completeReset = False
+
+        if self.completion:
+            # self.completion.delete()
+            self.completeReset = False
+            self.completion = None
+            self.completionManager.reset()
+            self.completing = False
+            self.updateLineTag()
+
         self.control.currentLine().addUppercasNamesToStoryNames(self.control)
 
     def focusIn(self, widget, event):

@@ -68,7 +68,17 @@ Diego uses The Double Cap Method. Hold down the Shift Key and press the characte
 
 <b>Spelling Completion</b>
 
-To get help spelling a word, type as much of the word as you can and press the tab button. Hit spacebar if you find word. Hit Escape key to cancel completion.
+Tab key turns completion on.
+
+Interactive Usage: Type as much of the word as you can and press the Tab key to see candidate suffixes, then...
+
+- Hitting Space key will accept current suffix, places a space after it and turns completion off.
+
+- Hitting Delete key will remove current suffix and turn completion off.
+
+- Hitting Escape key will remove current suffix, and resets completion to first suffix.
+
+- Hitting Return key will accept current suffix, but keeps completion on.
 
 <b>Name/Rename A Scene Title</b>
 
@@ -117,6 +127,10 @@ Press Atl + i, this information will be inserted into rtf and pdfs.
 <b>Move A Scene/Page</b>
 
 Select the Scene or Page to be moved in the Scene/Page View.  Hold down Control key and press up or down arrow key.
+
+<b>Clear History</b>
+
+Control + Delete
 
 <b>Set Backup Disk</b>
 

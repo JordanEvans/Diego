@@ -98,7 +98,8 @@ class Control(object):
             except:
                 self.mispelledLine = None
             else:
-                self.scriptView.textView.updateLineTag(index)
+                if self.scriptView.textView.completion is None:
+                    self.scriptView.textView.updateLineTag(index)
                 self.mispelledLine = None
 
     def wordMispelled(self, word):
