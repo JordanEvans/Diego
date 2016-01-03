@@ -323,16 +323,66 @@ class Control(object):
         self.p('mcsd')
 
     def moveCurrentSceneUp(self):
-        self.p('mcscu')
+        item = self.sceneItemBox.getSelectedItem()
+        itemIndex = self.sceneItemBox.scenes.index(item)
+        scene = self.currentStory().sequences[0].scenes[itemIndex]
+
+        if itemIndex == 0:
+            return
+
+        scene = self.currentStory().sequences[0].scenes.pop(itemIndex)
+
+        self.currentStory().sequences[0].scenes.insert(itemIndex - 1, scene)
+
+        self.sceneItemBox.reset()
+        self.sceneItemBox.load()
+        self.sceneItemBox.loadSceneAtIndex(itemIndex - 1)
 
     def moveCurrentSceneDown(self):
-        self.p('mcscd')
+        item = self.sceneItemBox.getSelectedItem()
+        itemIndex = self.sceneItemBox.scenes.index(item)
+        scene = self.currentStory().sequences[0].scenes[itemIndex]
+
+        if itemIndex == len(self.sceneItemBox.scenes) - 1:
+            return
+
+        scene = self.currentStory().sequences[0].scenes.pop(itemIndex)
+
+        self.currentStory().sequences[0].scenes.insert(itemIndex + 1, scene)
+
+        self.sceneItemBox.reset()
+        self.sceneItemBox.load()
+        self.sceneItemBox.loadSceneAtIndex(itemIndex + 1)
 
     def moveCurrentPageUp(self):
-        self.p('mcpu')
+        item = self.pageItemBox.getSelectedItem()
+        itemIndex = self.pageItemBox.pages.index(item)
+        page = self.currentScene().pages[itemIndex]
+
+        if itemIndex == 0:
+            return
+
+        page = self.currentScene().pages.pop(itemIndex)
+
+        self.currentScene().pages.insert(itemIndex - 1, page)
+
+        self.pageItemBox.updateNumberated()
+        self.pageItemBox.loadPageAtIndex(itemIndex - 1)
 
     def moveCurrentPageDown(self):
-        self.p('mcpd')
+        item = self.pageItemBox.getSelectedItem()
+        itemIndex = self.pageItemBox.pages.index(item)
+        page = self.currentScene().pages[itemIndex]
+
+        if itemIndex == len(self.pageItemBox.pages) - 1:
+            return
+
+        page = self.currentScene().pages.pop(itemIndex)
+
+        self.currentScene().pages.insert(itemIndex + 1, page)
+
+        self.pageItemBox.updateNumberated()
+        self.pageItemBox.loadPageAtIndex(itemIndex + 1)
 
     def updateHistoryColor(self):
 

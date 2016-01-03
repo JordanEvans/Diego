@@ -892,6 +892,16 @@ class Story(object):
         with open(path, 'w') as fp:
             json.dump(data, fp)
 
+        if self.control.state.backupDir and os.path.exists(self.control.state.backupDir) and os.path.isdir(self.control.state.backupDir):
+
+            count = 0
+            backupPath = self.control.state.backupDir + "/" + str(count) + "-" + self.title
+            while os.path.exists(backupPath):
+                backupPath = self.control.state.backupDir + "/" + str(count) + "-" + self.title
+                count += 1
+            with open(backupPath, 'w') as fp:
+                json.dump(data, fp)
+
         self.control.app.updateWindowTitle()
 
         if path == None:

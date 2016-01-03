@@ -11,7 +11,7 @@ class IndexListBox(Gtk.ListBox):
 
     def do_key_press_event(self, event):
 
-        if event.keyval == 65293:
+        if event.keyval == 65293: # enter key
             selectedRows = self.get_selected_rows()
             if len(selectedRows) == 0:
                 return

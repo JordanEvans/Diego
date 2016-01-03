@@ -219,3 +219,11 @@ class PageItemBox(ScrolledListBox):
 
     def rowAtIndex(self, index):
         return self.listbox.get_row_at_index(index)
+
+    def getSelectedItem(self):
+        row = self.listbox.get_selected_row()
+        if row:
+            rows = self.listbox.get_children()
+            if row in rows:
+                index = rows.index(row)
+                return self.pages[index]

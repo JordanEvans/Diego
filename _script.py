@@ -346,6 +346,8 @@ class TextView(Gtk.TextView):
         self.completing = False
         self.completeReset = False
 
+        self.undoing = False
+
         self.selectionMarkStart = None
         self.selectionMarkEnd = None
 
@@ -731,17 +733,11 @@ class TextView(Gtk.TextView):
 
         self.undoing = False
 
+        self.control.scriptView.updateCurrentStoryIndex()
+
         return
 
     def keyPressFollowUp(self, event):
-
-        # visibleRect = self.get_visible_rect()
-        # insertIter = self.insertIter()
-        # insertRect = self.get_iter_location(insertIter)
-        # if (insertRect.y >= visibleRect.y) and (insertRect.y + insertRect.height <= visibleRect.y + visibleRect.height):
-        #     pass
-        # else:
-        #     self.scroll_to_iter(insertIter, 0.1, False, 0.0, 0.0)
 
         if self.backspaceEvent or self.deleteEvent:
             self.updateLineTag()
@@ -786,8 +782,6 @@ class TextView(Gtk.TextView):
             self.applyCompletionTag(currentLine, offset, suffix)
 
             self.completeReset = False
-
-        self.control.scriptView.updateCurrentStoryIndex()
 
         return
 
@@ -1142,7 +1136,7 @@ class TextView(Gtk.TextView):
         cutEvent = self.chainDeleteSelectedTextEvent()
         self.updateLineTag()
         if cutEvent:
-            self.textView.place_cursor(self.insertIter())
+            self.buffer.place_cursor(self.insertIter())
             return 1
 
         self.backspaceEvent = True
@@ -1303,7 +1297,7 @@ class TextView(Gtk.TextView):
                         startIter = self.insertIter()
                         endIter = self.insertIter()
                         startIter.backward_chars(1)
-                        self.textView.delete(startIter,endIter)
+                        self.buffer.delete(startIter,endIter)
 
                         # complete the current iters name
                         self.completeWordOnLine(self.sceneHeadingIter.name(),

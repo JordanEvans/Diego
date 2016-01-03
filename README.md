@@ -37,8 +37,7 @@ Pygtk 3.14.15 + installed.
 <h4>Two Example Scripts are included:</h4>
 Hansel And Gretal - Screenplay directly adapted from the original story.
 
-Salem - Sample piece of graphic novel.
-
+Salem - Sample pages from a graphic novel.
 
 <h2>How To Use Diego</h2>
 <i>At this time the app is in development and only meant for testing.</i>
@@ -118,8 +117,6 @@ Press Atl + i, this information will be inserted into rtf and pdfs.
 <b>Move A Scene/Page</b>
 
 Select the Scene or Page to be moved in the Scene/Page View.  Hold down Control key and press up or down arrow key.
-
-<i>Not implemented yet.</i>
 
 <b>Set Backup Disk</b>
 
