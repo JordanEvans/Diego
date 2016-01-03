@@ -2472,10 +2472,18 @@ class TextView(Gtk.TextView):
         authorContact.show()
         authorContact.connect('activate', self.authorContact)
 
+        authorContact = Gtk.MenuItem("Set Backup Disk")
+        popup.append(authorContact)
+        authorContact.show()
+        authorContact.connect('activate', self.setBackupDir)
+
         help = Gtk.MenuItem("Help")
         popup.append(help)
         help.show()
         help.connect('activate', self.help)
+
+    def setBackupDir(self, arg=None):
+        _dialog.chooseBackupDir(self.control)
 
     def screenplayMode(self, arg=None, reset=True):
         self.control.scriptView.modeChanging = True

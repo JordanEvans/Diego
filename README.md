@@ -134,7 +134,6 @@ Control + Delete
 
 <b>Set Backup Disk</b>
 
-Select Set Backup Disk from Right Click Menu. Follow prompt.
+Select Set Backup Disk from Right Click Menu.
 
-<i>Not implemented yet.</i>
 

@@ -181,6 +181,9 @@ class App(object):
 
     def shutdownUnsavedFileCheck(self):
 
+        if self.control.state.backupDir and not os.path.exists(self.control.state.backupDir):
+            _dialog.infoDialog(self.control, "Your backup directory cannot be found:\n\n" + self.control.state.backupDir)
+
         self.control.currentStory().save()
 
         for story in self.control.stories:

@@ -105,6 +105,22 @@ def saveFile(control):
 
     dialog.destroy()
 
+def chooseBackupDir(control):
+    dialog = Gtk.FileChooserDialog("Choose Backup Direcroty", control.app.window,
+        Gtk.FileChooserAction.SELECT_FOLDER,
+        (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
+         Gtk.STOCK_APPLY, Gtk.ResponseType.OK))
+    dialog.set_current_folder(control.saveDir)
+
+    response = dialog.run()
+    if response == Gtk.ResponseType.OK:
+        dirName = dialog.get_filename()
+        control.state.backupDir = dirName
+    elif response == Gtk.ResponseType.CANCEL:
+        pass
+
+    dialog.destroy()
+
 def openFile(control):
     dialog = Gtk.FileChooserDialog("Please choose a file", control.app.window,
         Gtk.FileChooserAction.OPEN,
