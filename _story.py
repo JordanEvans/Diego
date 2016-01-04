@@ -624,13 +624,21 @@ class Story(object):
         self.scenesCreated = 0
 
         self.control = control
-        self.path = path
-        self.title = self.uniqueTitle()
+
+        if path and os.path.exists(path):
+            self.path = path
+        else:
+            self.path = None
+
+        self.title = ''
         if path:
             try:
                 self.title = os.path.split(path)[-1]
             except:
-                self.title = ""
+                self.title = self.uniqueTitle()
+        else:
+            self.title = self.uniqueTitle()
+
         self.synopsis=''
         self.notes=''
         self.sequences = []
@@ -749,7 +757,7 @@ class Story(object):
         if 'scenesCreated' in data.keys():
             self.scenesCreated = data['scenesCreated']
 
-        self.title=data['title']
+        self.title= os.path.split(self.path)[-1] #data['title']
         self.synopsis=data['synopsis']
         self.notes=data['notes']
         self.info = data['info']
@@ -794,7 +802,6 @@ class Story(object):
             self.createId()
 
     def writeTimeStampFiles(self):
-
 
         historyDir = self.historyDir()
         if not os.path.exists(historyDir):
@@ -849,8 +856,10 @@ class Story(object):
     def uniquePath(self):
         count = 1
 
+        storyPath = os.path.realpath(os.curdir) + '/Stories/'
+
         try:
-            title = self.control.currentStory().title
+            title = self.title
         except:
             title = self.uniqueTitle()
 
@@ -858,12 +867,12 @@ class Story(object):
         if split[0] == "Untitled":
             title = "Untitled"
 
-        if not os.path.exists(self.control.saveDir + title):
-            return self.control.saveDir + title
+        if not os.path.exists(storyPath + title):
+            return storyPath + title
 
-        while os.path.exists(self.control.saveDir + title + "-" + str(count)):
+        while os.path.exists(storyPath + title + "-" + str(count)):
             count += 1
-        return self.control.saveDir + title + "-" + str(count)
+        return storyPath + title + "-" + str(count)
 
     def save(self, pdf=True, rtf=True):
 
@@ -965,7 +974,6 @@ class Story(object):
     def defaultSave(self):
         if self.path == None:
             self.path = self.uniquePath()
-
         # self.control.saveDir = os.path.split(self.path)[0] + '/'
         self.control.scriptView.textView.forceWordEvent()
         data = self.data(self)

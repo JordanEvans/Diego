@@ -136,3 +136,7 @@ Control + Delete
 
 Select Set Backup Disk from Right Click Menu.
 
+<b>Minimal View</b>
+
+Press Escape Key
+

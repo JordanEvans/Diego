@@ -253,12 +253,14 @@ class Control(object):
 
     def newStory(self):
 
+        print "ns"
+
         for s in self.stories:
             if not s.saved:
                 s.save(pdf=False, rtf=False)
 
         story = Story(self)
-        self.index +=1
+        self.index += 1
         story.createId()
 
         story.makeHistoryDir()

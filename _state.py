@@ -176,11 +176,9 @@ class State(object):
                     defaultStory.load()
                     self.control.stories = [defaultStory]
 
-
     def reset(self):
         currentStory = self.control.currentStory()
         if currentStory:
             self.control.currentStory().path = None
         if os.path.exists(self.path):
             os.remove(self.path)
-

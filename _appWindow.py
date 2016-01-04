@@ -9,6 +9,7 @@ class Window(Gtk.Window):
     def __init__(self, control):
         Gtk.Window.__init__(self, title="Diego")
         self.control = control
+        self.isFullscreen = False
 
     def postInit(self):
         self.layout()
@@ -28,11 +29,11 @@ class Window(Gtk.Window):
 
     def keyPress(self, widget, event):
 
-        if event.state & Gdk.ModifierType.SHIFT_MASK:
-            if event.state & Gdk.ModifierType.CONTROL_MASK:
-                if event.keyval==83: # save as
-                    _dialog.saveFile(self.control)
-                    return 1
+        # if event.state & Gdk.ModifierType.SHIFT_MASK:
+        #     if event.state & Gdk.ModifierType.CONTROL_MASK:
+        #         if event.keyval==83: # save as
+        #             _dialog.saveFile(self.control)
+        #             return 1
 
         if event.state & Gdk.ModifierType.CONTROL_MASK:
 
@@ -73,7 +74,21 @@ class Window(Gtk.Window):
             elif (event.keyval ==112):
                 self.control.preferences.window()
         else:
-            pass
+
+            if event.keyval == 65307: # esc
+                self.control.scriptView.textView.escapePress()
+                return
+
+            if event.keyval == 65482: # F2 press
+                if self.isFullscreen:
+                    self.unfullscreen()
+                    self.isFullscreen = False
+                else:
+                    self.fullscreen()
+                    self.isFullscreen = True
+
+            return 1
+
 
     def newDocument(self):
         self.control.reset()

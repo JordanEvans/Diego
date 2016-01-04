@@ -646,20 +646,7 @@ class TextView(Gtk.TextView):
             return 1
 
         if event.keyval == 65307: # esc
-            # if self.completion:
-            #     self.completion.delete()
-            # self.completionManager.reset()
-            # self.completion = None
-            # self.completing = False
-            # self.completeReset = False
-
-            if self.completion:
-                self.completion.delete()
-            self.completion = None
-            self.completing = False
-            self.completeReset = False
-
-            self.clearFindTags()
+            # self.escapePress()
             return
 
         if event.keyval == 65470: # F1 press
@@ -756,12 +743,34 @@ class TextView(Gtk.TextView):
 
         return 1
 
+    def escapePress(self):
+        if self.completion:
+            self.completion.delete()
+        self.completion = None
+        self.completing = False
+        self.completeReset = False
+
+        if self.clearFindTags():
+            pass
+        else:
+            if self.control.appHeaderBar in self.control.appBox.get_children():
+                self.control.appBox.remove(self.control.appHeaderBar)
+                self.control.appBox.paned.remove(self.control.indexView)
+            else:
+                self.control.appBox.pack_start(self.control.appHeaderBar, 0, 0, 0)
+                self.control.appBox.paned.add1(self.control.indexView)
+            self.grab_focus()
+
     def clearFindTags(self):
+        cleared = False
         for line in self.control.scriptView.lines:
             if line.__class__.__name__ != "Heading":
+                if not cleared and len(line.findTags):
+                    cleared = True
                 line.findTags = []
                 lineIndex = self.control.scriptView.lines.index(line)
                 self.updateLineTag(lineIndex)
+        return cleared
 
     def keyRelease(self, widget, event):
 

@@ -55,7 +55,7 @@ class AppBox(Gtk.Box):
         self.paned.add1(self.control.indexView)
         self.paned.add2(self.control.scriptView)
         self.paned.set_position(150)
-        self.pack_start(vbox, 1, 1, 0)
+        self.pack_end(vbox, 1, 1, 0)
 
     def connections(self, ):
         pass

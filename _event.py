@@ -744,6 +744,11 @@ class EventManager(object):
         self.control.currentStory().saved = False
 
     def undo(self):
+
+        if self.control.appHeaderBar not in self.control.appBox.get_children():
+            self.control.appBox.pack_start(self.control.appHeaderBar, 0, 0, 0)
+            self.control.appBox.paned.add1(self.control.indexView)
+
         currentScene = self.control.currentScene()
         currentScene.undo(self.control)
         self.control.searchView.reset()
@@ -751,6 +756,11 @@ class EventManager(object):
         self.scroll()
 
     def redo(self):
+
+        if self.control.appHeaderBar not in self.control.appBox.get_children():
+            self.control.appBox.pack_start(self.control.appHeaderBar, 0, 0, 0)
+            self.control.appBox.paned.add1(self.control.indexView)
+
         currentScene = self.control.currentScene()
         currentScene.redo(self.control)
         self.control.searchView.reset()

@@ -145,21 +145,21 @@ class StoryItemBox(ScrolledListBox):
 
             self.loadStoryAtIndex(rowIndex)
 
-    def loadStoryAtIndex(self, index=None):
-
-        if index == None:
-            cs = self.control.currentStory()
-            index = self.control.stories.index(cs)
-
-        row = self.control.storyItemBox.listbox.get_row_at_index(index)
-
-        self.control.storyItemBox.listbox.resetAndLoad(row)
-
-        if row:
-            self.control.storyItemBox.listbox.select_row(row)
-            row.grab_focus()
-
-        # self.control.currentStory().updateStoryNames()
+    # def loadStoryAtIndex(self, index=None):
+    #
+    #     if index == None:
+    #         cs = self.control.currentStory()
+    #         index = self.control.stories.index(cs)
+    #
+    #     row = self.control.storyItemBox.listbox.get_row_at_index(index)
+    #
+    #     self.control.storyItemBox.listbox.resetAndLoad(row)
+    #
+    #     if row:
+    #         self.control.storyItemBox.listbox.select_row(row)
+    #         row.grab_focus()
+    #
+    #     # self.control.currentStory().updateStoryNames()
 
     def config(self, ):
         pass

@@ -3,6 +3,7 @@ import os
 from gi.repository import Gtk, Gdk, GObject
 
 import _item
+import _dialog
 
 class Data(object):
 
@@ -75,8 +76,13 @@ class View(_item.Item):
             if path is None:
                 cs.path = self.control.saveDir + title
             else:
+
                 split = os.path.split(path)
-                cs.path = split[0] + "/" + title
+                if not os.path.exists(split[0] + "/" + title):
+                    cs.path = split[0] + "/" + title
+                else:
+                    _dialog.infoDialog(self.control, "That story name is already being used.")
+                    title = self.startEditTitle
 
         self.saving = True
         cs.makeHistoryDir()

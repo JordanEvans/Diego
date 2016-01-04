@@ -105,8 +105,9 @@ class View(Gtk.Box):
 
             self.scrollToNextFindTag()
 
-        elif event.keyval == 65307: # esc
-            self.control.scriptView.textView.clearFindTags()
+        # elif event.keyval == 65307: # esc
+        #     # self.control.scriptView.textView.clearFindTags()
+        #     self.control.scriptView.textView.escapePress()
 
         else:
             self.find = None
