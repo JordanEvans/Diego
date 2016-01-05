@@ -649,6 +649,7 @@ class TextView(Gtk.TextView):
             # self.escapePress()
             return
 
+
         if event.keyval == 65470: # F1 press
             # self.control.currentStory().printTags()
             self.printTags()
@@ -2967,6 +2968,54 @@ class ScriptView(Gtk.Box):
 
         self.createTextView()
         self.scrolledWindow2.add(self.textView)
+
+    def pageUp(self):
+        self.control.p('pu')
+        if self.control.category == 'story':
+            pass
+
+        elif self.control.category == 'scene':
+            cs = self.control.currentStory()
+            if cs.index.scene - 1 >= 0:
+                cs.index.scene -= 1
+                cs.index.page = 0
+                cs.index.line = 0
+                cs.index.offset = 0
+                self.resetAndLoad()
+                self.control.scriptView.textView.get_vadjustment().set_value(0.0)
+                # self.control.scroll(self.control.scriptView.lines[1], 0)
+
+        elif self.control.category == 'page':
+            cs = self.control.currentStory()
+            if cs.index.page - 1 >= 0:
+                cs.index.page -= 1
+                cs.index.line = 0
+                cs.index.offset = 0
+                self.resetAndLoad()
+
+    def pageDown(self):
+        self.control.p('pd')
+        if self.control.category == 'story':
+            pass
+
+        elif self.control.category == 'scene':
+            cs = self.control.currentStory()
+            if cs.index.scene + 1 < len(self.control.currentSequence().scenes):
+                cs.index.scene += 1
+                cs.index.page = 0
+                cs.index.line = 0
+                cs.index.offset = 0
+                self.resetAndLoad()
+                self.control.scriptView.scrolledWindow2.get_vadjustment().set_value(0.0)
+                # self.control.scroll(self.control.scriptView.lines[1], 0)
+
+        elif self.control.category == 'page':
+            cs = self.control.currentStory()
+            if cs.index.page + 1 < len(self.control.currentScene().pages):
+                cs.index.page += 1
+                cs.index.line = 0
+                cs.index.offset = 0
+                self.resetAndLoad()
 
     def loadStory(self):
         self.lines = []

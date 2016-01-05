@@ -75,20 +75,28 @@ class Window(Gtk.Window):
                 self.control.preferences.window()
         else:
 
+            print event.keyval
+
+            if event.keyval == 65365: # esc
+                self.control.scriptView.pageUp()
+                return
+
+            if event.keyval == 65366: # esc
+                self.control.scriptView.pageDown()
+                return
+
             if event.keyval == 65307: # esc
                 self.control.scriptView.textView.escapePress()
                 return
 
-            if event.keyval == 65482: # F2 press
+            if event.keyval == 65480: # F2 press
                 if self.isFullscreen:
                     self.unfullscreen()
                     self.isFullscreen = False
                 else:
                     self.fullscreen()
                     self.isFullscreen = True
-
-            return 1
-
+                return 1
 
     def newDocument(self):
         self.control.reset()
