@@ -193,7 +193,6 @@ class Control(object):
         self.startingUpApp = False
 
         self.appBox.paned.set_position(self.verticalPanePosition)
-        # self.scriptView.paned.set_position(self.state.scriptViewPanedPosition)
 
         self.historyEnabled = True
 

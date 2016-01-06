@@ -23,6 +23,7 @@ class Window(Gtk.Window):
     def connections(self, ):
         self.connect("delete-event", self.control.app.shutdown)
         self.connect("key-press-event", self.keyPress)
+        self.connect("key-release-event", self.keyRelease)
 
     def config(self, ):
         self.resize(1000,600)
@@ -39,7 +40,6 @@ class Window(Gtk.Window):
 
             if ( event.keyval == 49):
                 self.newPage()
-
 
             elif(event.keyval==114): # Find And Replace
                 dialog = _dialog.FindAndReplaceDialog(self.control, self)
@@ -75,16 +75,6 @@ class Window(Gtk.Window):
                 self.control.preferences.window()
         else:
 
-            print event.keyval
-
-            if event.keyval == 65365: # esc
-                self.control.scriptView.pageUp()
-                return
-
-            if event.keyval == 65366: # esc
-                self.control.scriptView.pageDown()
-                return
-
             if event.keyval == 65307: # esc
                 self.control.scriptView.textView.escapePress()
                 return
@@ -97,6 +87,15 @@ class Window(Gtk.Window):
                     self.fullscreen()
                     self.isFullscreen = True
                 return 1
+
+    def keyRelease(self, widget, event):
+        if event.keyval == 65365: # page up key
+            self.control.scriptView.pageUp()
+            return 1
+
+        if event.keyval == 65366: # page down key
+            self.control.scriptView.pageDown()
+            return 1
 
     def newDocument(self):
         self.control.reset()

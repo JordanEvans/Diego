@@ -52,10 +52,10 @@ class App(object):
         # self.control.scriptView.infoTextView.props.left_margin = self.control.scriptView.textView.descriptionLeftMargin
         # self.control.scriptView.infoTextView.props.right_margin = self.control.scriptView.textView.descriptionRightMargin
 
-        try:
-            self.control.app.window.move(self.control.windowPosition[0], self.control.windowPosition[1])
-        except:
-            pass
+        # try:
+        #     self.control.app.window.move(self.control.windowPosition[0], self.control.windowPosition[1])
+        # except:
+        #     pass
 
         try:
             self.loadTrie()
@@ -119,12 +119,9 @@ class App(object):
         if line in self.control.scriptView.lines:
             lineIndex = self.control.scriptView.lines.index(line)
 
-            # self.control.p("scroll line", line.text, lineIndex)
-
             scrollIter = self.control.scriptView.textView.iterAtLocation(lineIndex, offset)
             scrollMark = self.control.scriptView.textView.iterMark(scrollIter)
             self.control.scriptView.textView.scroll_to_mark(scrollMark, 0.1, False, 0.0, 0.0)
-
 
     def select(self):
         if self.control.state.lastSelection[0] is not None:

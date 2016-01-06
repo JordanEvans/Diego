@@ -140,3 +140,11 @@ Select Set Backup Disk from Right Click Menu.
 
 Press Escape Key
 
+<b>Full Screen</b>
+
+Press F11
+
+<b>Scroll Scene/Page</b>
+
+Press Page Up/Down Key
+

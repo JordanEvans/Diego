@@ -649,7 +649,6 @@ class TextView(Gtk.TextView):
             # self.escapePress()
             return
 
-
         if event.keyval == 65470: # F1 press
             # self.control.currentStory().printTags()
             self.printTags()
@@ -682,11 +681,6 @@ class TextView(Gtk.TextView):
             return 1
 
         elif (event.keyval == 65535): # delete
-            # if self.completion:
-            #     self.completion.delete()
-            # self.completion = None
-            # self.completing = False
-            # self.completeReset = False
 
             if self.completion:
                 self.completion.delete()
@@ -2064,7 +2058,6 @@ class TextView(Gtk.TextView):
 
     def updateLineTag(self, line=None, formatingLastLineWhenEmpty=False, autoSceneHeading=True):
 
-
         if line is not None:
             updateLine = self.control.scriptView.lines[line]
             bufferIndex = self.control.scriptView.lines.index(updateLine)
@@ -2471,11 +2464,6 @@ class TextView(Gtk.TextView):
             popup.append(modeItem)
             modeItem.show()
             modeItem.connect('activate', self.screenplayMode)
-
-        # clearHistory = Gtk.MenuItem("Clear History")
-        # popup.append(clearHistory)
-        # clearHistory.show()
-        # clearHistory.connect('activate', self.clearHistory, self.control)
 
         authorContact = Gtk.MenuItem("Set Author/Contact")
         popup.append(authorContact)
@@ -2969,8 +2957,16 @@ class ScriptView(Gtk.Box):
         self.createTextView()
         self.scrolledWindow2.add(self.textView)
 
+        self.adjustReset = False
+        self.scrolledWindow2.get_vadjustment().connect('changed', self.adjustmentChanged)
+
+    def adjustmentChanged(self, arg=None):
+        if self.adjustReset:
+            if self.scrolledWindow2.get_vadjustment().get_value() != 0.0:
+                self.scrolledWindow2.get_vadjustment().set_value(0.0)
+            self.adjustReset = False
+
     def pageUp(self):
-        self.control.p('pu')
         if self.control.category == 'story':
             pass
 
@@ -2981,9 +2977,9 @@ class ScriptView(Gtk.Box):
                 cs.index.page = 0
                 cs.index.line = 0
                 cs.index.offset = 0
-                self.resetAndLoad()
-                self.control.scriptView.textView.get_vadjustment().set_value(0.0)
-                # self.control.scroll(self.control.scriptView.lines[1], 0)
+                self.control.sceneItemBox.loadSceneAtIndex()
+                self.control.scriptView.adjustReset = True
+                self.scrolledWindow2.get_vadjustment().changed()
 
         elif self.control.category == 'page':
             cs = self.control.currentStory()
@@ -2991,10 +2987,11 @@ class ScriptView(Gtk.Box):
                 cs.index.page -= 1
                 cs.index.line = 0
                 cs.index.offset = 0
-                self.resetAndLoad()
+                self.control.pageItemBox.loadPageAtIndex()
+                self.control.scriptView.adjustReset = True
+                self.scrolledWindow2.get_vadjustment().changed()
 
     def pageDown(self):
-        self.control.p('pd')
         if self.control.category == 'story':
             pass
 
@@ -3005,9 +3002,9 @@ class ScriptView(Gtk.Box):
                 cs.index.page = 0
                 cs.index.line = 0
                 cs.index.offset = 0
-                self.resetAndLoad()
-                self.control.scriptView.scrolledWindow2.get_vadjustment().set_value(0.0)
-                # self.control.scroll(self.control.scriptView.lines[1], 0)
+                self.control.sceneItemBox.loadSceneAtIndex()
+                self.control.scriptView.adjustReset = True
+                self.scrolledWindow2.get_vadjustment().changed()
 
         elif self.control.category == 'page':
             cs = self.control.currentStory()
@@ -3015,7 +3012,9 @@ class ScriptView(Gtk.Box):
                 cs.index.page += 1
                 cs.index.line = 0
                 cs.index.offset = 0
-                self.resetAndLoad()
+                self.control.pageItemBox.loadPageAtIndex()
+                self.control.scriptView.adjustReset = True
+                self.scrolledWindow2.get_vadjustment().changed()
 
     def loadStory(self):
         self.lines = []
