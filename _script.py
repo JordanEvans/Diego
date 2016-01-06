@@ -3334,6 +3334,7 @@ class ScriptView(Gtk.Box):
 
         if category == 'story':
             lastTag = self.control.scriptView.loadStory()
+            self.control.currentStory().updateStoryNames()
         elif category == 'scene':
             lastTag = self.control.scriptView.loadScene()
         elif category == 'page':

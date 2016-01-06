@@ -151,7 +151,7 @@ class SceneItemBox(ScrolledListBox):
         ScrolledListBox.__init__(self, control)
         self.control = control
         self.scenes = []
-        self.numerated = True
+        self.numerated = False
         self.editing = False
 
     def postInit(self, ):

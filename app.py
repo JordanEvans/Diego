@@ -183,9 +183,19 @@ class App(object):
 
         self.control.currentStory().save()
 
-        for story in self.control.stories:
+        for i in range(len(self.control.stories)):
+
+            story = self.control.stories[i]
+
+            story.index.sequence = 0 #story.sequences.index(sq)
+            story.index.scene = 0
+            story.index.page = 0
+            story.index.line = 0
+            story.index.offset = 0
+
             if not story.saved:
                 story.save()
+
             story.close()
 
         return
