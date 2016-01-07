@@ -62,11 +62,7 @@ Select an item in the Scene or Page View. Hit Delete key. Deleting a Scene will 
 
 If the line is empty, press the Spacebar. If the line has text, then place the cursor at the beginning of the line and hit Spacebar.
 
-<b>How To Complete Character Names, Locations and Times</b>
-
-Diego uses The Double Cap Method. Hold down the Shift Key and press the character of the word you are looking for 2 times. Keep pressing the first letter of the word with the shift down to cycle through candidates.
-
-<b>Spelling Completion</b>
+<b>Completion</b>
 
 Tab key turns completion on.
 

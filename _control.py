@@ -106,6 +106,10 @@ class Control(object):
 
         word = unicode(word)
 
+        # If it's a name, it's not mispelled.
+        if word in self.currentStory().names:
+            return False
+
         # If word comes in in all lower, then it must be in the dict as all lower or it's mispelled.
         allLower = True
         for c in word:
@@ -251,8 +255,6 @@ class Control(object):
         return [story.path for story in self.stories]
 
     def newStory(self):
-
-        print "ns"
 
         for s in self.stories:
             if not s.saved:

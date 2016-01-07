@@ -32,12 +32,6 @@ class CompletionManager(object):
 
         self.hasInserted = False
 
-    def insert(self):
-        pass
-
-    def delete(self):
-        pass
-
     def cursorPrefix(self):
 
         insertIter = self.control.scriptView.textView.insertIter()
@@ -64,7 +58,13 @@ class CompletionManager(object):
 
     def updateIter(self):
         cursorPrefix = self.cursorPrefix()
-        if len(cursorPrefix) > 1 and cursorPrefix != self.prefix:
+
+        if len(cursorPrefix) and cursorPrefix[0].isupper():
+            self.trie = self.control.currentStory().nameTrie
+        else:
+            self.trie = self.control.trie
+
+        if len(cursorPrefix) > 0 and cursorPrefix != self.prefix:
             suffixes = [item[0] for item in self.trie.items(unicode(cursorPrefix))]
             self.iter = CompletionIter(suffixes)
             if len(suffixes) and len(cursorPrefix) == len(suffixes[0]):
@@ -125,11 +125,15 @@ class Completion(object):
 
     def insert(self):
         line = self.control.currentStory().sequences[0].scenes[self.sceneIndex].pages[self.pageIndex].lines[self.pageLineIndex]
+
+        suffix = self.suffix
+        if line.tag in ['character', 'sceneHeading']:
+            suffix = suffix.upper()
         event = _event.Insertion(self.sceneIndex,
             self.pageIndex,
             self.pageLineIndex,
             self.offset,
-            self.suffix,
+            suffix,
             [line.tag])
         event.beforeTags = [line.tag]
         self.control.eventManager.addEvent(event)
@@ -472,8 +476,12 @@ class TextView(Gtk.TextView):
                     self.completeReset = False
                     self.completion = None
                     self.completing = False
-                    self.doCompleteReset()
-                    return 1
+
+                    if self.control.currentLine().tag == 'character':
+                        pass
+                    else:
+                        self.doCompleteReset()
+                        return 1
 
                 elif event.keyval == 65307: # del
                     self.completion.delete()
@@ -642,6 +650,7 @@ class TextView(Gtk.TextView):
                 self.completion = None
 
             self.completionManager.forward()
+
             self.keyPressFollowUp(event)
             return 1
 
@@ -1264,9 +1273,9 @@ class TextView(Gtk.TextView):
             line = self.control.currentLine()
         tag = line.tag
 
-        # Update the character names if on a character line.
-        if tag == "character":
-            self.control.currentStory().addName(line.text)
+        # # Update the character names if on a character line.
+        # if tag == "character":
+        #     self.control.currentStory().addName(line.text)
 
         # Update location and time if coming from a scene heading
         if tag == 'sceneHeading':
@@ -2440,6 +2449,20 @@ class TextView(Gtk.TextView):
         popup.append(sep)
         sep.show()
 
+        addSelectedCharacter = self.addSelectedCharacter()
+        if len(addSelectedCharacter):
+            addWord = Gtk.MenuItem("Add " + addSelectedCharacter + " to Characters")
+            popup.append(addWord)
+            addWord.show()
+            addWord.connect('activate', self.addCharacter, addSelectedCharacter)
+
+        removeSelectedCharacter = self.removeSelectedCharacter()
+        if len(removeSelectedCharacter):
+            removeWord = Gtk.MenuItem("Remove " + removeSelectedCharacter + " from Characters")
+            popup.append(removeWord)
+            removeWord.show()
+            removeWord.connect('activate', self.removeCharacter, removeSelectedCharacter)
+
         addSelectedWord = self.addSelectedWord()
         if len(addSelectedWord):
             addWord = Gtk.MenuItem("Add " + addSelectedWord + " to Dictionary")
@@ -2560,6 +2583,9 @@ class TextView(Gtk.TextView):
             f.close()
             self.control.app.loadAddWordTrie()
 
+    def addCharacter(self, arg, word):
+        self.control.currentStory().addName(word)
+
     def removeWord(self, arg, word):
 
         f = open(self.control.addWordPath, 'r')
@@ -2592,6 +2618,10 @@ class TextView(Gtk.TextView):
 
         self.control.app.loadRemoveWordTrie()
 
+    def removeCharacter(self, arg, word):
+        self.control.currentStory().names.remove(word)
+        self.control.currentStory().updateNameTrie()
+
     def addSelectedWord(self):
         word = ''
         self.setSelectionClipboard()
@@ -2612,6 +2642,29 @@ class TextView(Gtk.TextView):
 
         return word
 
+    def addSelectedCharacter(self):
+        word = ''
+        self.setSelectionClipboard()
+        if len(self.selectedClipboard):
+
+            # Stop the deletion of the ZERO_WIDTH_SPACE
+            endOffset = self.endIter().get_offset()
+            if self.selectionIterEnd.get_offset() == endOffset:
+                self.selectionIterEnd.backward_char()
+
+            word = self.buffer.get_text(self.selectionIterStart, self.selectionIterEnd, False)
+
+            if len(word.split(" ")) > 1:
+                return ''
+
+            if len(word) and not word[0].isupper():
+                return ''
+
+            if word in self.control.currentStory().names:
+                word = ''
+
+        return word
+
     def removeSelectedWord(self):
         word = ''
         self.setSelectionClipboard()
@@ -2628,6 +2681,26 @@ class TextView(Gtk.TextView):
                 return ''
 
             if self.control.wordMispelled(word):
+                word = ''
+
+        return word
+
+    def removeSelectedCharacter(self):
+        word = ''
+        self.setSelectionClipboard()
+        if len(self.selectedClipboard):
+
+            # Stop the deletion of the ZERO_WIDTH_SPACE
+            endOffset = self.endIter().get_offset()
+            if self.selectionIterEnd.get_offset() == endOffset:
+                self.selectionIterEnd.backward_char()
+
+            word = self.buffer.get_text(self.selectionIterStart, self.selectionIterEnd, False)
+
+            if len(word.split(" ")) > 1:
+                return ''
+
+            if word not in self.control.currentStory().names:
                 word = ''
 
         return word

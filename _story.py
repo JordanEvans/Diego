@@ -138,6 +138,7 @@ class Line(object):
                 control.scriptView.textView.buffer.apply_tag_by_name(self.tag + "Mispelled", startIter, endIter)
 
     def addUppercasNamesToStoryNames(self, control):
+        return
         names = []
 
         if self.tag == 'character':
@@ -474,6 +475,7 @@ class Scene(object):
         return names + storyNames
 
     def addUppercasNamesToStoryNames(self, control):
+        return
         for page in self.pages:
             page.addUppercasNamesToStoryNames(control)
 
@@ -607,6 +609,7 @@ class Page(object):
                 print s
 
     def addUppercasNamesToStoryNames(self, control):
+        return
         for line in self.lines:
             line.addUppercasNamesToStoryNames(control)
 
@@ -657,6 +660,15 @@ class Story(object):
         self.isScreenplay = False
 
         self.firstAppearances = []
+
+        self.nameTrie = None
+
+    def updateNameTrie(self):
+        try:
+            import marisa_trie
+            self.nameTrie = marisa_trie.Trie(self.names)
+        except:
+            self.nameTrie = None
 
     def createId(self):
         if self.id == None:
@@ -760,7 +772,9 @@ class Story(object):
         self.title= os.path.split(self.path)[-1] #data['title']
         self.synopsis=data['synopsis']
         self.notes=data['notes']
-        self.info = data['info']
+
+        if 'names' in data.keys():
+            self.names = data['names']
 
         self.index = StoryIndex(data['index'])
 
@@ -784,6 +798,8 @@ class Story(object):
         self.updateEventCount()
 
         self.crashDetect()
+
+        self.updateNameTrie()
 
         # self.hanselGretalImport()
 
@@ -1034,6 +1050,7 @@ class Story(object):
         data['isScreenplay'] = self.isScreenplay
         data['scenesCreated'] = self.scenesCreated
         data['id'] = self.id
+        data['names'] = self.names
         return data
 
     def currentIssue(self):
@@ -1059,13 +1076,17 @@ class Story(object):
             seq.findAndReplace(find, replace, self.control)
 
     def addName(self, name):
-        name = name.upper()
+
+        # raise Exception()
+
         if name in RESTRICTED_CHARACTER_NAMES:
             return
 
         if len(name) and name not in self.names:
             self.names.append(name)
             self.names.sort()
+
+        self.control.currentStory().updateNameTrie()
 
     def addLocation(self, location):
         if location == '':
@@ -1082,6 +1103,7 @@ class Story(object):
         self.times.sort()
 
     def updateStoryNames(self):
+        return
         self.names = []
         for sequence in self.sequences:
             for scene in sequence.scenes:
@@ -1093,11 +1115,11 @@ class Story(object):
 
         self.names.sort()
 
-        for sequence in self.sequences:
-            for scene in sequence.scenes:
-                scene.addUppercasNamesToStoryNames(self.control)
-
-        self.upperCaseFirstOccurenceOfCharactersInDescription()
+        # for sequence in self.sequences:
+        #     for scene in sequence.scenes:
+        #         scene.addUppercasNamesToStoryNames(self.control)
+        #
+        # self.upperCaseFirstOccurenceOfCharactersInDescription()
 
     def upperCaseFirstOccurenceOfCharactersInDescription(self):
         applied = []
