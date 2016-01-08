@@ -212,8 +212,14 @@ def deleteSceneConfirmation(control, row, index):
         control.currentSequence().scenes[index].archiveManager.clear()
         control.currentSequence().scenes.pop(index)
 
+        # control.sceneItemBox.updateNumberated()
 
-        control.sceneItemBox.updateNumberated()
+        control.reset(data=False)
+        control.scriptView.updateTitles()
+        control.load(data=False)
+        index = control.currentStory().index.scene
+        control.sceneItemBox.listbox.get_row_at_index(index).grab_focus()
+        control.sceneItemBox.listbox.select_row(control.sceneItemBox.listbox.get_row_at_index(index))
 
     elif response == Gtk.ResponseType.CANCEL:
         pass

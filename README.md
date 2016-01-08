@@ -66,7 +66,9 @@ If the line is empty, press the Spacebar. If the line has text, then place the c
 
 Tab key turns completion on.
 
-Interactive Usage: Type as much of the word as you can and press the Tab key to see candidate suffixes, then...
+Interactive Usage: Type a prefix then press the Tab key to see candidate suffixes, then...
+
+- Hitting Return key will accept current suffix, and turns completion off.
 
 - Hitting Space key will accept current suffix, places a space after it and turns completion off.
 
@@ -74,7 +76,10 @@ Interactive Usage: Type as much of the word as you can and press the Tab key to 
 
 - Hitting Escape key will remove current suffix, and resets completion to first suffix.
 
-- Hitting Return key will accept current suffix, but keeps completion on.
+
+<b>Add Character To Story</b>
+
+Type character name in the editor. Select the name. Right click and choose "Add Name to Characters"
 
 <b>Name/Rename A Scene Title</b>
 

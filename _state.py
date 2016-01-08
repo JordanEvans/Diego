@@ -21,6 +21,7 @@ class State(object):
         self.lastStoryIndex = _story.StoryIndex()
         self.lastSelection = (0,0)
         self.backupDir = '/home/dev/Documents'
+        self.times = ["DAY", "NIGHT", "DUSK", "DAWN"]
 
         if not os.path.exists(self.path):
             self.defaultSave()
@@ -46,6 +47,7 @@ class State(object):
         # data['scriptViewPanedPosition'] = self.control.scriptView.paned.get_position()
         data['storyIds'] = self.storyIds
         data['backupdir'] = self.backupDir
+        data['times'] = self.times
 
         try:
             data['lastStoryIndex'] = self.control.currentStory().index.data()
@@ -85,6 +87,7 @@ class State(object):
 
         data['lastCategory'] = 'story'
         data['lastSelection'] = (None, None)
+        data['times'] = ['DAY', 'NIGHT', 'DUSK', 'DAWN']
 
         try:
             with open(self.path, 'w') as fp:
@@ -153,6 +156,9 @@ class State(object):
 
                         if 'backupdir' in data.keys():
                             self.backupDir = data['backupdir']
+
+                        if 'times' in data.keys():
+                            self.times = data['times']
 
                     except:
                         exceptionText = "State Data Error : State file did not load open. The state file data may be corrupted."

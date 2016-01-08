@@ -662,6 +662,9 @@ class Story(object):
         self.firstAppearances = []
 
         self.nameTrie = None
+        self.intExtTrie = None
+        self.locationTrie = None
+        self.timeTrie = None
 
     def updateNameTrie(self):
         try:
@@ -669,6 +672,30 @@ class Story(object):
             self.nameTrie = marisa_trie.Trie(self.names)
         except:
             self.nameTrie = None
+
+    def updateIntExtTrie(self):
+        try:
+            import marisa_trie
+            self.intExtTrie = marisa_trie.Trie(['INT.', 'EXT.', 'INT./EXT.'])
+        except:
+            self.intExtTrie = None
+
+    def updateLocationTrie(self):
+        try:
+            import marisa_trie
+            self.locationTrie = marisa_trie.Trie(self.locations)
+        except:
+            self.locationTrie = None
+
+    def updateTimeTrie(self):
+        try:
+            import marisa_trie
+            for t in self.control.state.times:
+                if t not in self.times:
+                    self.times.append(t)
+            self.timeTrie = marisa_trie.Trie(self.times)
+        except:
+            self.timeTrie = None
 
     def createId(self):
         if self.id == None:
@@ -800,6 +827,9 @@ class Story(object):
         self.crashDetect()
 
         self.updateNameTrie()
+        self.updateLocationTrie()
+        self.updateTimeTrie()
+        self.updateIntExtTrie()
 
         # self.hanselGretalImport()
 

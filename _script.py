@@ -59,8 +59,23 @@ class CompletionManager(object):
     def updateIter(self):
         cursorPrefix = self.cursorPrefix()
 
-        if len(cursorPrefix) and cursorPrefix[0].isupper():
+        if self.control.currentLine().tag == "sceneHeading":
+
+            sh = SceneHeading()
+            component = sh.cursorComponent(self.control.currentLine().text, self.control.currentStory().index.offset)
+
+            if component == 'intExt':
+                self.trie = self.control.currentStory().intExtTrie
+
+            elif component == 'location':
+                self.trie = self.control.currentStory().locationTrie
+
+            elif component == 'time':
+                self.trie = self.control.currentStory().timeTrie
+
+        elif len(cursorPrefix) and cursorPrefix[0].isupper():
             self.trie = self.control.currentStory().nameTrie
+
         else:
             self.trie = self.control.trie
 
@@ -476,12 +491,8 @@ class TextView(Gtk.TextView):
                     self.completeReset = False
                     self.completion = None
                     self.completing = False
-
-                    if self.control.currentLine().tag == 'character':
-                        pass
-                    else:
-                        self.doCompleteReset()
-                        return 1
+                    self.updateLineTag()
+                    return 1
 
                 elif event.keyval == 65307: # del
                     self.completion.delete()
@@ -894,7 +905,7 @@ class TextView(Gtk.TextView):
             # Push the cursor to the next line.
             insertIter = self.insertIter()
             insertIter.forward_char()
-            self.textView.place_cursor(insertIter)
+            self.buffer.place_cursor(insertIter)
 
             # Update the model so the current line is next line.
             lineIndex = self.control.currentPage().lines.index(currentLine)
@@ -1082,7 +1093,7 @@ class TextView(Gtk.TextView):
             else:
                 movedIter.forward_chars(2)
 
-            self.textView.place_cursor(movedIter)
+            self.buffer.place_cursor(movedIter)
 
             self.control.scriptView.updateCurrentStoryIndex()
             return 1
@@ -1176,14 +1187,14 @@ class TextView(Gtk.TextView):
                 movedIter.backward_chars(2)
             else:
                 movedIter.backward_char()
-            self.textView.place_cursor(movedIter)
+            self.buffer.place_cursor(movedIter)
             self.control.scriptView.updateCurrentStoryIndex()
             return 1
 
         elif len(self.selectedClipboard) == 0 and prevCharIsHeading and currentLineIndex > 1: # backspace on heading
             movedIter = self.insertIter()
             movedIter.backward_chars(3)
-            self.textView.place_cursor(movedIter)
+            self.buffer.place_cursor(movedIter)
             self.control.scriptView.updateCurrentStoryIndex()
             return 1
 
@@ -2406,6 +2417,9 @@ class TextView(Gtk.TextView):
         cs.updateLocations(sh, self.control.currentStory())
         cs.updateTimes(sh, self.control.currentStory())
 
+        self.control.currentStory().updateLocationTrie()
+        self.control.currentStory().updateTimeTrie()
+
 
     # Misc./Debugging
     def printTags(self):
@@ -2449,33 +2463,49 @@ class TextView(Gtk.TextView):
         popup.append(sep)
         sep.show()
 
-        addSelectedCharacter = self.addSelectedCharacter()
-        if len(addSelectedCharacter):
-            addWord = Gtk.MenuItem("Add " + addSelectedCharacter + " to Characters")
-            popup.append(addWord)
-            addWord.show()
-            addWord.connect('activate', self.addCharacter, addSelectedCharacter)
+        if self.control.currentLine().tag == 'sceneHeading':
+            addSelectedTime = self.addSelectedTime()
+            if len(addSelectedTime):
+                addWord = Gtk.MenuItem("Add " + addSelectedTime + " to Times")
+                popup.append(addWord)
+                addWord.show()
+                addWord.connect('activate', self.addTime, addSelectedTime)
 
-        removeSelectedCharacter = self.removeSelectedCharacter()
-        if len(removeSelectedCharacter):
-            removeWord = Gtk.MenuItem("Remove " + removeSelectedCharacter + " from Characters")
-            popup.append(removeWord)
-            removeWord.show()
-            removeWord.connect('activate', self.removeCharacter, removeSelectedCharacter)
+            removeSelectedTime = self.removeSelectedTime()
+            if len(removeSelectedTime):
+                addWord = Gtk.MenuItem("Remove " + removeSelectedTime + " from Times")
+                popup.append(addWord)
+                addWord.show()
+                addWord.connect('activate', self.removeTime, removeSelectedTime)
 
-        addSelectedWord = self.addSelectedWord()
-        if len(addSelectedWord):
-            addWord = Gtk.MenuItem("Add " + addSelectedWord + " to Dictionary")
-            popup.append(addWord)
-            addWord.show()
-            addWord.connect('activate', self.addWord, addSelectedWord)
+        else:
+            addSelectedCharacter = self.addSelectedCharacter()
+            if len(addSelectedCharacter):
+                addWord = Gtk.MenuItem("Add " + addSelectedCharacter + " to Characters")
+                popup.append(addWord)
+                addWord.show()
+                addWord.connect('activate', self.addCharacter, addSelectedCharacter)
 
-        removeSelectedWord = self.removeSelectedWord()
-        if len(removeSelectedWord):
-            removeWord = Gtk.MenuItem("Remove " + removeSelectedWord + " from Dictionary")
-            popup.append(removeWord)
-            removeWord.show()
-            removeWord.connect('activate', self.removeWord, removeSelectedWord)
+            removeSelectedCharacter = self.removeSelectedCharacter()
+            if len(removeSelectedCharacter):
+                removeWord = Gtk.MenuItem("Remove " + removeSelectedCharacter + " from Characters")
+                popup.append(removeWord)
+                removeWord.show()
+                removeWord.connect('activate', self.removeCharacter, removeSelectedCharacter)
+
+            addSelectedWord = self.addSelectedWord()
+            if len(addSelectedWord):
+                addWord = Gtk.MenuItem("Add " + addSelectedWord + " to Dictionary")
+                popup.append(addWord)
+                addWord.show()
+                addWord.connect('activate', self.addWord, addSelectedWord)
+
+            removeSelectedWord = self.removeSelectedWord()
+            if len(removeSelectedWord):
+                removeWord = Gtk.MenuItem("Remove " + removeSelectedWord + " from Dictionary")
+                popup.append(removeWord)
+                removeWord.show()
+                removeWord.connect('activate', self.removeWord, removeSelectedWord)
 
         if self.control.currentStory().isScreenplay:
             modeItem = Gtk.MenuItem("Graphic Novel Mode")
@@ -2583,6 +2613,12 @@ class TextView(Gtk.TextView):
             f.close()
             self.control.app.loadAddWordTrie()
 
+    def addTime(self, arg, word):
+        self.control.state.times.append(word)
+
+    def removeTime(self, arg, word):
+        self.control.state.times.remove(word)
+
     def addCharacter(self, arg, word):
         self.control.currentStory().addName(word)
 
@@ -2641,6 +2677,64 @@ class TextView(Gtk.TextView):
                 word = ''
 
         return word
+
+    def addSelectedTime(self):
+
+        word = ''
+        self.setSelectionClipboard()
+        if len(self.selectedClipboard):
+
+            # Stop the deletion of the ZERO_WIDTH_SPACE
+            endOffset = self.endIter().get_offset()
+            if self.selectionIterEnd.get_offset() == endOffset:
+                self.selectionIterEnd.backward_char()
+
+            word = self.buffer.get_text(self.selectionIterStart, self.selectionIterEnd, False)
+
+            if len(word.split(" ")) > 1:
+                return ''
+
+            sh = SceneHeading()
+            component = sh.cursorComponent(self.control.currentLine().text, self.control.currentStory().index.offset)
+
+            if component != 'time':
+                word = ''
+
+            if word in self.control.state.times:
+                word = ''
+
+        return word
+
+    def removeSelectedTime(self):
+
+        word = ''
+        self.setSelectionClipboard()
+        if len(self.selectedClipboard):
+
+            # Stop the deletion of the ZERO_WIDTH_SPACE
+            endOffset = self.endIter().get_offset()
+            if self.selectionIterEnd.get_offset() == endOffset:
+                self.selectionIterEnd.backward_char()
+
+            word = self.buffer.get_text(self.selectionIterStart, self.selectionIterEnd, False)
+
+            if len(word.split(" ")) > 1:
+                return ''
+
+            sh = SceneHeading()
+            component = sh.cursorComponent(self.control.currentLine().text, self.control.currentStory().index.offset)
+
+            if component != 'time':
+                word = ''
+
+            if word not in self.control.state.times:
+                word = ''
+
+            if word in ['NIGHT', 'DAY']:
+                word = ''
+
+        return word
+
 
     def addSelectedCharacter(self):
         word = ''
