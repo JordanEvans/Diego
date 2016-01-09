@@ -76,7 +76,6 @@ Interactive Usage: Type a prefix then press the Tab key to see candidate suffixe
 
 - Hitting Escape key will remove current suffix, and resets completion to first suffix.
 
-
 <b>Add Character To Story</b>
 
 Type character name in the editor. Select the name. Right click and choose "Add Name to Characters"

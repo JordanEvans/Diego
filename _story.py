@@ -902,7 +902,7 @@ class Story(object):
     def uniquePath(self):
         count = 1
 
-        storyPath = os.path.realpath(os.curdir) + '/Stories/'
+        storyPath = os.path.expanduser("~") + '/Stories/' #os.path.realpath(os.curdir) + '/Stories/'
 
         try:
             title = self.title
@@ -940,7 +940,7 @@ class Story(object):
         # _dialog.saveFile(self.control)
 
     def _save(self, path, pdf=True, rtf=True):
-        self.control.saveDir = os.path.split(path)[0] + '/'
+        # self.control.saveDir = os.path.split(path)[0] + '/'
         self.path = path
         self.control.scriptView.textView.forceWordEvent()
         self.saveArchiveManagerArchives()

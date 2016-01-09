@@ -2523,10 +2523,10 @@ class TextView(Gtk.TextView):
         authorContact.show()
         authorContact.connect('activate', self.authorContact)
 
-        authorContact = Gtk.MenuItem("Set Backup Disk")
-        popup.append(authorContact)
-        authorContact.show()
-        authorContact.connect('activate', self.setBackupDir)
+        setBackupDisk = Gtk.MenuItem("Set Backup Disk")
+        popup.append(setBackupDisk)
+        setBackupDisk.show()
+        setBackupDisk.connect('activate', self.setBackupDir)
 
         help = Gtk.MenuItem("Help")
         popup.append(help)
@@ -2748,8 +2748,7 @@ class TextView(Gtk.TextView):
 
             word = self.buffer.get_text(self.selectionIterStart, self.selectionIterEnd, False)
 
-            if len(word.split(" ")) > 1:
-                return ''
+            word = word.rstrip().lstrip()
 
             if len(word) and not word[0].isupper():
                 return ''
@@ -2791,8 +2790,7 @@ class TextView(Gtk.TextView):
 
             word = self.buffer.get_text(self.selectionIterStart, self.selectionIterEnd, False)
 
-            if len(word.split(" ")) > 1:
-                return ''
+            word = word.rstrip().lstrip()
 
             if word not in self.control.currentStory().names:
                 word = ''

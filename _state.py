@@ -39,7 +39,7 @@ class State(object):
         data['windowWidth'] = self.control.app.window.get_allocated_width()
         data['windowHeight'] = self.control.app.window.get_allocated_height()
         # data['infoViewFontSize'] = self.control.scriptView.infoViewFontSize
-        data['saveDir'] = self.control.saveDir
+        # data['saveDir'] = self.control.saveDir
         data['windowPosition'] = self.control.app.window.get_position()
         data['storyIndex'] = self.control.index
         data['author'] = self.author
@@ -76,7 +76,7 @@ class State(object):
         data['windowWidth'] = 1000
         data['windowHeight'] = 600
         # data['infoViewFontSize'] = 14
-        data['saveDir'] = self.control.saveDir
+        # data['sav/eDir'] = self.control.saveDir
         data['windowPosition'] = (0,0)
         data['storyIndex'] = 0
         data['author'] = ''
@@ -138,7 +138,7 @@ class State(object):
                         self.height = data['windowHeight']
                         # self.control.scriptView.infoViewFontSize = data['infoViewFontSize']
                         # self.control.scriptView.infoTextView.modify_font(Pango.FontDescription("Courier Prime " + str(data['infoViewFontSize'])))
-                        self.control.saveDir = data['saveDir']
+                        # self.control.saveDir = data['saveDir']
                         self.control.windowPosition = data['windowPosition']
 
                         self.author = data['author']

@@ -40,7 +40,7 @@ class Control(object):
         self.historyEnabled = False
         self.printCount = 0
         self.category = 'sequence'
-        self.saveDir = os.path.realpath(os.curdir) + '/Stories/'
+        self.saveDir = os.path.expanduser("~") + '/Stories/'
         self.verticalPanePosition = 150
         self.startingUpApp = True
         self.sequenceVisible = False

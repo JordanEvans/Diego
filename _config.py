@@ -23,7 +23,7 @@ class Config(object):
             self.control.historyDir = historyDir
 
     def makeStoryDir(self):
-        storyDir = os.path.realpath(os.curdir) + "/Stories"
+        storyDir = expanduser("~") + "/Stories"
         if not os.path.exists(storyDir):
             try:
                 os.mkdir(storyDir)
