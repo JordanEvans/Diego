@@ -40,7 +40,6 @@ Hansel And Gretal - Screenplay directly adapted from the original story.
 Salem - Sample pages from a graphic novel.
 
 <h2>How To Use Diego</h2>
-<i>At this time the app is in development and only meant for testing.</i>
 
 <b>How To Run The App</b>
 
