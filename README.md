@@ -118,7 +118,7 @@ Go to Story, Scene, or Page View. Type single word in Find Entry.
 
 <b>Screenplay Mode</b>
 
-Right click over the text editor. Choose Screenplay Mode from the popup menu. In Screenplay mode, Locations and Times will complete using the Double Cap Method.
+Right click over the text editor. Choose Screenplay Mode from the popup menu. In Screenplay mode, Locations and Times will now complete.
 
 <b>Set Author/Contact Information</b>
 
