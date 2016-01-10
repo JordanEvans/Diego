@@ -1,4 +1,4 @@
-# Diego
+![](http://specscripter.com/logo.png "")
 
 <h3>Simple. Fast. Organized.</h3>
 
